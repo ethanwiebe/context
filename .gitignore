@@ -1,0 +1,11 @@
+# object files
+*.o
+
+# log files
+*.log
+
+# executable
+bin/context
+
+# test text files
+test*.txt

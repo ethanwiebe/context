@@ -1,0 +1,38 @@
+{
+	"sourceDir":"src",
+	"outputDir":"bin",
+	"outputName":"context",
+	"compileCommand": "g++ -c",
+	"linkCommand": "g++",
+	"compileFlags":[
+		"-std=c++20",
+		"-o",
+		"%output",
+		"-Wall",
+		"-DCURSES_INTERFACE"
+	],
+	"linkFlags":[
+		"-o",
+		"%output",
+		"-lncurses"
+	],
+	"modes": {
+		"debug":{
+			"objectDir":"build/debug",
+			"compileFlags":[
+				"-ggdb3",
+				"-Og"
+			]
+		},
+		"release":{
+			"objectDir":"build/release",
+			"compileFlags":[
+				"-O3",
+				"-DNDEBUG"
+			],
+			"linkFlags":[
+				"-s"
+			]
+		}
+	}
+}
