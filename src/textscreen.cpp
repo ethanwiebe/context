@@ -34,3 +34,9 @@ TextCell TextScreen::operator[](size_t i) const {
 TextCell& TextScreen::operator[](size_t i){
 	return cells[i];
 }
+
+void TextScreen::RenderString(s32 x,s32 y,std::string_view s){
+	for (const auto& c : s){
+		cells[y*width + x++] = TextCell(c,0,0);
+	}
+}

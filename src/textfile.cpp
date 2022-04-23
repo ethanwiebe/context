@@ -81,13 +81,14 @@ size_t TextFile::size() const noexcept {
 	return lines.size();
 }
 
-s32 ToNextMultiple(s32 x,s32 d){
-	return (x/d+1)*d;
+s32 ToNextMultiple(s32 x,s32 d,s32 w){
+	s32 xproper = x%w;
+	return x + (d-xproper%d);
 }
 
-void UpdateXI(const std::string& str,s32& x,s32& i){
+void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
 	if (str[i]=='\t'){
-		x = ToNextMultiple(x,Config::tabSize);
+		x = std::min(ToNextMultiple(x,Config::tabSize,width),ToNextMultiple(x,width,width));
 		i++;
 	} else if (str[i]&128){ //utf8 handling
 		if ((str[i]>>5)==6){
@@ -106,11 +107,26 @@ void UpdateXI(const std::string& str,s32& x,s32& i){
 	}
 }
 
-s32 GetXPosOfIndex(const std::string& str,s32 index){
+s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width){
 	s32 x = 0;
+	s32 strLen = str.size();
 	for (s32 i=0;i<index;){
-		UpdateXI(str,x,i);
+		UpdateXI(str,x,i,width);
+
+		if (index>strLen) break;
 	}
 
 	return x;
+}
+
+s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width){
+	s32 index = 0;
+	s32 strLen = str.size();
+	for (s32 i=0;i<x;){
+		UpdateXI(str,i,index,width);
+
+		if (index>strLen) break;
+	}
+
+	return index;
 }

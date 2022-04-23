@@ -12,8 +12,11 @@ s32 tenPow(s32 i){
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	TextScreen textScreen;
 
+	s32 lineNumberWidth = 4;
+
 	screenWidth = w;
 	screenHeight = h;
+	lineWidth = screenWidth-lineNumberWidth;
 
 	textScreen.SetSize(w,h);
 	
@@ -24,7 +27,6 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	s32 lineNumber;
 	char c;
 
-	s32 lineNumberWidth = 4;
 
 	for (s32 y=0;y<h;y++){
 		if (it.it==file->end()){
@@ -50,7 +52,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			lineStart += lineNumberWidth;
 		}
 
-		for (s32 x=lineStart;x<w;){
+		for (s32 x=0;x<w;){
 			if (i>=lineLen) break;
 
 
@@ -58,10 +60,10 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			if (c&128) c = '?'; //utf8
 			if (c=='\t') c = ' ';
 
-			textScreen[y*w+x] = TextCell(c,0,0);
+			textScreen[y*w+x+lineStart] = TextCell(c,0,0);
 
-			UpdateXI(*it.it,x,i);
-			if (x >= w){
+			UpdateXI(*it.it,x,i,lineWidth);
+			if (x >= w-lineStart){
 				y++;
 				x = 0;
 			}
@@ -72,9 +74,12 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	s32 loc;
 	for (auto cursor : cursors){
-		loc = cursor.visualLine*w + GetXPosOfIndex(*cursor.line.it,cursor.column)%screenWidth + lineStart;
+		loc = cursor.visualLine*w + GetXPosOfIndex(*cursor.line.it,cursor.column,lineWidth)%lineWidth + lineStart;
 		textScreen[loc].fg = 1;
 	}
+
+	std::string locString = std::to_string(cursors[0].line.index)+" "+std::to_string(cursors[0].visualLine)+", "+std::to_string(cursors[0].column) + " " + std::to_string(cursors[0].subline);
+	textScreen.RenderString(1,h-1,locString);
 
 	return textScreen;
 }
@@ -96,32 +101,42 @@ void LineModeBase::ProcessKeyboardEvent(KeyboardEvent* event){
 
 
 void LineModeBase::MoveCursorDown(TextCursor& cursor,s32 num){
-	//cursor.line += num;
+	if (cursor.line.index==(s32)(file->size()-1) &&
+			cursor.subline==cursor.CurrentLineLen()/lineWidth) return;
+
 	cursor.visualLine += num;
-	cursor.SetLineFromVisualLine(viewLine,screenWidth);
+	cursor.SetLineFromVisualLine(viewLine,screenSubline,lineWidth);
 }
 
 void LineModeBase::MoveCursorUp(TextCursor& cursor,s32 num){
-	//cursor.line -= num;
+	if (cursor.line.index==0 &&
+			cursor.subline==0) return;
+
 	cursor.visualLine -= num;
-	cursor.SetLineFromVisualLine(viewLine,screenWidth);
+	cursor.SetLineFromVisualLine(viewLine,screenSubline,lineWidth);
 }
 
 void LineModeBase::SetCursorColumn(TextCursor& cursor,s32 col){
 	s32 oldSubline = cursor.subline;
 
 	cursor.column = col;
-	cursor.subline = col/screenWidth;
+	cursor.subline = GetXPosOfIndex(*cursor.line.it,col,lineWidth)/lineWidth;
 
 	cursor.visualLine += cursor.subline-oldSubline;
 }
 
-void TextCursor::SetLineFromVisualLine(IndexedIterator viewLine,s32 w){
+// sets the cursor's line from a screen position (visualLine)
+void TextCursor::SetLineFromVisualLine(IndexedIterator viewLine,s32 screenSubline,s32 w){
 	s32 count = visualLine;
 	s32 lineSize;
+
+	// reset line to top of screen and move down
 	line = viewLine;
-	while (count--){
-		lineSize = line.it->size();
+	subline = screenSubline;
+	column %= w;
+
+	while (--count>=0){
+		lineSize = GetXPosOfIndex(*line.it,line.it->size(),w);
 		if (lineSize>=(subline+1)*w){
 			column += w;
 			++subline;

@@ -45,5 +45,6 @@ public:
 	size_t size() const noexcept;
 };
 
-void UpdateXI(const std::string&, s32&, s32&);
-s32 GetXPosOfIndex(const std::string&, s32);
+void UpdateXI(const std::string&, s32&, s32&, s32);
+s32 GetXPosOfIndex(const std::string&, s32, s32);
+s32 GetIndexOfXPos(const std::string&, s32, s32);

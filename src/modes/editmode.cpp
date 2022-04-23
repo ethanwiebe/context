@@ -3,6 +3,7 @@
 EditMode::EditMode(){
 	file = FileManager::ReadFile("test.txt");
 	viewLine = {file->begin()};
+	screenSubline = 0;
 	cursors.emplace_back(file->begin());
 
 	SetKeybinds();
@@ -10,19 +11,23 @@ EditMode::EditMode(){
 
 void EditMode::ProcessTextAction(TextAction a){
 	auto& cursor = cursors[0];
+	s32 oldCursorX;
+	s32 newCursorX;
 	switch (a.action){
 		case Action::MoveUpLine:
-			if (cursor.line.index>0){
-				MoveCursorUp(cursor,a.num);
-				SetCursorColumn(cursor,std::min(cursor.column,cursor.CurrentLineLen()));
-			}
+			oldCursorX = GetXPosOfIndex(*cursor.line.it,cursor.column,lineWidth)%lineWidth;
+			MoveCursorUp(cursor,a.num);
+			newCursorX = GetIndexOfXPos(*cursor.line.it,oldCursorX+cursor.subline*lineWidth,lineWidth);
+
+			SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 
 			break;
 		case Action::MoveDownLine:
-			if (cursor.line.index<(s32)file->size()-1){
-				MoveCursorDown(cursor,a.num);
-				SetCursorColumn(cursor,std::min(cursor.column,cursor.CurrentLineLen()));
-			}
+			oldCursorX = GetXPosOfIndex(*cursor.line.it,cursor.column,lineWidth)%lineWidth;
+			MoveCursorDown(cursor,a.num);
+			newCursorX = GetIndexOfXPos(*cursor.line.it,oldCursorX+cursor.subline*lineWidth,lineWidth);
+
+			SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 			break;
 		case Action::MoveLeftChar:
 			if (cursor.column>0){

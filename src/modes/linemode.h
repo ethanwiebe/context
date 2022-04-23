@@ -20,14 +20,16 @@ struct TextCursor {
 		return line.it->size();
 	}
 
-	void SetLineFromVisualLine(IndexedIterator viewLine,s32 w);
+	void SetLineFromVisualLine(IndexedIterator viewLine,s32 screenSubline,s32 w);
 };
 
 
 class LineModeBase : public ModeBase {
 protected:
 	IndexedIterator viewLine;
+	s32 screenSubline;
 	std::vector<TextCursor> cursors;
+	s32 lineWidth;
 
 public:
 	void ProcessKeyboardEvent(KeyboardEvent*) override;
