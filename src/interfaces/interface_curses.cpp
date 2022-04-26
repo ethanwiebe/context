@@ -1,7 +1,5 @@
 #include "interface_curses.h"
 
-#include <string_view>
-
 void DefineAltKeys(){
 	std::string s = "\033";
 	for (char i='a';i<='z';i++){
@@ -54,10 +52,21 @@ CursesInterface::CursesInterface(){
 
 	refresh();
 
+	InitColors();
 	InitColorPairs();
-	ListColorPairs();
+	//ListColorPairs();
+
+	colorDefinitions = {};//{{0,0,0},{174,174,174}};
+//	colorDefinitions = {{1,2,3}};
+	pairDefinitions = {};
+//	pairDefinitions.emplace_back(colorDefinitions[0],colorDefinitions[0]);
 
 	DefineAltKeys();
+
+	logger << "Max color pairs: " << COLOR_PAIRS << "\n";
+	logger << "Max colors: " << COLORS << "\n";
+	logger << "Colors pairs: " << definedPairs << "\n";
+	logger << "Colors: " << definedColors << "\n";
 }
 
 CursesInterface::~CursesInterface(){
@@ -65,16 +74,42 @@ CursesInterface::~CursesInterface(){
 	logger << "closing\n";
 }
 
+void CursesInterface::InitColors(){
+	/*definedColors = 8;
+
+	init_color(definedColors++,300,300,300); //bright black (gray)
+	init_color(definedColors++,1000,    0,    0); //bright red
+	init_color(definedColors++,0,    1000,    0); //bright green
+	init_color(definedColors++,1000, 1000,    0); //bright yellow
+	init_color(definedColors++,   0,    0, 1000); //bright blue
+	init_color(definedColors++,1000,    0, 1000); //bright magenta
+	init_color(definedColors++,   0, 1000, 1000); //bright cyan
+	init_color(definedColors++,  1000, 1000, 1000); //bright white
+*/
+}
+
 void CursesInterface::InitColorPairs(){
-	init_pair(1,0,7); //for fake cursor
+	reset_color_pairs();
+/*	definedPairs = 0;
+	
+	s32 colorN,colorFore,colorBack;
+
+	for (s32 i=0;i<definedColors*definedColors;i++){
+		colorFore = i%definedColors;
+		colorBack = i/definedColors;
+		
+		init_pair(i,colorFore,colorBack);
+		++definedPairs;
+	}
+*/
 };
 
 
 void CursesInterface::ListColorPairs(){
 	s16 fg,bg;
-	for (s16 i=0;i<COLOR_PAIRS;i++){
+	for (s16 i=0;i<definedPairs;i++){
 		pair_content(i,&fg,&bg);
-	//	std::cout << fg << "," << bg << "\n";
+		logger << "FG: " << fg << " BG: " << bg << "\n";
 	}
 }
 
@@ -94,7 +129,7 @@ KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 		return nullptr;
 	}
 
-	s32 mod = (s32)KeyModifier::None;//(KeyModifier)PDC_get_key_modifiers();
+	s32 mod = (s32)KeyModifier::None;
 
 	logger << "Pre:" << (char)key << " " << key << " " << GetModName(mod) << "\n";
 
@@ -115,12 +150,57 @@ s32 CursesInterface::GetHeight(){
 	return LINES;
 }
 
+inline s32 CursesInterface::ColorsToPair(s32 fg, s32 bg) const {
+	return bg*definedColors + fg;
+}
+
+s32 CursesInterface::DefineColor(Color col){
+	s32 colorIndex = 0;
+	for (const auto& defColor : colorDefinitions){
+		if (defColor == col){
+			return colorIndex;
+		}
+
+		++colorIndex;
+	}
+
+	init_color(colorIndex+16,col.r*1000/255,col.g*1000/255,col.b*1000/255);
+	colorDefinitions.push_back(col);
+
+	return colorIndex;
+}
+
+s32 CursesInterface::DefinePair(Color fg,Color bg){
+	s32 pairIndex = 0;
+	for (const auto& pair : pairDefinitions){
+		if (pair.first==fg && pair.second==bg){
+			return pairIndex;
+		}
+
+		++pairIndex;
+	}
+
+	s32 fgIndex = DefineColor(fg);
+	s32 bgIndex = DefineColor(bg);
+
+	init_pair(pairIndex+16,fgIndex+16,bgIndex+16);
+
+	pairDefinitions.emplace_back(fg,bg);
+
+	return pairIndex;
+}
 
 void CursesInterface::RenderScreen(const TextScreen& textScreen){
 	// convert text into chtype arrays
+	s32 boldFlag;
+	s32 pairNum;
 	for (size_t i=0;i<textScreen.size();i++){
-		charArray[i] = (chtype)textScreen[i].c | COLOR_PAIR(textScreen[i].fg);
+		boldFlag = textScreen[i].style.bold ? A_BOLD : 0;
 
+		//boldFlag = textScreen[i].fg>=8&&textScreen[i].fg<16 ? A_BOLD : 0;
+		pairNum = DefinePair(textScreen[i].style.fg,textScreen[i].style.bg);
+
+		charArray[i] = (chtype)textScreen[i].c | COLOR_PAIR(pairNum+16) | boldFlag;
 	}
 
 	// print lines onto the terminal

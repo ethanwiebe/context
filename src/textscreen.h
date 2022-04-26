@@ -1,22 +1,20 @@
 #pragma once
 
 #include "core.h"
+#include "style.h"
 
 #include <vector>
 
 struct TextCell {
 	u8 c;
-	u8 fg;
-	u8 bg;
+	TextStyle style;
 };
 
 class TextScreen {
 	s32 width,height;
-	
 	std::vector<TextCell> cells;
 
 public:
-
 	s32 GetWidth() const;
 	s32 GetHeight() const;
 

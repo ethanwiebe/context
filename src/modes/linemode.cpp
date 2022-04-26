@@ -20,7 +20,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	textScreen.SetSize(w,h);
 	
-	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',0,0));
+	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',defaultStyle));
 
 	auto it = viewLine;
 	s32 lineLen,lineStart;
@@ -30,7 +30,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	for (s32 y=0;y<h;y++){
 		if (it.it==file->end()){
-			textScreen[y*w] = TextCell('~',0,0);
+			textScreen[y*w] = TextCell('~',blankLineStyle);
 			continue;
 		}
 
@@ -47,7 +47,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 				powerOfTen = tenPow(i);
 				if (powerOfTen>lineNumber) break;
 
-				textScreen[y*w+x] = TextCell('0'+(lineNumber/tenPow(i))%10, 0,0);
+				textScreen[y*w+x] = TextCell('0'+(lineNumber/tenPow(i))%10, lineNumberStyle);
 			}
 			lineStart += lineNumberWidth;
 		}
@@ -60,7 +60,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			if (c&128) c = '?'; //utf8
 			if (c=='\t') c = ' ';
 
-			textScreen[y*w+x+lineStart] = TextCell(c,0,0);
+			textScreen[y*w+x+lineStart] = TextCell(c,defaultStyle);
 
 			UpdateXI(*it.it,x,i,lineWidth);
 			if (x >= w-lineStart){
@@ -75,7 +75,9 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	s32 loc;
 	for (auto cursor : cursors){
 		loc = cursor.visualLine*w + GetXPosOfIndex(*cursor.line.it,cursor.column,lineWidth)%lineWidth + lineStart;
-		textScreen[loc].fg = 1;
+		//textScreen[loc].fg = 0;
+		//textScreen[loc].bg = 7;
+		textScreen[loc].style = cursorStyle;
 	}
 
 	std::string locString = std::to_string(cursors[0].line.index)+" "+std::to_string(cursors[0].visualLine)+", "+std::to_string(cursors[0].column) + " " + std::to_string(cursors[0].subline);
