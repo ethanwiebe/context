@@ -192,15 +192,17 @@ s32 CursesInterface::DefinePair(Color fg,Color bg){
 
 void CursesInterface::RenderScreen(const TextScreen& textScreen){
 	// convert text into chtype arrays
-	s32 boldFlag;
+	s32 flags;
 	s32 pairNum;
 	for (size_t i=0;i<textScreen.size();i++){
-		boldFlag = textScreen[i].style.bold ? A_BOLD : 0;
+		flags = 0;
+		flags |= textScreen[i].style.flags & StyleFlag::Bold ? A_BOLD : 0;
+		flags |= textScreen[i].style.flags & StyleFlag::Underline ? A_UNDERLINE : 0; 
 
 		//boldFlag = textScreen[i].fg>=8&&textScreen[i].fg<16 ? A_BOLD : 0;
 		pairNum = DefinePair(textScreen[i].style.fg,textScreen[i].style.bg);
 
-		charArray[i] = (chtype)textScreen[i].c | COLOR_PAIR(pairNum+16) | boldFlag;
+		charArray[i] = (chtype)textScreen[i].c | COLOR_PAIR(pairNum+16) | flags;
 	}
 
 	// print lines onto the terminal

@@ -19,12 +19,17 @@ const Color ColorCyan = {0,255,255};
 struct TextStyle {
 	Color fg;
 	Color bg;
-	bool bold;
+	u8 flags;
 };
 
-const TextStyle defaultStyle = {ColorWhite,ColorBlack,false};
-const TextStyle cursorStyle = {ColorBlack,ColorWhite,false};
-const TextStyle lineNumberStyle = {ColorBlue,ColorBlack,false};
-const TextStyle blankLineStyle = {ColorCyan,ColorBlack,false};
+enum StyleFlag : u8 {
+	NoFlag = 0,
+	Bold = 1,
+	Underline = 2
+};
 
+const TextStyle defaultStyle = {ColorWhite,ColorBlack,StyleFlag::NoFlag};
+const TextStyle cursorStyle = {ColorBlack,ColorWhite,StyleFlag::NoFlag};
+const TextStyle lineNumberStyle = {ColorBlue,ColorBlack,StyleFlag::NoFlag};
+const TextStyle blankLineStyle = {ColorCyan,ColorBlack,StyleFlag::NoFlag};
 
