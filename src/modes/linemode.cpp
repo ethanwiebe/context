@@ -9,10 +9,19 @@ s32 tenPow(s32 i){
 	return p;
 }
 
+s32 numWidth(s32 i){
+	s32 c = 1;
+	while (i>9){
+		i /= 10;
+		++c;
+	}
+	return c;
+}
+
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	TextScreen textScreen;
 
-	s32 lineNumberWidth = 4;
+	s32 lineNumberWidth = std::max(numWidth(viewLine.index+h)+1,4);
 
 	screenWidth = w;
 	screenHeight = h;
@@ -23,7 +32,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',defaultStyle));
 
 	auto it = viewLine;
-	s32 lineLen,lineStart;
+	s32 lineLen,lineStart = 0;
 	s32 lineNumber;
 	char c;
 
