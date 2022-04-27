@@ -1,4 +1,4 @@
-#include "textfile.h"
+#include "textbuffer.h"
 
 IndexedIterator& IndexedIterator::operator+=(s32 n){
 	while (n--){
@@ -46,7 +46,7 @@ const std::string& IndexedIterator::operator*() const {
 }
 
 
-LineIterator TextFile::GetLineIterator(size_t s) noexcept {
+LineIterator TextBuffer::GetLineIterator(size_t s) noexcept {
 	auto it = lines.begin();
 	while (s--){ //TODO: use begin AND end for optimization
 		it++;
@@ -55,22 +55,22 @@ LineIterator TextFile::GetLineIterator(size_t s) noexcept {
 	return it;
 }
 
-void TextFile::InsertLine(LineIterator it,const std::string& s){
+void TextBuffer::InsertLine(LineIterator it,const std::string& s){
 	lines.insert(it,s);
 }
 
-void TextFile::InsertLineAfter(LineIterator it,const std::string& s){
+void TextBuffer::InsertLineAfter(LineIterator it,const std::string& s){
 	lines.insert(++it,s);
 }
 
-void TextFile::BackDeleteLine(LineIterator it){
+void TextBuffer::BackDeleteLine(LineIterator it){
 	auto prev = it;
 	--prev;
 	*prev += *it;
 	lines.erase(it);
 }
 
-void TextFile::ForwardDeleteLine(LineIterator it){
+void TextBuffer::ForwardDeleteLine(LineIterator it){
 	auto next = it;
 	++next;
 
@@ -78,19 +78,19 @@ void TextFile::ForwardDeleteLine(LineIterator it){
 	lines.erase(next);
 }
 
-void TextFile::SetLine(LineIterator it,const std::string& s){
+void TextBuffer::SetLine(LineIterator it,const std::string& s){
 	*it = s;
 }
 
-LineIterator TextFile::begin() noexcept {
+LineIterator TextBuffer::begin() noexcept {
 	return lines.begin();
 }
 
-LineIterator TextFile::end() noexcept {
+LineIterator TextBuffer::end() noexcept {
 	return lines.end();
 }
 
-size_t TextFile::size() const noexcept {
+size_t TextBuffer::size() const noexcept {
 	return lines.size();
 }
 

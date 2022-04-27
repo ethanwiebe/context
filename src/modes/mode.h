@@ -3,7 +3,6 @@
 #include "../core.h"
 
 #include "../key.h"
-#include "../textfile.h"
 #include "../textscreen.h"
 
 #include <vector>
@@ -24,7 +23,6 @@ struct TextAction {
 
 class ModeBase {
 protected:
-	Ref<TextFile> file;
 	s32 screenWidth,screenHeight;
 public:
 	virtual void ProcessKeyboardEvent(KeyboardEvent*) = 0;

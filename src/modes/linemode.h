@@ -3,6 +3,7 @@
 #include "mode.h"
 #include "../keybind.h"
 #include "../config.h"
+#include "../textbuffer.h"
 
 #include <vector>
 
@@ -27,6 +28,8 @@ struct TextCursor {
 
 class LineModeBase : public ModeBase {
 protected:
+	Ref<TextBuffer> file;
+
 	IndexedIterator viewLine;
 	s32 screenSubline;
 	std::vector<TextCursor> cursors;

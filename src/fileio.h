@@ -2,7 +2,7 @@
 
 #include "core.h"
 
-#include "textfile.h"
+#include "textbuffer.h"
 
 #include <fstream>
 #include <string_view>
@@ -10,7 +10,7 @@
 
 class FileManager {
 public:
-	static Ref<TextFile> ReadFile(const std::string& path);
+	static Ref<TextBuffer> ReadFile(const std::string& path);
 
 	
 };

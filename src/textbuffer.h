@@ -29,7 +29,7 @@ struct IndexedIterator {
 	const std::string& operator*() const;
 };
 
-class TextFile {
+class TextBuffer {
 	LineList lines;
 public:
 	
