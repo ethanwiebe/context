@@ -11,23 +11,18 @@ EditMode::EditMode(){
 
 void EditMode::ProcessTextAction(TextAction a){
 	auto& cursor = cursors[0];
-	s32 oldCursorX;
-	s32 newCursorX;
 	switch (a.action){
+		case Action::MoveScreenUpLine:
+			MoveScreenUp(1);
+			break;
+		case Action::MoveScreenDownLine:
+			MoveScreenDown(1);
+			break;
 		case Action::MoveUpLine:
-			oldCursorX = GetXPosOfIndex(*cursor.line.it,cursor.column,lineWidth)%lineWidth;
 			MoveCursorUp(cursor,a.num);
-			newCursorX = GetIndexOfXPos(*cursor.line.it,oldCursorX+cursor.subline*lineWidth,lineWidth);
-
-			SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
-
 			break;
 		case Action::MoveDownLine:
-			oldCursorX = GetXPosOfIndex(*cursor.line.it,cursor.column,lineWidth)%lineWidth;
 			MoveCursorDown(cursor,a.num);
-			newCursorX = GetIndexOfXPos(*cursor.line.it,oldCursorX+cursor.subline*lineWidth,lineWidth);
-
-			SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 			break;
 		case Action::MoveLeftChar:
 			if (cursor.column>0){

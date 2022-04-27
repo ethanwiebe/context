@@ -25,6 +25,8 @@ struct IndexedIterator {
 	IndexedIterator& operator++();
 
 	IndexedIterator& operator--();
+
+	const std::string& operator*() const;
 };
 
 class TextFile {

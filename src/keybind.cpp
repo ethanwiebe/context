@@ -23,6 +23,9 @@ void SetKeybinds(){
 	ADD_BIND(Action::MoveDownLine,        KeyEnum::Down,       KeyModifier::None);
 	ADD_BIND(Action::MoveDownLine,        'k',                 KeyModifier::Alt);
 
+	ADD_BIND(Action::MoveScreenUpLine,    KeyEnum::PageUp,     KeyModifier::None);
+	ADD_BIND(Action::MoveScreenDownLine,  KeyEnum::PageDown,   KeyModifier::None);
+
 	ADD_BIND(Action::InsertLine,          KeyEnum::Enter,      KeyModifier::None);
 	ADD_BIND(Action::InsertLine,          KeyEnum::Enter,      KeyModifier::Shift);
 	ADD_BIND(Action::InsertLine,          'j',                 KeyModifier::Ctrl);

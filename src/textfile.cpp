@@ -1,18 +1,20 @@
 #include "textfile.h"
 
 IndexedIterator& IndexedIterator::operator+=(s32 n){
-	index += n;
 	while (n--){
-		it++;
+		++index;
+		if (index>0)
+			++it;
 	}
 
 	return *this;
 }
 
 IndexedIterator& IndexedIterator::operator-=(s32 n){
-	index -= n;
 	while (n--){
-		it--;
+		--index;
+		if (index>=0)
+			--it;
 	}
 
 	return *this;
@@ -20,22 +22,33 @@ IndexedIterator& IndexedIterator::operator-=(s32 n){
 
 IndexedIterator& IndexedIterator::operator++(){
 	++index;
-	++it;
+	if (index>0)
+		++it;
 
 	return *this;
 }
 
 IndexedIterator& IndexedIterator::operator--(){
 	--index;
-	--it;
+	if (index>=0)
+		--it;
 
 	return *this;
+}
+
+const std::string& IndexedIterator::operator*() const {
+	static const std::string nullStr = "";
+	if (index>=0){
+		return *it;
+	}
+
+	return nullStr;
 }
 
 
 LineIterator TextFile::GetLineIterator(size_t s) noexcept {
 	auto it = lines.begin();
-	while (s--){ //TODO: use begin and end for optimization
+	while (s--){ //TODO: use begin AND end for optimization
 		it++;
 	}
 
