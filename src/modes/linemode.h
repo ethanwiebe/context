@@ -39,7 +39,7 @@ public:
 
 	virtual void ProcessTextAction(TextAction) = 0;
 
-	void MoveScreenDown(s32);
+	void MoveScreenDown(s32,bool = true);
 	void MoveScreenUp(s32,bool = false);
 	void MoveScreenToCursor(TextCursor&);
 	void LockScreenToCursor(TextCursor&);

@@ -185,15 +185,15 @@ void UpdateSublineDownwards(IndexedIterator& line,s32& subline,s32& column,s32 w
 	}
 }
 
-void LineModeBase::MoveScreenDown(s32 num){
-	s32 moveDist = (s32)(file->size()-1) - viewLine.index;
-	moveDist += GetXPosOfIndex(*viewLine,(*viewLine).size(),lineWidth)/lineWidth-screenSubline;
-	if (moveDist<=0) return;
+void LineModeBase::MoveScreenDown(s32 num,bool constrain){
+	//s32 moveDist = (s32)(file->size()-1) - viewLine.index;
+	//moveDist += GetXPosOfIndex(*viewLine,(*viewLine).size(),lineWidth)/lineWidth-screenSubline;
+	//if (moveDist<=0) return;
 
-	num = std::min(moveDist,num);
+	//num = std::min(moveDist,num);
 	
 	s32 dummy;
-	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num);
+	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,file->size());
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
 }
 
