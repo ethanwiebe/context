@@ -13,9 +13,7 @@ struct TextCursor {
 	s32 column;
 	s32 subline;
 
-	TextCursor(LineIterator it) : line(it), visualLine(0), column(0), subline(0) {
-		
-	}
+	TextCursor(LineIterator it) : line(it), visualLine(0), column(0), subline(0) {}
 
 	inline s32 CurrentLineLen() const noexcept {
 		return (*line).size();

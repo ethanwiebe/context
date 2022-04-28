@@ -86,6 +86,9 @@ enum class Action : u16 {
 
 	MoveToLineStart,
 	MoveToLineEnd,
+	
+	MoveToBufferStart,
+	MoveToBufferEnd,
 
 	InsertChar,
 	InsertLine,

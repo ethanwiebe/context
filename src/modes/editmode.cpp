@@ -11,6 +11,7 @@ EditMode::EditMode(){
 
 void EditMode::ProcessTextAction(TextAction a){
 	auto& cursor = cursors[0];
+	s32 multiAmount;
 	switch (a.action){
 		case Action::MoveScreenUpLine:
 			MoveScreenUp(1);
@@ -26,13 +27,27 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 		case Action::MoveLeftChar:
 			if (cursor.column>0){
-				SetCursorColumn(cursor,cursor.column-a.num);
+				SetCursorColumn(cursor,cursor.column-1);
 			}
 			break;
 		case Action::MoveRightChar:
 			if (cursor.column<cursor.CurrentLineLen()){
-				SetCursorColumn(cursor,cursor.column+a.num);
+				SetCursorColumn(cursor,cursor.column+1);
 			}
+			break;
+		case Action::MoveLeftMulti:
+			multiAmount = std::min(a.num,cursor.column);
+			SetCursorColumn(cursor,cursor.column-multiAmount);
+			break;
+		case Action::MoveRightMulti:
+			multiAmount = std::min(a.num,cursor.CurrentLineLen()-cursor.column);
+			SetCursorColumn(cursor,cursor.column+multiAmount);
+			break;
+		case Action::MoveUpMulti:
+			MoveCursorUp(cursor,a.num);
+			break;
+		case Action::MoveDownMulti:
+			MoveCursorDown(cursor,a.num);
 			break;
 		case Action::InsertLine: {
 			std::string cut = cursor.line.it->substr(cursor.column);
@@ -69,6 +84,14 @@ void EditMode::ProcessTextAction(TextAction a){
 			SetCursorColumn(cursor,0);
 			break;
 		case Action::MoveToLineEnd:
+			SetCursorColumn(cursor,cursor.CurrentLineLen());
+			break;
+		case Action::MoveToBufferStart:
+			cursor.line = {file->begin()};
+			SetCursorColumn(cursor,0);
+			break;
+		case Action::MoveToBufferEnd:
+			cursor.line = {--file->end(),(s32)file->size()-1};
 			SetCursorColumn(cursor,cursor.CurrentLineLen());
 			break;
 		case Action::InsertChar:

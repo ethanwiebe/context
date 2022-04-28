@@ -17,6 +17,7 @@ struct IndexedIterator {
 
 	IndexedIterator() = default;
 	IndexedIterator(LineIterator lineIt) : it(lineIt), index(0){}
+	IndexedIterator(LineIterator lineIt,s32 index) : it(lineIt), index(index){}
 
 	IndexedIterator& operator+=(s32);
 

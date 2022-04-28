@@ -124,7 +124,27 @@ void LineModeBase::ProcessKeyboardEvent(KeyboardEvent* event){
 		textAction.character = event->key;
 	} else {
 		textAction.action = FindActionFromKey((KeyEnum)event->key,(KeyModifier)event->mod);
-		textAction.num = 1;
+		switch (textAction.action){
+			case Action::MoveLeftChar:
+			case Action::MoveRightChar:
+			case Action::MoveUpLine:
+			case Action::MoveDownLine:
+			case Action::MoveScreenUpLine:
+			case Action::MoveScreenDownLine:
+				textAction.num = 1;
+				break;
+
+			case Action::MoveLeftMulti:
+			case Action::MoveRightMulti:
+			case Action::MoveUpMulti:
+			case Action::MoveDownMulti:
+				textAction.num = Config::multiAmount;
+				break;
+
+			default:
+				break;
+
+		}
 	}
 
 
@@ -148,10 +168,12 @@ void UpdateSublineUpwards(IndexedIterator& line,s32& subline,s32& column,s32 wid
 	}
 }
 
-void UpdateSublineDownwards(IndexedIterator& line,s32& subline,s32& column,s32 width,s32 num){
+void UpdateSublineDownwards(IndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false,s32 lineCount=0){
 	s32 lineSize;
 	while (--num>=0){
 		lineSize = GetXPosOfIndex(*line,(*line).size(),width);
+
+		if (constrain&&line.index==lineCount-1&&subline==lineSize/width) return;
 		if (lineSize>=(subline+1)*width){
 			++subline;
 			column += width;
@@ -176,10 +198,6 @@ void LineModeBase::MoveScreenDown(s32 num){
 }
 
 void LineModeBase::MoveScreenUp(s32 num,bool constrain){
-	//s32 moveDist = viewLine.index+screenSubline; //rough guess for moveDist TODO: improve this
-	//if (moveDist<=0) return;
-
-	//num = std::min(moveDist,num);
 	s32 dummy;
 	UpdateSublineUpwards(viewLine,screenSubline,dummy,lineWidth,num,constrain);
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
@@ -217,16 +235,12 @@ void LineModeBase::MoveScreenToCursor(TextCursor& cursor){
 }
 
 void LineModeBase::MoveCursorDown(TextCursor& cursor,s32 num){
-	if (cursor.line.index==(s32)(file->size()-1) &&
-			cursor.subline==cursor.CurrentLineLen()/lineWidth) return;
-
 	s32 oldCursorX = GetXPosOfIndex(*cursor.line,cursor.column,lineWidth)%lineWidth;
 
-	UpdateSublineDownwards(cursor.line,cursor.subline,cursor.column,lineWidth,num);
+	UpdateSublineDownwards(cursor.line,cursor.subline,cursor.column,lineWidth,num,true,file->size());
 
 	s32 newCursorX = GetIndexOfXPos(*cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
 	SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
-
 }
 
 void LineModeBase::MoveCursorUp(TextCursor& cursor,s32 num){
@@ -236,7 +250,6 @@ void LineModeBase::MoveCursorUp(TextCursor& cursor,s32 num){
 
 	s32 newCursorX = GetIndexOfXPos(*cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
 	SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
-
 }
 
 void LineModeBase::SetCursorColumn(TextCursor& cursor,s32 col){
@@ -245,20 +258,7 @@ void LineModeBase::SetCursorColumn(TextCursor& cursor,s32 col){
 
 	MoveScreenToCursor(cursor);
 }
-/*
-// sets the cursor's line from a screen position (visualLine)
-void TextCursor::SetLineFromVisualLine(IndexedIterator viewLine,s32 screenSubline,s32 w){
-	// reset line to top of screen and move down
-	line = viewLine;
-	subline = screenSubline;
-	column %= w;
 
-	if (line.index>=viewLine.index)
-		UpdateSublineDownwards(line,subline,column,w,visualLine);
-	else
-		UpdateSublineUpwards(line,subline,column,w,-visualLine);
-}
-*/
 void TextCursor::SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){
 	s32 count = 0;
 

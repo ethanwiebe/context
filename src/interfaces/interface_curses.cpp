@@ -16,6 +16,20 @@ void DefineAltKeys(){
 
 	s = "\033\047"; //alt apostrophe
 	define_key(s.c_str(),446);
+	
+	//ctrl-alt alpha
+	for (s32 i=1;i<=26;i++){
+		s = "\033";
+		s += (char)i;
+		define_key(s.c_str(),446+i);
+	}
+
+	//alt numbers
+	for (s32 i=0;i<10;i++){
+		s = "\033";
+		s += '0'+i;
+		define_key(s.c_str(),473+i);
+	}
 }
 
 std::string GetModName(s32 mod){
@@ -220,6 +234,16 @@ inline void NormalizeAlphabetKeys(s32& key,s32& mod){
 		mod |= KeyModifier::Alt;
 	}
 
+	if (key>=447&&key<=446+26){
+		key -= 447-97;
+		mod |= KeyModifier::Alt | KeyModifier::Ctrl;
+	}
+
+	if (key>=473&&key<484){
+		key = '0'+key-473;
+		mod |= KeyModifier::Alt;
+	}
+
 	if (key==445){
 		key = 59;
 		mod |= KeyModifier::Alt;
@@ -289,17 +313,20 @@ inline void NormalizeBackspaceKey(s32& key,s32& mod){
 }
 
 inline void NormalizeHomeEndKeys(s32& key,s32& mod){
-	if (key==391){ //home
+	if (key==391){ //shift home
 		key = 262;
 		mod |= KeyModifier::Shift;
 	}
 
-	if (key==386){
+	if (key==386){ //shift end
 		key = 360;
 		mod |= KeyModifier::Shift;
 	}
 
-	
+	if (key==334){ //ctrl end
+		key = 360;
+		mod |= KeyModifier::Ctrl;
+	}
 
 }
 
