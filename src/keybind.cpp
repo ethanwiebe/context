@@ -43,10 +43,10 @@ void SetKeybinds(){
 	ADD_BIND(Action::MoveToBufferEnd,     'o',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::DeletePreviousChar,  KeyEnum::Backspace,  KeyModifier::None);
-	ADD_BIND(Action::DeletePreviousChar,  'g',                 KeyModifier::Alt);
+	ADD_BIND(Action::DeletePreviousChar,  'u',                 KeyModifier::Alt);
 	
 	ADD_BIND(Action::DeleteCurrentChar,   KeyEnum::Delete,     KeyModifier::None);
-	ADD_BIND(Action::DeleteCurrentChar,   ';',                 KeyModifier::Alt);
+	ADD_BIND(Action::DeleteCurrentChar,   'i',                 KeyModifier::Alt);
 
 	ADD_BIND(Action::InsertTab,           KeyEnum::Tab,        KeyModifier::None);
 	ADD_BIND(Action::InsertTab,           'i',                 KeyModifier::Ctrl);
