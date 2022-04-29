@@ -15,6 +15,12 @@ void TextScreen::SetSize(s32 w,s32 h){
 	cells.resize(w*h);
 }
 
+void TextScreen::SetAt(s32 x,s32 y,TextCell t){
+	if (x<0||x>=width||y<0||y>=height) return;
+
+	cells[y*width+x] = t;
+}
+
 std::vector<TextCell>::iterator TextScreen::begin(){
 	return cells.begin();
 }

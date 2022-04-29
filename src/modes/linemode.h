@@ -4,6 +4,7 @@
 #include "../keybind.h"
 #include "../config.h"
 #include "../textbuffer.h"
+#include "../tui.h"
 
 #include <vector>
 

@@ -25,11 +25,13 @@ struct TextStyle {
 enum StyleFlag : u8 {
 	NoFlag = 0,
 	Bold = 1,
-	Underline = 2
+	Underline = 2,
+	AlternateCharacterSet = 4
 };
 
 const TextStyle defaultStyle = {ColorWhite,ColorBlack,StyleFlag::NoFlag};
 const TextStyle cursorStyle = {ColorBlack,ColorWhite,StyleFlag::NoFlag};
 const TextStyle lineNumberStyle = {ColorBlue,ColorBlack,StyleFlag::NoFlag};
 const TextStyle blankLineStyle = {ColorCyan,ColorBlack,StyleFlag::NoFlag};
+const TextStyle lineDrawingStyle = {ColorWhite,ColorBlack,StyleFlag::AlternateCharacterSet};
 

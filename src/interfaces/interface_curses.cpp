@@ -81,6 +81,8 @@ CursesInterface::CursesInterface(){
 	logger << "Max colors: " << COLORS << "\n";
 	logger << "Colors pairs: " << definedPairs << "\n";
 	logger << "Colors: " << definedColors << "\n";
+	logger << (s32)ACS_ULCORNER << "\n";
+	logger << (s32)A_ALTCHARSET << "\n";
 }
 
 CursesInterface::~CursesInterface(){
@@ -212,6 +214,7 @@ void CursesInterface::RenderScreen(const TextScreen& textScreen){
 		flags = 0;
 		flags |= textScreen[i].style.flags & StyleFlag::Bold ? A_BOLD : 0;
 		flags |= textScreen[i].style.flags & StyleFlag::Underline ? A_UNDERLINE : 0; 
+		flags |= textScreen[i].style.flags & StyleFlag::AlternateCharacterSet ? A_ALTCHARSET : 0;
 
 		//boldFlag = textScreen[i].fg>=8&&textScreen[i].fg<16 ? A_BOLD : 0;
 		pairNum = DefinePair(textScreen[i].style.fg,textScreen[i].style.bg);

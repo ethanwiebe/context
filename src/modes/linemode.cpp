@@ -113,6 +113,10 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	locString += ", SSL: " + std::to_string(screenSubline);
 	textScreen.RenderString(w-locString.size()-1,h-1,locString);
 
+	TUITextBox testBox{"Line Test\nNew Line\n\nLine",3,-5,20,3};
+	testBox.SetTitle("open");
+	testBox.Render(textScreen);
+
 	return textScreen;
 }
 
