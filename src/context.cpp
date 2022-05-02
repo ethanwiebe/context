@@ -100,10 +100,11 @@ void ContextEditor::ProcessYesNoEntry(TextAction textAction){
 		case Action::InsertChar:
 			if (textAction.character=='y'||textAction.character=='Y'){
 				yesAction();
+				entryMode = EntryMode::None;
 			} else if (textAction.character=='n'||textAction.character=='N'){
 				noAction();
+				entryMode = EntryMode::None;
 			}
-			entryMode = EntryMode::None;
 			break;
 
 		case Action::Escape:
