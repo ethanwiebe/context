@@ -33,6 +33,7 @@ struct IndexedIterator {
 class TextBuffer {
 	LineList lines;
 public:
+//	TextBuffer();
 	
 	LineIterator GetLineIterator(size_t) noexcept;
 
@@ -42,10 +43,23 @@ public:
 	void BackDeleteLine(LineIterator);
 	void ForwardDeleteLine(LineIterator);
 
-	LineIterator begin() noexcept;
-	LineIterator end() noexcept;
+	inline LineIterator begin() noexcept {
+		return lines.begin();
+	}
 
-	size_t size() const noexcept;
+	inline LineIterator end() noexcept {
+		return lines.end();
+	}
+
+	inline size_t size() const noexcept {
+		return lines.size();
+	}
+
+	void clear() noexcept;
+
+	inline bool empty() const noexcept {
+		return lines.empty();
+	}
 };
 
 void UpdateXI(const std::string&, s32&, s32&, s32);

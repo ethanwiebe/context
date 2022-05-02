@@ -5,6 +5,7 @@
 #include "../config.h"
 #include "../textbuffer.h"
 #include "../tui.h"
+#include "../logger.h"
 
 #include <vector>
 
@@ -27,7 +28,8 @@ struct TextCursor {
 
 class LineModeBase : public ModeBase {
 protected:
-	Ref<TextBuffer> file;
+	Ref<TextBuffer> textBuffer;
+	std::string bufferPath;
 
 	IndexedIterator viewLine;
 	s32 screenSubline;
@@ -35,10 +37,17 @@ protected:
 	s32 lineWidth,innerHeight;
 
 public:
-	void ProcessKeyboardEvent(KeyboardEvent*) override;
-	TextScreen GetTextScreen(s32,s32) override;
+	LineModeBase(ContextEditor* ctx);
+	void InitIterators();
 
-	virtual void ProcessTextAction(TextAction) = 0;
+	TextScreen GetTextScreen(s32,s32) override;
+	std::string_view GetBufferName() override;
+
+	bool OpenAction(const OSInterface& os,std::string_view path) override;
+	bool SaveAction(const OSInterface& os) override;
+	void SetPath(const OSInterface&,std::string_view) override;
+	
+	bool HasSavePath() override;
 
 	void MoveScreenDown(s32,bool = true);
 	void MoveScreenUp(s32,bool = false);

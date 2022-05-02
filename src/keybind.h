@@ -1,6 +1,7 @@
 #pragma once
 
 #include "key.h"
+#include "config.h"
 
 #include <unordered_map>
 #include <list>
@@ -30,4 +31,4 @@ typedef std::unordered_map<KeyBind,Action> InvKeyMap;
 
 void SetKeybinds();
 Action FindActionFromKey(KeyEnum,KeyModifier);
-
+TextAction GetTextActionFromKey(KeyEnum,KeyModifier);

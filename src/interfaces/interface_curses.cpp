@@ -55,39 +55,42 @@ std::string GetModName(s32 mod){
 }
 
 CursesInterface::CursesInterface(){
+	charArray = nullptr;
+	COLS = 80;
+	LINES = 40;
+
 	initscr();
 	start_color();
 
 	keypad(stdscr,true);
 	noecho(); // don't echo typed keys into the terminal
 	raw(); //pass input through instantly
+	notimeout(stdscr,false);
+	ESCDELAY = 50;
 	
-	curs_set(0); //make default invisible
+	curs_set(0); //make default cursor invisible
 
-	refresh();
 
 	InitColors();
 	InitColorPairs();
-	//ListColorPairs();
 
-	colorDefinitions = {};//{{0,0,0},{174,174,174}};
-//	colorDefinitions = {{1,2,3}};
+	colorDefinitions = {};
 	pairDefinitions = {};
-//	pairDefinitions.emplace_back(colorDefinitions[0],colorDefinitions[0]);
 
 	DefineAltKeys();
 
+	WindowResized(COLS,LINES);
+
 	logger << "Max color pairs: " << COLOR_PAIRS << "\n";
 	logger << "Max colors: " << COLORS << "\n";
-	logger << "Colors pairs: " << definedPairs << "\n";
-	logger << "Colors: " << definedColors << "\n";
+	logger << "Escape delay: " << ESCDELAY << "\n";
 	logger << (s32)ACS_ULCORNER << "\n";
 	logger << (s32)A_ALTCHARSET << "\n";
 }
 
 CursesInterface::~CursesInterface(){
 	endwin();
-	logger << "closing\n";
+	delete[] charArray;
 }
 
 void CursesInterface::InitColors(){
@@ -131,7 +134,7 @@ void CursesInterface::ListColorPairs(){
 
 void CursesInterface::WindowResized(s32 w,s32 h){
 	if (charArray)
-		delete charArray;
+		delete[] charArray;
 
 	charArray = new chtype[w*h];
 }

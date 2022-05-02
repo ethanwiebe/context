@@ -30,6 +30,6 @@ public:
 	TextCell operator[](size_t) const;
 	TextCell& operator[](size_t);
 
-	void RenderString(s32 x,s32 y,std::string_view s);
+	void RenderString(s32 x,s32 y,std::string_view s,TextStyle = defaultStyle);
 };
 

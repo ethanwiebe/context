@@ -34,4 +34,5 @@ const TextStyle cursorStyle = {ColorBlack,ColorWhite,StyleFlag::NoFlag};
 const TextStyle lineNumberStyle = {ColorBlue,ColorBlack,StyleFlag::NoFlag};
 const TextStyle blankLineStyle = {ColorCyan,ColorBlack,StyleFlag::NoFlag};
 const TextStyle lineDrawingStyle = {ColorWhite,ColorBlack,StyleFlag::AlternateCharacterSet};
+const TextStyle errorStyle = {ColorRed,ColorBlack,StyleFlag::NoFlag};
 

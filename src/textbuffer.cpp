@@ -44,7 +44,17 @@ const std::string& IndexedIterator::operator*() const {
 
 	return nullStr;
 }
+/*
+TextBuffer::TextBuffer(){
+	lines = {};
+	lines.insert(lines.begin(),"");
+}*/
 
+void TextBuffer::clear() noexcept {
+//	if (!lines.empty())
+//		lines.erase(++lines.begin(),lines.end());
+	lines.clear();
+}
 
 LineIterator TextBuffer::GetLineIterator(size_t s) noexcept {
 	auto it = lines.begin();
@@ -80,18 +90,6 @@ void TextBuffer::ForwardDeleteLine(LineIterator it){
 
 void TextBuffer::SetLine(LineIterator it,const std::string& s){
 	*it = s;
-}
-
-LineIterator TextBuffer::begin() noexcept {
-	return lines.begin();
-}
-
-LineIterator TextBuffer::end() noexcept {
-	return lines.end();
-}
-
-size_t TextBuffer::size() const noexcept {
-	return lines.size();
 }
 
 s32 ToNextMultiple(s32 x,s32 d,s32 w){

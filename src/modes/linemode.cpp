@@ -18,6 +18,15 @@ s32 numWidth(s32 i){
 	return c;
 }
 
+LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0) {
+	textBuffer = MakeRef<TextBuffer>();
+	textBuffer->InsertLine(textBuffer->begin(),"");
+	readonly = false;
+	modified = false;
+	InitIterators();
+	bufferPath = {};
+}
+
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	TextScreen textScreen;
 
@@ -39,7 +48,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	s32 i = 0;
 
-	if (it.index>=0)
+	if (it.index>=0&&it.it!=textBuffer->end())
 		i = GetIndexOfXPos(*it.it,screenSubline*lineWidth,lineWidth);
 
 	for (s32 y=0;y<innerHeight;y++){
@@ -48,7 +57,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			++it;
 			continue;
 		}
-		if (it.it==file->end()){
+		if (it.it==textBuffer->end()){
 			textScreen[y*w] = TextCell('~',blankLineStyle);
 			continue;
 		}
@@ -120,39 +129,62 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	return textScreen;
 }
 
-void LineModeBase::ProcessKeyboardEvent(KeyboardEvent* event){
-	TextAction textAction;
-	
-	if (IsPrintable(event->key,event->mod)){
-		textAction.action = Action::InsertChar;
-		textAction.character = event->key;
-	} else {
-		textAction.action = FindActionFromKey((KeyEnum)event->key,(KeyModifier)event->mod);
-		switch (textAction.action){
-			case Action::MoveLeftChar:
-			case Action::MoveRightChar:
-			case Action::MoveUpLine:
-			case Action::MoveDownLine:
-			case Action::MoveScreenUpLine:
-			case Action::MoveScreenDownLine:
-				textAction.num = 1;
-				break;
+std::string_view LineModeBase::GetBufferName(){
+	if (bufferPath.empty()) return "unnamed";
+	size_t index = bufferPath.find_last_of('/')+1;
+	std::string_view result = bufferPath;
+	result.remove_prefix(index);
 
-			case Action::MoveLeftMulti:
-			case Action::MoveRightMulti:
-			case Action::MoveUpMulti:
-			case Action::MoveDownMulti:
-				textAction.num = Config::multiAmount;
-				break;
+	return result;
+}
 
-			default:
-				break;
+bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
+	if (!os.ReadFileIntoTextBuffer(path,textBuffer))
+		return false;
 
-		}
+	readonly = !os.FileIsWritable(path);
+	modified = false;
+	bufferPath.clear();
+	bufferPath += path;
+	if (textBuffer->empty()){
+		textBuffer->InsertLine(textBuffer->end(),{});
+	}
+	InitIterators();
+
+	logger << "bufferPath: " << bufferPath << "\n";
+
+	return true;
+}
+
+bool LineModeBase::SaveAction(const OSInterface& os){
+	readonly = !os.FileIsWritable(bufferPath);
+	if (readonly)
+		return false;
+
+	if (!os.WriteTextBufferIntoFile(bufferPath,textBuffer)){
+		return false;
 	}
 
+	modified = false;
 
-	ProcessTextAction(textAction);
+	return true;
+}
+
+bool LineModeBase::HasSavePath(){
+	return !bufferPath.empty();
+}
+
+void LineModeBase::SetPath(const OSInterface& os,std::string_view path){
+	bufferPath.clear();
+	bufferPath += path;
+	modified = true;
+	readonly = !os.FileIsWritable(bufferPath);
+}
+
+void LineModeBase::InitIterators(){
+	viewLine = {textBuffer->begin()};
+	cursors.clear();
+	cursors.emplace_back(textBuffer->begin());
 }
 
 void UpdateSublineUpwards(IndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false){
@@ -190,14 +222,14 @@ void UpdateSublineDownwards(IndexedIterator& line,s32& subline,s32& column,s32 w
 }
 
 void LineModeBase::MoveScreenDown(s32 num,bool constrain){
-	//s32 moveDist = (s32)(file->size()-1) - viewLine.index;
+	//s32 moveDist = (s32)(textBuffer->size()-1) - viewLine.index;
 	//moveDist += GetXPosOfIndex(*viewLine,(*viewLine).size(),lineWidth)/lineWidth-screenSubline;
 	//if (moveDist<=0) return;
 
 	//num = std::min(moveDist,num);
 	
 	s32 dummy;
-	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,file->size());
+	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,textBuffer->size());
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
 }
 
@@ -241,7 +273,7 @@ void LineModeBase::MoveScreenToCursor(TextCursor& cursor){
 void LineModeBase::MoveCursorDown(TextCursor& cursor,s32 num){
 	s32 oldCursorX = GetXPosOfIndex(*cursor.line,cursor.column,lineWidth)%lineWidth;
 
-	UpdateSublineDownwards(cursor.line,cursor.subline,cursor.column,lineWidth,num,true,file->size());
+	UpdateSublineDownwards(cursor.line,cursor.subline,cursor.column,lineWidth,num,true,textBuffer->size());
 
 	s32 newCursorX = GetIndexOfXPos(*cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
 	SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));

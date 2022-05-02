@@ -51,6 +51,15 @@ void SetKeybinds(){
 	ADD_BIND(Action::InsertTab,           KeyEnum::Tab,        KeyModifier::None);
 	ADD_BIND(Action::InsertTab,           'i',                 KeyModifier::Ctrl);
 
+	ADD_BIND(Action::Escape,              KeyEnum::Escape,     KeyModifier::None);
+
+	ADD_BIND(Action::CloseMode,           'q',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::NewMode,             'n',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::NextMode,            KeyEnum::PageUp,     KeyModifier::Ctrl);
+	ADD_BIND(Action::PreviousMode,        KeyEnum::PageDown,   KeyModifier::Ctrl);
+	ADD_BIND(Action::OpenMode,            'e',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
+
 	for (const auto& [action, keybindlist] : gKeyBindings)
 		for (const auto& keybind : keybindlist)
 			gBoundKeys[keybind] = action;
@@ -63,4 +72,36 @@ Action FindActionFromKey(KeyEnum key,KeyModifier mod){
 		return Action::None;
 
 	return gBoundKeys.at(kb);
+}
+
+TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
+	TextAction textAction;
+
+	if (IsPrintable(key,mod)){
+		textAction.action = Action::InsertChar;
+		textAction.character = key;
+	} else {
+		textAction.action = FindActionFromKey(key,mod);
+		switch (textAction.action){
+			case Action::MoveLeftChar:
+			case Action::MoveRightChar:
+			case Action::MoveUpLine:
+			case Action::MoveDownLine:
+			case Action::MoveScreenUpLine:
+			case Action::MoveScreenDownLine:
+				textAction.num = 1;
+				break;
+			case Action::MoveLeftMulti:
+			case Action::MoveRightMulti:
+			case Action::MoveUpMulti:
+			case Action::MoveDownMulti:
+				textAction.num = Config::multiAmount;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return textAction;
 }

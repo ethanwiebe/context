@@ -41,8 +41,12 @@ TextCell& TextScreen::operator[](size_t i){
 	return cells[i];
 }
 
-void TextScreen::RenderString(s32 x,s32 y,std::string_view s){
+void TextScreen::RenderString(s32 x,s32 y,std::string_view s,TextStyle style){
+	size_t index;
 	for (const auto& c : s){
-		cells[y*width + x++] = TextCell(c,defaultStyle);
+		index = y*width + x++;
+		if (index>cells.size()-1) break;
+
+		cells[index] = TextCell(c,style);
 	}
 }

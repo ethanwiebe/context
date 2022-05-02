@@ -3,8 +3,6 @@
 #include "core.h"
 
 //key codes
-#ifdef CURSES_INTERFACE
-
 enum KeyEnum {
 	Backspace = 263,
 	Tab = 9,
@@ -37,18 +35,6 @@ enum KeyEnum {
 	Home = 262,
 	End = 360
 };
-
-#else
-enum KeyEnum {
-	Backspace = 8,
-	Enter = 10,
-	Escape = 27,
-	Space = 32,
-
-	Delete = 127
-
-};
-#endif
 
 enum KeyModifier {
 	None = 0,
@@ -98,9 +84,29 @@ enum class Action : u16 {
 	DeleteCurrentChar,
 
 	CopySelection,
-	PasteClipboard
+	PasteClipboard,
+
+	Escape,
+
+	NewMode,
+	OpenMode,
+	CloseMode,
+	NextMode,
+	PreviousMode,
+	SaveMode,
+	SaveAsMode
+};
+
+struct TextAction {
+	Action action;
+	
+	union {
+		s32 num;
+		char character;
+		const char* str;
+	};
 };
 
 s32 CharLower(s32);
 s32 IsPrintable(s32,s32);
-
+bool ActionIsCommand(Action);

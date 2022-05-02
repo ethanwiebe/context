@@ -41,6 +41,12 @@ public:
 		return *this;
 	}
 
+	Logger& operator<<(std::string_view sv){
+		logFile << sv;
+		logFile.flush();
+		return *this;
+	}
+
 };
 
 extern Logger logger;

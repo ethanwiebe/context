@@ -4,29 +4,46 @@
 
 #include "../key.h"
 #include "../textscreen.h"
+#include "../interfaces/os.h"
 
-#include <vector>
-
-struct TextAction {
-	Action action;
-	
-	union {
-		s32 num;
-		char character;
-		const char* str;
-	};
-};
-
+class ContextEditor;
 
 // modes sit on top of text files and modify them according
 // to the stream of keyboard events they receive
-
 class ModeBase {
 protected:
+	ContextEditor* ctx;
+
 	s32 screenWidth,screenHeight;
+	std::string modeErrorMessage;
+
+	bool readonly,modified;
 public:
-	virtual void ProcessKeyboardEvent(KeyboardEvent*) = 0;
+	ModeBase(ContextEditor* c) : ctx(c){}
+
+	std::string& GetErrorMessage(){
+		return modeErrorMessage;
+	}
+
+	virtual void ProcessTextAction(TextAction) = 0;
 	virtual TextScreen GetTextScreen(s32,s32) = 0;
+
+	virtual bool SaveAction(const OSInterface&){return true;}
+	virtual bool OpenAction(const OSInterface&,std::string_view){return true;}
+	virtual void SetPath(const OSInterface&,std::string_view){}
+
+	virtual bool Readonly(){
+		return readonly;
+	}
+
+	virtual bool Modified(){
+		return modified;
+	}
+
+	virtual bool HasSavePath(){return false;}
+
+	virtual std::string_view GetBufferName(){return {};}
+	virtual std::string_view GetModeName() = 0;
 
 	virtual ~ModeBase() = default;
 };

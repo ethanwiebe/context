@@ -26,6 +26,7 @@ public:
 
 	void RenderScreen(const TextScreen&) override;
 	KeyboardEvent* GetKeyboardEvent() override;
+
 	void WindowResized(s32,s32) override;
 
 	s32 GetHeight() override;
