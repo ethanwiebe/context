@@ -288,10 +288,41 @@ void LineModeBase::MoveCursorUp(TextCursor& cursor,s32 num){
 	SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 }
 
+void LineModeBase::MoveCursorLeft(TextCursor& cursor,s32 num){
+	s32 newCol = cursor.column-num;
+	
+	while (newCol<0){ //move cursor up lines until only horiz adjust is left
+		if (cursor.line.index==0){
+			SetCursorColumn(cursor,0);
+			return;
+		}
+
+		MoveCursorUp(cursor,1);
+		newCol += cursor.CurrentLineLen()+1;
+	}
+
+	SetCursorColumn(cursor,newCol);
+}
+
+void LineModeBase::MoveCursorRight(TextCursor& cursor,s32 num){
+	s32 newCol = cursor.column+num;
+
+	while (newCol>cursor.CurrentLineLen()){
+		if (cursor.line.index==(s32)textBuffer->size()-1){
+			SetCursorColumn(cursor,cursor.CurrentLineLen());
+			return;
+		}
+
+		newCol -= cursor.CurrentLineLen()+1;
+		MoveCursorDown(cursor,1);
+	}
+
+	SetCursorColumn(cursor,newCol);
+}
+
 void LineModeBase::SetCursorColumn(TextCursor& cursor,s32 col){
 	cursor.column = col;
 	cursor.subline = GetXPosOfIndex(*cursor.line,col,lineWidth)/lineWidth;
-
 	MoveScreenToCursor(cursor);
 }
 
@@ -334,3 +365,21 @@ void TextCursor::SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSublin
 	
 }
 
+void LineModeBase::DeleteCharAt(IndexedIterator line,s32 column){
+	modified = true;
+
+	if (column==(s32)line.it->size())
+		textBuffer->ForwardDeleteLine(line.it);
+	else
+		line.it->erase(column,1);
+}
+
+void LineModeBase::InsertCharAt(IndexedIterator line,s32 column,char c){
+	modified = true;
+
+	if (c=='\n'){
+		textBuffer->InsertLineAfter(line.it,line.it->substr(column));
+		line.it->erase(column);
+	} else 
+		line.it->insert(column,1,c);
+}

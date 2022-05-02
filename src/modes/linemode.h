@@ -21,8 +21,37 @@ struct TextCursor {
 		return (*line).size();
 	}
 
-	//void SetLineFromVisualLine(IndexedIterator viewLine,s32 screenSubline,s32 w);
 	void SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubline,s32 w,s32 h);
+};
+
+enum class BufferActionType {
+	TextInsertion,
+	TextDeletion,
+	LineInsertion,
+	LineDeletion
+};
+
+struct BufferAction {
+	BufferActionType type;
+	s32 extendLine,extendCol;
+
+	union {
+		s32 insertedLen;
+		char* deletedText;
+	};
+
+
+	void SetDeleteText(const std::string& s){
+		type = BufferActionType::TextDeletion;
+		deletedText = new char[s.size()+1]{};
+		s.copy(deletedText,sizeof(deletedText));
+	}
+
+	~BufferAction(){
+		if (type==BufferActionType::TextDeletion){
+			delete[] deletedText;
+		}
+	}
 };
 
 
@@ -56,6 +85,12 @@ public:
 
 	void MoveCursorDown(TextCursor&,s32);
 	void MoveCursorUp(TextCursor&,s32);
+	void MoveCursorLeft(TextCursor&,s32);
+	void MoveCursorRight(TextCursor&,s32);
 	void SetCursorColumn(TextCursor&,s32);
+	void RestrictColumn(TextCursor&) const;
+
+	void InsertCharAt(IndexedIterator,s32,char);
+	void DeleteCharAt(IndexedIterator,s32);
 };
 

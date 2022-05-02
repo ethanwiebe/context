@@ -4,7 +4,6 @@ EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {}
 
 void EditMode::ProcessTextAction(TextAction a){
 	auto& cursor = cursors[0];
-	s32 multiAmount;
 	switch (a.action){
 		case Action::MoveScreenUpLine:
 			MoveScreenUp(1);
@@ -19,22 +18,16 @@ void EditMode::ProcessTextAction(TextAction a){
 			MoveCursorDown(cursor,a.num);
 			break;
 		case Action::MoveLeftChar:
-			if (cursor.column>0){
-				SetCursorColumn(cursor,cursor.column-1);
-			}
+			MoveCursorLeft(cursor,1);
 			break;
 		case Action::MoveRightChar:
-			if (cursor.column<cursor.CurrentLineLen()){
-				SetCursorColumn(cursor,cursor.column+1);
-			}
+			MoveCursorRight(cursor,1);
 			break;
 		case Action::MoveLeftMulti:
-			multiAmount = std::min(a.num,cursor.column);
-			SetCursorColumn(cursor,cursor.column-multiAmount);
+			MoveCursorLeft(cursor,a.num);
 			break;
 		case Action::MoveRightMulti:
-			multiAmount = std::min(a.num,cursor.CurrentLineLen()-cursor.column);
-			SetCursorColumn(cursor,cursor.column+multiAmount);
+			MoveCursorRight(cursor,a.num);
 			break;
 		case Action::MoveUpMulti:
 			MoveCursorUp(cursor,a.num);
@@ -42,39 +35,22 @@ void EditMode::ProcessTextAction(TextAction a){
 		case Action::MoveDownMulti:
 			MoveCursorDown(cursor,a.num);
 			break;
-		case Action::InsertLine: {
-			modified = true;
-			std::string cut = cursor.line.it->substr(cursor.column);
-			cursor.line.it->erase(cursor.column);
-			textBuffer->InsertLineAfter(cursor.line.it,cut);
-			MoveCursorDown(cursor,1);
-			SetCursorColumn(cursor,0);
+		case Action::InsertLine:
+			InsertCharAt(cursor.line,cursor.column,'\n');
+			MoveCursorRight(cursor,1);
 			break;
-		}
 		case Action::DeletePreviousChar:
-			modified = true;
-			if (cursor.column==0&&cursor.line.it==textBuffer->begin()){ //at start of textBuffer
+			if (cursor.column==0&&cursor.line.it==textBuffer->begin()) //at start of textBuffer
 				break;
-			} else if (cursor.column==0){
-				MoveCursorUp(cursor,1);
-				auto cachedLen = cursor.CurrentLineLen();
-				auto itcopy = cursor.line.it;
-				textBuffer->BackDeleteLine(++itcopy);
-				SetCursorColumn(cursor,cachedLen);
-			} else {
-				SetCursorColumn(cursor,cursor.column-1);
-				cursor.line.it->erase(cursor.column,1);
-			}
+
+			MoveCursorLeft(cursor,1);
+			DeleteCharAt(cursor.line,cursor.column);
 			break;
 		case Action::DeleteCurrentChar:
-			modified = true;
-			if (cursor.column==cursor.CurrentLineLen()&&cursor.line.it==--textBuffer->end()){
+			if (cursor.column==cursor.CurrentLineLen()&&cursor.line.it==--textBuffer->end())
 				break;
-			} else if (cursor.column==cursor.CurrentLineLen()){
-				textBuffer->ForwardDeleteLine(cursor.line.it);
-			} else {
-				cursor.line.it->erase(cursor.column,1);
-			}
+
+			DeleteCharAt(cursor.line,cursor.column);
 			break;
 		case Action::MoveToLineStart:
 			SetCursorColumn(cursor,0);
@@ -91,14 +67,12 @@ void EditMode::ProcessTextAction(TextAction a){
 			SetCursorColumn(cursor,cursor.CurrentLineLen());
 			break;
 		case Action::InsertChar:
-			modified = true;
-			cursor.line.it->insert(cursor.column,1,a.character);
-			SetCursorColumn(cursor,cursor.column+1);
+			InsertCharAt(cursor.line,cursor.column,a.character);
+			MoveCursorRight(cursor,1);
 			break;
 		case Action::InsertTab:
-			modified = true;
-			cursor.line.it->insert(cursor.column,1,'\t');
-			SetCursorColumn(cursor,cursor.column+1);
+			InsertCharAt(cursor.line,cursor.column,'\t');
+			MoveCursorRight(cursor,1);
 			break;
 
 		default:
