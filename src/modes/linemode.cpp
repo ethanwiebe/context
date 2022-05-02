@@ -115,16 +115,16 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	locString += ", CVL: " + std::to_string(cursors[0].visualLine);
 	locString += ", CSL: " + std::to_string(cursors[0].subline);
 	locString += ", CC: " + std::to_string(cursors[0].column);
-	textScreen.RenderString(w-locString.size()-1,h-2,locString);
+	textScreen.RenderString(w-locString.size()-1,h-3,locString);
 
 	locString = "";
 	locString += "SL: " + std::to_string(viewLine.index);
 	locString += ", SSL: " + std::to_string(screenSubline);
-	textScreen.RenderString(w-locString.size()-1,h-1,locString);
+	textScreen.RenderString(w-locString.size()-1,h-2,locString);
 
-	TUITextBox testBox{"Line Test\nNew Line\n\nLine",3,-5,20,3};
+	/*TUITextBox testBox{"Line Test\nNew Line\n\nLine",3,-5,20,3};
 	testBox.SetTitle("open");
-	testBox.Render(textScreen);
+	testBox.Render(textScreen);*/
 
 	return textScreen;
 }
