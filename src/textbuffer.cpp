@@ -36,23 +36,17 @@ IndexedIterator& IndexedIterator::operator--(){
 	return *this;
 }
 
+static const std::string nullStr = "";
+
 const std::string& IndexedIterator::operator*() const {
-	static const std::string nullStr = "";
 	if (index>=0){
 		return *it;
 	}
 
 	return nullStr;
 }
-/*
-TextBuffer::TextBuffer(){
-	lines = {};
-	lines.insert(lines.begin(),"");
-}*/
 
 void TextBuffer::clear() noexcept {
-//	if (!lines.empty())
-//		lines.erase(++lines.begin(),lines.end());
 	lines.clear();
 }
 
