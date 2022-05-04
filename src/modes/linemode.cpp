@@ -277,7 +277,7 @@ void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
 
 	UpdateSublineDownwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true,textBuffer->size());
 
-	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
+	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 }
 
@@ -286,7 +286,7 @@ void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 
 	UpdateSublineUpwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true);
 
-	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
+	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 }
 
@@ -304,6 +304,7 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 	}
 
 	SetVisualCursorColumn(cursor,newCol);
+	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 }
 
 void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
@@ -320,6 +321,7 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 	}
 
 	SetVisualCursorColumn(cursor,newCol);
+	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 }
 
 void LineModeBase::MoveCursorLeft(Cursor& cursor,s32 num) const {

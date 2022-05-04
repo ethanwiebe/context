@@ -19,8 +19,9 @@ struct VisualCursor {
 	Cursor cursor;
 	s32 visualLine;
 	s32 subline;
+	s32 cachedX;
 
-	VisualCursor(LineIterator it) : cursor(it,0), visualLine(0), subline(0) {}
+	VisualCursor(LineIterator it) : cursor(it,0), visualLine(0), subline(0), cachedX(0) {}
 
 	inline s32 CurrentLineLen() const noexcept {
 		return (*cursor.line).size();
@@ -31,9 +32,7 @@ struct VisualCursor {
 
 enum class BufferActionType {
 	TextInsertion,
-	TextDeletion,
-	LineInsertion,
-	LineDeletion
+	TextDeletion
 };
 
 struct BufferAction {
