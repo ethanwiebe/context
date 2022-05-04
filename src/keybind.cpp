@@ -51,6 +51,11 @@ void SetKeybinds(){
 	ADD_BIND(Action::InsertTab,           KeyEnum::Tab,        KeyModifier::None);
 	ADD_BIND(Action::InsertTab,           'i',                 KeyModifier::Ctrl);
 
+	ADD_BIND(Action::DeleteLine,          'd',                 KeyModifier::Ctrl);
+
+	ADD_BIND(Action::UndoAction,          'z',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::RedoAction,          'y',                 KeyModifier::Ctrl);
+
 	ADD_BIND(Action::Escape,              KeyEnum::Escape,     KeyModifier::None);
 
 	ADD_BIND(Action::CloseMode,           'q',                 KeyModifier::Ctrl);

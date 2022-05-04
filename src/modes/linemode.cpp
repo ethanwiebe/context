@@ -18,13 +18,14 @@ s32 numWidth(s32 i){
 	return c;
 }
 
-LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0) {
+LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0),currentAction(BufferActionType::TextInsertion,0,0) {
 	textBuffer = MakeRef<TextBuffer>();
 	textBuffer->InsertLine(textBuffer->begin(),"");
 	readonly = false;
 	modified = false;
 	InitIterators();
 	bufferPath = {};
+	undoStack = {};
 }
 
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
@@ -89,7 +90,12 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			if (c&128) c = '?'; //utf8
 			if (c=='\t') c = ' ';
 
-			textScreen[y*w+x+lineStart] = TextCell(c,defaultStyle);
+			TextStyle usedStyle = defaultStyle;
+#ifndef NDEBUG
+			if (it.index==currentAction.line&&i==currentAction.column) usedStyle = yellowHighlightStyle;
+			if (it.index==currentAction.extendLine&&i==currentAction.extendColumn) usedStyle = greenHighlightStyle;
+#endif
+			textScreen[y*w+x+lineStart] = TextCell(c,usedStyle);
 
 			UpdateXI(*it.it,x,i,lineWidth);
 			if (x >= w-lineStart){
@@ -104,22 +110,24 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	s32 loc;
 	for (auto cursor : cursors){
-		loc = cursor.visualLine*w + GetXPosOfIndex(*cursor.line.it,cursor.column,lineWidth)%lineWidth + lineStart;
+		loc = cursor.visualLine*w + GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth + lineStart;
 		if (loc>=0&&loc<screenWidth*innerHeight)
 			textScreen[loc].style = cursorStyle;
 	}
 	
 	std::string locString = "";
 
-	locString += "CL: " + std::to_string(cursors[0].line.index);
+	locString += "CL: " + std::to_string(cursors[0].cursor.line.index);
 	locString += ", CVL: " + std::to_string(cursors[0].visualLine);
 	locString += ", CSL: " + std::to_string(cursors[0].subline);
-	locString += ", CC: " + std::to_string(cursors[0].column);
+	locString += ", CC: " + std::to_string(cursors[0].cursor.column);
 	textScreen.RenderString(w-locString.size()-1,h-3,locString);
 
 	locString = "";
 	locString += "SL: " + std::to_string(viewLine.index);
 	locString += ", SSL: " + std::to_string(screenSubline);
+	locString += ", UH: " + std::to_string(undoStack.UndoHeight());
+	locString += ", RH: " + std::to_string(undoStack.RedoHeight());
 	textScreen.RenderString(w-locString.size()-1,h-2,locString);
 
 	/*TUITextBox testBox{"Line Test\nNew Line\n\nLine",3,-5,20,3};
@@ -222,12 +230,6 @@ void UpdateSublineDownwards(IndexedIterator& line,s32& subline,s32& column,s32 w
 }
 
 void LineModeBase::MoveScreenDown(s32 num,bool constrain){
-	//s32 moveDist = (s32)(textBuffer->size()-1) - viewLine.index;
-	//moveDist += GetXPosOfIndex(*viewLine,(*viewLine).size(),lineWidth)/lineWidth-screenSubline;
-	//if (moveDist<=0) return;
-
-	//num = std::min(moveDist,num);
-	
 	s32 dummy;
 	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,textBuffer->size());
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
@@ -239,16 +241,16 @@ void LineModeBase::MoveScreenUp(s32 num,bool constrain){
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
 }
 
-void LineModeBase::LockScreenToCursor(TextCursor& cursor){
-	viewLine = cursor.line;
+void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor){
+	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
 	MoveScreenUp(innerHeight/2);
 }
 
-void LineModeBase::MoveScreenToCursor(TextCursor& cursor){
+void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	if (Config::cursorLock){
-		LineModeBase::LockScreenToCursor(cursor);
+		LineModeBase::LockScreenToVisualCursor(cursor);
 		return;
 	}
 
@@ -257,8 +259,8 @@ void LineModeBase::MoveScreenToCursor(TextCursor& cursor){
 			cursor.visualLine < innerHeight-1-Config::cursorMoveHeight) return;
 
 
-	s32 lineDiff = cursor.line.index-viewLine.index;
-	viewLine = cursor.line;
+	s32 lineDiff = cursor.cursor.line.index-viewLine.index;
+	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
 	if (lineDiff>innerHeight/2)
@@ -270,83 +272,115 @@ void LineModeBase::MoveScreenToCursor(TextCursor& cursor){
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
 }
 
-void LineModeBase::MoveCursorDown(TextCursor& cursor,s32 num){
-	s32 oldCursorX = GetXPosOfIndex(*cursor.line,cursor.column,lineWidth)%lineWidth;
+void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
+	s32 oldCursorX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 
-	UpdateSublineDownwards(cursor.line,cursor.subline,cursor.column,lineWidth,num,true,textBuffer->size());
+	UpdateSublineDownwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true,textBuffer->size());
 
-	s32 newCursorX = GetIndexOfXPos(*cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
-	SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
+	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
+	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 }
 
-void LineModeBase::MoveCursorUp(TextCursor& cursor,s32 num){
-	s32 oldCursorX = GetXPosOfIndex(*cursor.line,cursor.column,lineWidth)%lineWidth;
+void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
+	s32 oldCursorX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 
-	UpdateSublineUpwards(cursor.line,cursor.subline,cursor.column,lineWidth,num,true);
+	UpdateSublineUpwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true);
 
-	s32 newCursorX = GetIndexOfXPos(*cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
-	SetCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
+	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,oldCursorX+cursor.subline*lineWidth,lineWidth);
+	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 }
 
-void LineModeBase::MoveCursorLeft(TextCursor& cursor,s32 num){
-	s32 newCol = cursor.column-num;
+void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
+	s32 newCol = cursor.cursor.column-num;
 	
 	while (newCol<0){ //move cursor up lines until only horiz adjust is left
-		if (cursor.line.index==0){
-			SetCursorColumn(cursor,0);
+		if (cursor.cursor.line.index==0){
+			SetVisualCursorColumn(cursor,0);
 			return;
 		}
 
-		MoveCursorUp(cursor,1);
+		MoveVisualCursorUp(cursor,1);
 		newCol += cursor.CurrentLineLen()+1;
 	}
 
-	SetCursorColumn(cursor,newCol);
+	SetVisualCursorColumn(cursor,newCol);
 }
 
-void LineModeBase::MoveCursorRight(TextCursor& cursor,s32 num){
-	s32 newCol = cursor.column+num;
+void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
+	s32 newCol = cursor.cursor.column+num;
 
 	while (newCol>cursor.CurrentLineLen()){
-		if (cursor.line.index==(s32)textBuffer->size()-1){
-			SetCursorColumn(cursor,cursor.CurrentLineLen());
+		if (cursor.cursor.line.index==(s32)textBuffer->size()-1){
+			SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
 			return;
 		}
 
 		newCol -= cursor.CurrentLineLen()+1;
-		MoveCursorDown(cursor,1);
+		MoveVisualCursorDown(cursor,1);
 	}
 
-	SetCursorColumn(cursor,newCol);
+	SetVisualCursorColumn(cursor,newCol);
 }
 
-void LineModeBase::SetCursorColumn(TextCursor& cursor,s32 col){
-	cursor.column = col;
-	cursor.subline = GetXPosOfIndex(*cursor.line,col,lineWidth)/lineWidth;
-	MoveScreenToCursor(cursor);
+void LineModeBase::MoveCursorLeft(Cursor& cursor,s32 num) const {
+	s32 newCol = cursor.column-num;
+
+	while (newCol<0){
+		if (cursor.line.index==0){
+			cursor.column = 0;
+			return;
+		}
+		
+		--cursor.line;
+		newCol += cursor.line.it->size()+1;
+	}
+
+	cursor.column = newCol;
 }
 
-void TextCursor::SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){
+void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
+	s32 newCol = cursor.column+num;
+
+	while (newCol>(s32)cursor.line.it->size()){
+		if (cursor.line.index==(s32)textBuffer->size()-1){
+			cursor.column = cursor.line.it->size();
+			return;
+		}
+
+		newCol -= cursor.line.it->size()+1;
+		++cursor.line;
+	}
+
+	cursor.column = newCol;
+}
+
+void LineModeBase::SetVisualCursorColumn(VisualCursor& cursor,s32 col){
+	cursor.cursor.column = col;
+	cursor.subline = GetXPosOfIndex(*cursor.cursor.line,col,lineWidth)/lineWidth;
+	MoveScreenToVisualCursor(cursor);
+}
+
+void VisualCursor::SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){
 	s32 count = 0;
 
-	if (line.index<viewLine.index){
+	if (cursor.line.index<viewLine.index){
 		visualLine = -100;
 		return;
 	}
 
-	if (line.index==viewLine.index&&subline<screenSubline){
+	if (cursor.line.index==viewLine.index&&subline<screenSubline){
 		visualLine = -100;
 		return;
 	}
 
-	if (line.index-viewLine.index > h-1){
+	if (cursor.line.index-viewLine.index > h-1){
 		visualLine = -100;
 		return;
 	}
 
 	s32 lineSize;
 
-	while (viewLine.index!=line.index||screenSubline!=subline){
+	while (viewLine.index!=cursor.line.index||screenSubline!=subline){
 		lineSize = GetXPosOfIndex(*viewLine,(*viewLine).size(),w);
 		if (lineSize >= (screenSubline+1)*w){
 			++screenSubline;
@@ -361,25 +395,189 @@ void TextCursor::SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSublin
 	if (count > h-1)
 		visualLine = -100;
 	else
-		visualLine = count;
+		visualLine = count;	
+}
+
+Cursor LineModeBase::MakeCursor(s32 line,s32 column){
+	IndexedIterator from{textBuffer->begin()};
 	
+	return MakeCursorFromIndexedIterator(line,column,from);
 }
 
-void LineModeBase::DeleteCharAt(IndexedIterator line,s32 column){
+Cursor LineModeBase::MakeCursorFromIndexedIterator(s32 line,s32 column,IndexedIterator it){
+	while (it.index>line){
+		--it;
+	}
+
+	while (it.index<line){
+		++it;
+	}
+
+	return {it,column};
+}
+
+void LineModeBase::DeleteLine(VisualCursor& cursor){
+	SetVisualCursorColumn(cursor,0);
+	DeleteCharCountAt(cursor.cursor,cursor.CurrentLineLen());
+	if (cursor.cursor.line.index!=(s32)textBuffer->size()-1){
+		DeleteCharAt(cursor.cursor);
+	} else if (cursor.cursor.line.index!=0){
+		MoveVisualCursorLeft(cursor,1);
+		DeleteCharAt(cursor.cursor);
+	}
+
+}
+
+void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
+	char deletedChar;
 	modified = true;
+	
+	if (cursor.column==(s32)cursor.line.it->size()){
+		deletedChar = '\n';
+	} else {
+		deletedChar = (*cursor.line.it)[cursor.column];
+	}
 
-	if (column==(s32)line.it->size())
-		textBuffer->ForwardDeleteLine(line.it);
-	else
-		line.it->erase(column,1);
+	if (undoable)
+		PushDeletionAction(cursor,deletedChar);
+
+	if (deletedChar=='\n'){
+		textBuffer->ForwardDeleteLine(cursor.line.it);
+	} else {
+		cursor.line.it->erase(cursor.column,1);
+	}
 }
 
-void LineModeBase::InsertCharAt(IndexedIterator line,s32 column,char c){
+void LineModeBase::DeleteCharCountAt(Cursor cursor,s32 count){
+	while (--count>=0){
+		DeleteCharAt(cursor);
+	}
+}
+
+void LineModeBase::InsertCharAt(Cursor cursor,char c,bool undoable){
 	modified = true;
 
 	if (c=='\n'){
-		textBuffer->InsertLineAfter(line.it,line.it->substr(column));
-		line.it->erase(column);
+		textBuffer->InsertLineAfter(cursor.line.it,cursor.line.it->substr(cursor.column));
+		cursor.line.it->erase(cursor.column);
 	} else 
-		line.it->insert(column,1,c);
+		cursor.line.it->insert(cursor.column,1,c);
+
+	if (undoable)
+		PushInsertionAction(cursor,c);
+}
+
+void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoable){
+	for (auto c : s){
+		InsertCharAt(cursor,c,undoable);
+		if (c=='\n'){
+			++cursor.line;
+			cursor.column = 0;
+		} else
+			++cursor.column;
+	}
+}
+
+void LineModeBase::Undo(VisualCursor& cursor){
+	if (!currentAction.Empty()){
+		undoStack.PushAction(currentAction);
+		MakeNewAction(BufferActionType::TextInsertion,0,0);	
+	}
+	
+	if (!undoStack.CanUndo()) return;
+
+	BufferAction undoAction = undoStack.PopUndo();
+	if (undoAction.type==BufferActionType::TextInsertion){
+		undoAction.type = BufferActionType::TextDeletion;
+	} else if (undoAction.type==BufferActionType::TextDeletion){
+		undoAction.type = BufferActionType::TextInsertion;
+	}
+
+	std::swap(undoAction.line,undoAction.extendLine);
+	std::swap(undoAction.column,undoAction.extendColumn);
+
+	PerformBufferAction(cursor,undoAction);
+}
+
+void LineModeBase::Redo(VisualCursor& cursor){
+	if (!currentAction.Empty()){
+		undoStack.PushAction(currentAction);
+		MakeNewAction(BufferActionType::TextInsertion,0,0);	
+	}
+
+	if (!undoStack.CanRedo()) return;
+
+	BufferAction redoAction = undoStack.PopRedo();
+	
+	PerformBufferAction(cursor,redoAction);
+}
+
+void LineModeBase::MakeNewAction(BufferActionType type,s32 line,s32 col){
+	currentAction = {type,line,col};
+}
+
+
+void LineModeBase::PerformBufferAction(VisualCursor& cursor,const BufferAction& action){
+	Cursor c;
+	if (action.type==BufferActionType::TextInsertion){
+		c = MakeCursorFromIndexedIterator(action.line,action.column,cursor.cursor.line);
+		InsertStringAt(c,action.text,false);
+		cursor.cursor = c;
+		MoveVisualCursorRight(cursor,action.text.size());
+	} else if (action.type==BufferActionType::TextDeletion){
+		c = MakeCursorFromIndexedIterator(action.extendLine,action.extendColumn,cursor.cursor.line);
+		cursor.cursor = c;
+		for (s32 i=0;i<action.insertedLen;++i){
+			DeleteCharAt(c,false);
+		}
+		SetVisualCursorColumn(cursor,cursor.cursor.column);
+	}
+}
+
+void LineModeBase::PushInsertionAction(Cursor cursor,char c){
+	if (currentAction.type!=BufferActionType::TextInsertion ||
+			!InsertionExtendsAction(cursor)){
+		if (!currentAction.Empty())
+			undoStack.PushAction(currentAction);
+
+		MakeNewAction(BufferActionType::TextInsertion,cursor.line.index,cursor.column);
+	}
+
+	currentAction.AddCharacter(c);
+	MoveCursorRight(cursor,1);
+	currentAction.extendLine = cursor.line.index;
+	currentAction.extendColumn = cursor.column;
+}
+
+void LineModeBase::PushDeletionAction(Cursor cursor,char c){
+	if (currentAction.type!=BufferActionType::TextDeletion ||
+			!DeletionExtendsAction(cursor)){
+		if (!currentAction.Empty())
+			undoStack.PushAction(currentAction);
+
+		MakeNewAction(BufferActionType::TextDeletion,cursor.line.index,cursor.column);
+	}
+
+	Cursor cursorcopy = cursor;
+	MoveCursorRight(cursorcopy,1);
+	if (cursorcopy.line.index==currentAction.extendLine&&cursorcopy.column==currentAction.extendColumn){
+		currentAction.PrependCharacter(c);
+		currentAction.extendLine = cursor.line.index;
+		currentAction.extendColumn = cursor.column;
+		currentAction.line = cursor.line.index;
+		currentAction.column = cursor.column;
+	} else {
+		currentAction.AddCharacter(c);
+	}
+}
+
+bool LineModeBase::InsertionExtendsAction(Cursor cursor) const {
+	return currentAction.extendLine==cursor.line.index&&currentAction.extendColumn==cursor.column;
+}
+
+bool LineModeBase::DeletionExtendsAction(Cursor cursor) const {
+	bool cond1 = currentAction.line==cursor.line.index&&currentAction.column==cursor.column;
+	MoveCursorRight(cursor,1);
+	bool cond2 = currentAction.extendLine==cursor.line.index&&currentAction.extendColumn==cursor.column;
+	return cond1||cond2;
 }

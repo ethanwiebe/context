@@ -83,6 +83,11 @@ enum class Action : u16 {
 	DeletePreviousChar,
 	DeleteCurrentChar,
 
+	DeleteLine,
+
+	UndoAction,
+	RedoAction,
+
 	CopySelection,
 	PasteClipboard,
 

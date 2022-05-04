@@ -6,19 +6,24 @@
 #include "../textbuffer.h"
 #include "../tui.h"
 #include "../logger.h"
+#include "../undo.h"
 
 #include <vector>
 
-struct TextCursor {
+struct Cursor {
 	IndexedIterator line;
-	s32 visualLine;
 	s32 column;
+};
+
+struct VisualCursor {
+	Cursor cursor;
+	s32 visualLine;
 	s32 subline;
 
-	TextCursor(LineIterator it) : line(it), visualLine(0), column(0), subline(0) {}
+	VisualCursor(LineIterator it) : cursor(it,0), visualLine(0), subline(0) {}
 
 	inline s32 CurrentLineLen() const noexcept {
-		return (*line).size();
+		return (*cursor.line).size();
 	}
 
 	void SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubline,s32 w,s32 h);
@@ -33,24 +38,29 @@ enum class BufferActionType {
 
 struct BufferAction {
 	BufferActionType type;
-	s32 extendLine,extendCol;
+	s32 line,column;
+	s32 extendLine,extendColumn;
 
-	union {
-		s32 insertedLen;
-		char* deletedText;
-	};
+	s32 insertedLen;
+	std::string text;
 
-
-	void SetDeleteText(const std::string& s){
-		type = BufferActionType::TextDeletion;
-		deletedText = new char[s.size()+1]{};
-		s.copy(deletedText,sizeof(deletedText));
+	BufferAction(BufferActionType type,s32 l,s32 c) : type(type),line(l),column(c),extendLine(l),extendColumn(c){
+		insertedLen = 0;
+		text = {};
 	}
 
-	~BufferAction(){
-		if (type==BufferActionType::TextDeletion){
-			delete[] deletedText;
-		}
+	bool Empty() const {
+		return insertedLen==0 && text.empty();
+	}
+
+	void AddCharacter(char c){
+		++insertedLen;
+		text += c;
+	}
+
+	void PrependCharacter(char c){
+		++insertedLen;
+		text.insert(0,1,c);
 	}
 };
 
@@ -62,8 +72,11 @@ protected:
 
 	IndexedIterator viewLine;
 	s32 screenSubline;
-	std::vector<TextCursor> cursors;
+	std::vector<VisualCursor> cursors;
 	s32 lineWidth,innerHeight;
+
+	UndoStack<BufferAction> undoStack;
+	BufferAction currentAction;
 
 public:
 	LineModeBase(ContextEditor* ctx);
@@ -80,17 +93,38 @@ public:
 
 	void MoveScreenDown(s32,bool = true);
 	void MoveScreenUp(s32,bool = false);
-	void MoveScreenToCursor(TextCursor&);
-	void LockScreenToCursor(TextCursor&);
+	void MoveScreenToVisualCursor(VisualCursor&);
+	void LockScreenToVisualCursor(VisualCursor&);
 
-	void MoveCursorDown(TextCursor&,s32);
-	void MoveCursorUp(TextCursor&,s32);
-	void MoveCursorLeft(TextCursor&,s32);
-	void MoveCursorRight(TextCursor&,s32);
-	void SetCursorColumn(TextCursor&,s32);
-	void RestrictColumn(TextCursor&) const;
+	Cursor MakeCursorFromIndexedIterator(s32,s32,IndexedIterator);
+	Cursor MakeCursor(s32,s32);
 
-	void InsertCharAt(IndexedIterator,s32,char);
-	void DeleteCharAt(IndexedIterator,s32);
+	void MoveVisualCursorDown(VisualCursor&,s32);
+	void MoveVisualCursorUp(VisualCursor&,s32);
+	void MoveVisualCursorLeft(VisualCursor&,s32);
+	void MoveVisualCursorRight(VisualCursor&,s32);
+	void MoveCursorLeft(Cursor&,s32) const;
+	void MoveCursorRight(Cursor&,s32) const;
+	void SetVisualCursorColumn(VisualCursor&,s32);
+
+	void DeleteLine(VisualCursor&);
+
+	void InsertCharAt(Cursor,char,bool=true);
+	void InsertStringAt(Cursor,const std::string&,bool=true);
+	void DeleteCharAt(Cursor,bool=true);
+	void DeleteCharCountAt(Cursor,s32);
+
+	void PerformBufferAction(VisualCursor&,const BufferAction&);
+
+	void Undo(VisualCursor&);
+	void Redo(VisualCursor&);
+
+	bool InsertionExtendsAction(Cursor) const;
+	bool DeletionExtendsAction(Cursor) const;
+
+	void MakeNewAction(BufferActionType,s32,s32);
+
+	void PushInsertionAction(Cursor,char);
+	void PushDeletionAction(Cursor,char);
 };
 
