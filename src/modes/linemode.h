@@ -77,6 +77,9 @@ protected:
 	UndoStack<BufferAction> undoStack;
 	BufferAction currentAction;
 
+	bool selecting;
+	Cursor selectAnchor,selectCursor;
+
 public:
 	LineModeBase(ContextEditor* ctx);
 	void InitIterators();
@@ -118,12 +121,19 @@ public:
 	void Undo(VisualCursor&);
 	void Redo(VisualCursor&);
 
+	void MakeNewAction(BufferActionType,s32,s32);
 	bool InsertionExtendsAction(Cursor) const;
 	bool DeletionExtendsAction(Cursor) const;
 
-	void MakeNewAction(BufferActionType,s32,s32);
-
+	void FinishOldAction(Cursor,BufferActionType);
 	void PushInsertionAction(Cursor,char);
 	void PushDeletionAction(Cursor,char);
+
+	void StartSelecting(const VisualCursor&);
+	void StopSelecting();
+	void UpdateSelection(const VisualCursor&);
+	Cursor GetSelectStartPos() const;
+	Cursor GetSelectEndPos() const;
+	void DeleteSelection(VisualCursor&);
 };
 

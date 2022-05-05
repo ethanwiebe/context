@@ -40,6 +40,11 @@ void EditMode::ProcessTextAction(TextAction a){
 			MoveVisualCursorRight(cursor,1);
 			break;
 		case Action::DeletePreviousChar:
+			if (selecting){
+				DeleteSelection(cursor);
+				break;
+			}
+
 			if (cursor.cursor.column==0&&cursor.cursor.line.index==0) //at start of textBuffer
 				break;
 
@@ -47,6 +52,11 @@ void EditMode::ProcessTextAction(TextAction a){
 			DeleteCharAt(cursor.cursor);
 			break;
 		case Action::DeleteCurrentChar:
+			if (selecting){
+				DeleteSelection(cursor);
+				break;
+			}
+
 			if (cursor.cursor.column==cursor.CurrentLineLen()&&cursor.cursor.line.index==(s32)textBuffer->size()-1)
 				break;
 
@@ -54,19 +64,24 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 		case Action::MoveToLineStart:
 			SetVisualCursorColumn(cursor,0);
+			cursor.cachedX = 0;
 			break;
 		case Action::MoveToLineEnd:
 			SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
+			cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.CurrentLineLen(),lineWidth)%lineWidth;
 			break;
 		case Action::MoveToBufferStart:
 			cursor.cursor.line = {textBuffer->begin()};
 			SetVisualCursorColumn(cursor,0);
+			cursor.cachedX = 0;
 			break;
 		case Action::MoveToBufferEnd:
 			cursor.cursor.line = {--textBuffer->end(),(s32)textBuffer->size()-1};
 			SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
+			cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.CurrentLineLen(),lineWidth)%lineWidth;
 			break;
 		case Action::InsertChar:
+			if (selecting) DeleteSelection(cursor);
 			InsertCharAt(cursor.cursor,a.character);
 			MoveVisualCursorRight(cursor,1);
 			break;
@@ -83,9 +98,14 @@ void EditMode::ProcessTextAction(TextAction a){
 		case Action::RedoAction:
 			Redo(cursor);
 			break;
+		case Action::ToggleSelect:
+			if (selecting) StopSelecting();
+			else StartSelecting(cursor);
+			break;
 
 		default:
 			break;
 	}
+	if (selecting) UpdateSelection(cursor);
 }
 

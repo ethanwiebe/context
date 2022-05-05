@@ -56,6 +56,8 @@ void SetKeybinds(){
 	ADD_BIND(Action::UndoAction,          'z',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::RedoAction,          'y',                 KeyModifier::Ctrl);
 
+	ADD_BIND(Action::ToggleSelect,        's',                 KeyModifier::Alt);
+
 	ADD_BIND(Action::Escape,              KeyEnum::Escape,     KeyModifier::None);
 
 	ADD_BIND(Action::CloseMode,           'q',                 KeyModifier::Ctrl);

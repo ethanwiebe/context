@@ -26,6 +26,7 @@ LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0),
 	InitIterators();
 	bufferPath = {};
 	undoStack = {};
+	selecting = false;
 }
 
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
@@ -46,7 +47,11 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	s32 lineLen,lineStart = 0;
 	s32 lineNumber;
 	char c;
+	Cursor startSelect = GetSelectStartPos();
+	Cursor endSelect = GetSelectEndPos();
+	bool inSelection = selecting && viewLine.index > startSelect.line.index; //TODO: handle sublines here
 
+	s32 oldX,xDiff;
 	s32 i = 0;
 
 	if (it.index>=0&&it.it!=textBuffer->end())
@@ -83,21 +88,35 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 		}
 
 		for (s32 x=0;x<w;){
-			if (i>=lineLen) break;
+			if (selecting){
+				if (it.index==startSelect.line.index
+						&&i==startSelect.column) inSelection = true;
+				if (it.index>endSelect.line.index||
+						(it.index==endSelect.line.index&&
+						 i>endSelect.column)) inSelection = false;
+			}
 
+			if (i>=lineLen) c = ' ';
+			else 			c = (*it.it)[i];
 
-			c = (*it.it)[i];
 			if (c&128) c = '?'; //utf8
 			if (c=='\t') c = ' ';
 
 			TextStyle usedStyle = defaultStyle;
-#ifndef NDEBUG
-			if (it.index==currentAction.line&&i==currentAction.column) usedStyle = yellowHighlightStyle;
-			if (it.index==currentAction.extendLine&&i==currentAction.extendColumn) usedStyle = greenHighlightStyle;
-#endif
+			if (inSelection) std::swap(usedStyle.bg,usedStyle.fg);
 			textScreen[y*w+x+lineStart] = TextCell(c,usedStyle);
 
+			if (i>=lineLen) break;
+
+			oldX = x;
 			UpdateXI(*it.it,x,i,lineWidth);
+			xDiff = x-oldX;
+
+			if (inSelection){
+				while (--xDiff>0) //draw selection over tabs
+					std::swap(textScreen[y*w+x-xDiff+lineStart].style.fg,textScreen[y*w+x-xDiff+lineStart].style.bg);
+			}
+
 			if (x >= w-lineStart){
 				y++;
 				x = 0;
@@ -109,7 +128,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	}
 
 	s32 loc;
-	for (auto cursor : cursors){
+	for (const auto& cursor : cursors){
 		loc = cursor.visualLine*w + GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth + lineStart;
 		if (loc>=0&&loc<screenWidth*innerHeight)
 			textScreen[loc].style = cursorStyle;
@@ -273,19 +292,13 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 }
 
 void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
-	s32 oldCursorX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
-
 	UpdateSublineDownwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true,textBuffer->size());
-
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 }
 
 void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
-	s32 oldCursorX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
-
 	UpdateSublineUpwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true);
-
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
 }
@@ -299,7 +312,8 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 			return;
 		}
 
-		MoveVisualCursorUp(cursor,1);
+		//MoveVisualCursorUp(cursor,1);
+		--cursor.cursor.line;
 		newCol += cursor.CurrentLineLen()+1;
 	}
 
@@ -317,7 +331,8 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 		}
 
 		newCol -= cursor.CurrentLineLen()+1;
-		MoveVisualCursorDown(cursor,1);
+		++cursor.cursor.line;
+		//MoveVisualCursorDown(cursor,1);
 	}
 
 	SetVisualCursorColumn(cursor,newCol);
@@ -431,6 +446,10 @@ void LineModeBase::DeleteLine(VisualCursor& cursor){
 }
 
 void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
+	if (cursor.line.index==(s32)textBuffer->size()-1 &&
+			cursor.column==(s32)cursor.line.it->size())
+		return;
+
 	char deletedChar;
 	modified = true;
 	
@@ -518,7 +537,6 @@ void LineModeBase::MakeNewAction(BufferActionType type,s32 line,s32 col){
 	currentAction = {type,line,col};
 }
 
-
 void LineModeBase::PerformBufferAction(VisualCursor& cursor,const BufferAction& action){
 	Cursor c;
 	if (action.type==BufferActionType::TextInsertion){
@@ -536,14 +554,31 @@ void LineModeBase::PerformBufferAction(VisualCursor& cursor,const BufferAction& 
 	}
 }
 
-void LineModeBase::PushInsertionAction(Cursor cursor,char c){
-	if (currentAction.type!=BufferActionType::TextInsertion ||
-			!InsertionExtendsAction(cursor)){
+bool LineModeBase::InsertionExtendsAction(Cursor cursor) const {
+	return currentAction.extendLine==cursor.line.index&&currentAction.extendColumn==cursor.column;
+}
+
+bool LineModeBase::DeletionExtendsAction(Cursor cursor) const {
+	bool cond1 = currentAction.line==cursor.line.index&&currentAction.column==cursor.column;
+	MoveCursorRight(cursor,1);
+	bool cond2 = currentAction.extendLine==cursor.line.index&&currentAction.extendColumn==cursor.column;
+	return cond1||cond2;
+}
+
+void LineModeBase::FinishOldAction(Cursor cursor,BufferActionType type){
+	if (currentAction.type!=type ||
+			(type==BufferActionType::TextDeletion&&!DeletionExtendsAction(cursor)) ||
+			(type==BufferActionType::TextInsertion&&!InsertionExtendsAction(cursor))){
+
 		if (!currentAction.Empty())
 			undoStack.PushAction(currentAction);
 
-		MakeNewAction(BufferActionType::TextInsertion,cursor.line.index,cursor.column);
+		MakeNewAction(type,cursor.line.index,cursor.column);
 	}
+}
+
+void LineModeBase::PushInsertionAction(Cursor cursor,char c){
+	FinishOldAction(cursor,BufferActionType::TextInsertion);
 
 	currentAction.AddCharacter(c);
 	MoveCursorRight(cursor,1);
@@ -552,13 +587,7 @@ void LineModeBase::PushInsertionAction(Cursor cursor,char c){
 }
 
 void LineModeBase::PushDeletionAction(Cursor cursor,char c){
-	if (currentAction.type!=BufferActionType::TextDeletion ||
-			!DeletionExtendsAction(cursor)){
-		if (!currentAction.Empty())
-			undoStack.PushAction(currentAction);
-
-		MakeNewAction(BufferActionType::TextDeletion,cursor.line.index,cursor.column);
-	}
+	FinishOldAction(cursor,BufferActionType::TextDeletion);
 
 	Cursor cursorcopy = cursor;
 	MoveCursorRight(cursorcopy,1);
@@ -573,13 +602,55 @@ void LineModeBase::PushDeletionAction(Cursor cursor,char c){
 	}
 }
 
-bool LineModeBase::InsertionExtendsAction(Cursor cursor) const {
-	return currentAction.extendLine==cursor.line.index&&currentAction.extendColumn==cursor.column;
+
+void LineModeBase::StartSelecting(const VisualCursor& cursor){
+	selecting = true;
+
+	selectAnchor = cursor.cursor;
+	selectCursor = cursor.cursor;
 }
 
-bool LineModeBase::DeletionExtendsAction(Cursor cursor) const {
-	bool cond1 = currentAction.line==cursor.line.index&&currentAction.column==cursor.column;
-	MoveCursorRight(cursor,1);
-	bool cond2 = currentAction.extendLine==cursor.line.index&&currentAction.extendColumn==cursor.column;
-	return cond1||cond2;
+void LineModeBase::StopSelecting(){
+	selecting = false;
+}
+
+void LineModeBase::UpdateSelection(const VisualCursor& cursor){
+	selectCursor = cursor.cursor;
+}
+
+Cursor LineModeBase::GetSelectStartPos() const {
+	if (selectAnchor.line.index>selectCursor.line.index)
+		return selectCursor;
+	if (selectAnchor.line.index<selectCursor.line.index)
+		return selectAnchor;
+	if (selectAnchor.column>selectCursor.column)
+		return selectCursor;
+	return selectAnchor;
+}
+
+Cursor LineModeBase::GetSelectEndPos() const {
+	if (selectAnchor.line.index>selectCursor.line.index)
+		return selectAnchor;
+	if (selectAnchor.line.index<selectCursor.line.index)
+		return selectCursor;
+	if (selectAnchor.column>selectCursor.column)
+		return selectAnchor;
+	return selectCursor;
+}
+
+void LineModeBase::DeleteSelection(VisualCursor& cursor){
+	Cursor start = GetSelectStartPos();
+	Cursor end = GetSelectEndPos();
+
+	while (end.line.index>start.line.index||end.column>start.column){
+		DeleteCharAt(end);
+		MoveCursorLeft(end,1);
+	}
+	
+	//if (end.line.it->size())
+	DeleteCharAt(end);
+
+	cursor.cursor = start;
+	SetVisualCursorColumn(cursor,cursor.cursor.column);
+	StopSelecting();
 }

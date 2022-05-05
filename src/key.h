@@ -88,6 +88,8 @@ enum class Action : u16 {
 	UndoAction,
 	RedoAction,
 
+	ToggleSelect,
+
 	CopySelection,
 	PasteClipboard,
 
