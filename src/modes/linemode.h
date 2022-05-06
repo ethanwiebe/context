@@ -7,11 +7,12 @@
 #include "../tui.h"
 #include "../logger.h"
 #include "../undo.h"
+#include "../syntaxhighlight.h"
 
 #include <vector>
 
 struct Cursor {
-	IndexedIterator line;
+	LineIndexedIterator line;
 	s32 column;
 };
 
@@ -27,7 +28,7 @@ struct VisualCursor {
 		return (*cursor.line).size();
 	}
 
-	void SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubline,s32 w,s32 h);
+	void SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h);
 };
 
 enum class BufferActionType {
@@ -67,9 +68,11 @@ struct BufferAction {
 class LineModeBase : public ModeBase {
 protected:
 	Ref<TextBuffer> textBuffer;
+	ColorBuffer colorBuffer;
 	std::string bufferPath;
 
-	IndexedIterator viewLine;
+	LineIndexedIterator viewLine;
+	ColorIterator colorLine;
 	s32 screenSubline;
 	std::vector<VisualCursor> cursors;
 	s32 lineWidth,innerHeight;
@@ -80,11 +83,15 @@ protected:
 	bool selecting;
 	Cursor selectAnchor,selectCursor;
 
+	Handle<SyntaxHighlighter> syntaxHighlighter;
+
 public:
 	LineModeBase(ContextEditor* ctx);
 	void InitIterators();
+	void CalculateColorLine();
 
 	TextScreen GetTextScreen(s32,s32) override;
+	TextStyle GetTextStyleAt(ColorIterator,s32);
 	std::string_view GetBufferName() override;
 
 	bool OpenAction(const OSInterface& os,std::string_view path) override;
@@ -98,7 +105,7 @@ public:
 	void MoveScreenToVisualCursor(VisualCursor&);
 	void LockScreenToVisualCursor(VisualCursor&);
 
-	Cursor MakeCursorFromIndexedIterator(s32,s32,IndexedIterator);
+	Cursor MakeCursorFromLineIndexedIterator(s32,s32,LineIndexedIterator);
 	Cursor MakeCursor(s32,s32);
 
 	void MoveVisualCursorDown(VisualCursor&,s32);
@@ -135,5 +142,7 @@ public:
 	Cursor GetSelectStartPos() const;
 	Cursor GetSelectEndPos() const;
 	void DeleteSelection(VisualCursor&);
+
+	void UpdateHighlighter();
 };
 

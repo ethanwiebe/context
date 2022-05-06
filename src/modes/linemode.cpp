@@ -21,12 +21,37 @@ s32 numWidth(s32 i){
 LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0),currentAction(BufferActionType::TextInsertion,0,0) {
 	textBuffer = MakeRef<TextBuffer>();
 	textBuffer->InsertLine(textBuffer->begin(),"");
+	colorBuffer = {};
+	colorBuffer.resize(textBuffer->size());
 	readonly = false;
 	modified = false;
 	InitIterators();
 	bufferPath = {};
 	undoStack = {};
 	selecting = false;
+
+}
+
+void LineModeBase::UpdateHighlighter(){
+	if (!syntaxHighlighter)
+		return;
+
+	syntaxHighlighter->FillColorBuffer(colorBuffer);
+	CalculateColorLine();
+}
+
+TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
+	if (!it->size())
+		return defaultStyle;
+
+	for (const ColorData& cd : *it){
+		if (cd.start>index) break;
+
+		if (cd.start<=index&&cd.start+cd.size>index)
+			return cd.style;
+	}
+
+	return defaultStyle;
 }
 
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
@@ -44,6 +69,9 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',defaultStyle));
 
 	auto it = viewLine;
+	auto colorLineIt = colorLine;
+	auto colorCharIt = colorLineIt->begin();
+
 	s32 lineLen,lineStart = 0;
 	s32 lineNumber;
 	char c;
@@ -102,7 +130,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			if (c&128) c = '?'; //utf8
 			if (c=='\t') c = ' ';
 
-			TextStyle usedStyle = defaultStyle;
+			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);//defaultStyle;
 			if (inSelection) std::swap(usedStyle.bg,usedStyle.fg);
 			textScreen[y*w+x+lineStart] = TextCell(c,usedStyle);
 
@@ -125,6 +153,8 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 		}
 		i = 0;
 		++it;
+		++colorLineIt;
+		colorCharIt = colorLineIt->begin();
 	}
 
 	s32 loc;
@@ -176,6 +206,8 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	if (textBuffer->empty()){
 		textBuffer->InsertLine(textBuffer->end(),{});
 	}
+
+	UpdateHighlighter();
 	InitIterators();
 
 	logger << "bufferPath: " << bufferPath << "\n";
@@ -210,11 +242,12 @@ void LineModeBase::SetPath(const OSInterface& os,std::string_view path){
 
 void LineModeBase::InitIterators(){
 	viewLine = {textBuffer->begin()};
+	colorLine = colorBuffer.begin();
 	cursors.clear();
 	cursors.emplace_back(textBuffer->begin());
 }
 
-void UpdateSublineUpwards(IndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false){
+void UpdateSublineUpwards(LineIndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false){
 	s32 lineSize;
 	while (--num>=0){
 		if (constrain&&line.index==0&&subline==0) return;
@@ -231,7 +264,7 @@ void UpdateSublineUpwards(IndexedIterator& line,s32& subline,s32& column,s32 wid
 	}
 }
 
-void UpdateSublineDownwards(IndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false,s32 lineCount=0){
+void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false,s32 lineCount=0){
 	s32 lineSize;
 	while (--num>=0){
 		lineSize = GetXPosOfIndex(*line,(*line).size(),width);
@@ -248,16 +281,22 @@ void UpdateSublineDownwards(IndexedIterator& line,s32& subline,s32& column,s32 w
 	}
 }
 
+void LineModeBase::CalculateColorLine(){
+	colorLine = colorBuffer.begin()+viewLine.index;
+}
+
 void LineModeBase::MoveScreenDown(s32 num,bool constrain){
 	s32 dummy;
 	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,textBuffer->size());
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
+	CalculateColorLine();
 }
 
 void LineModeBase::MoveScreenUp(s32 num,bool constrain){
 	s32 dummy;
 	UpdateSublineUpwards(viewLine,screenSubline,dummy,lineWidth,num,constrain);
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
+	CalculateColorLine();
 }
 
 void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor){
@@ -289,6 +328,7 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	
 
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
+	CalculateColorLine();
 }
 
 void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
@@ -377,7 +417,7 @@ void LineModeBase::SetVisualCursorColumn(VisualCursor& cursor,s32 col){
 	MoveScreenToVisualCursor(cursor);
 }
 
-void VisualCursor::SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){
+void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){
 	s32 count = 0;
 
 	if (cursor.line.index<viewLine.index){
@@ -416,12 +456,12 @@ void VisualCursor::SetVisualLineFromLine(IndexedIterator viewLine,s32 screenSubl
 }
 
 Cursor LineModeBase::MakeCursor(s32 line,s32 column){
-	IndexedIterator from{textBuffer->begin()};
+	LineIndexedIterator from{textBuffer->begin()};
 	
-	return MakeCursorFromIndexedIterator(line,column,from);
+	return MakeCursorFromLineIndexedIterator(line,column,from);
 }
 
-Cursor LineModeBase::MakeCursorFromIndexedIterator(s32 line,s32 column,IndexedIterator it){
+Cursor LineModeBase::MakeCursorFromLineIndexedIterator(s32 line,s32 column,LineIndexedIterator it){
 	while (it.index>line){
 		--it;
 	}
@@ -540,12 +580,12 @@ void LineModeBase::MakeNewAction(BufferActionType type,s32 line,s32 col){
 void LineModeBase::PerformBufferAction(VisualCursor& cursor,const BufferAction& action){
 	Cursor c;
 	if (action.type==BufferActionType::TextInsertion){
-		c = MakeCursorFromIndexedIterator(action.line,action.column,cursor.cursor.line);
+		c = MakeCursorFromLineIndexedIterator(action.line,action.column,cursor.cursor.line);
 		InsertStringAt(c,action.text,false);
 		cursor.cursor = c;
 		MoveVisualCursorRight(cursor,action.text.size());
 	} else if (action.type==BufferActionType::TextDeletion){
-		c = MakeCursorFromIndexedIterator(action.extendLine,action.extendColumn,cursor.cursor.line);
+		c = MakeCursorFromLineIndexedIterator(action.extendLine,action.extendColumn,cursor.cursor.line);
 		cursor.cursor = c;
 		for (s32 i=0;i<action.insertedLen;++i){
 			DeleteCharAt(c,false);

@@ -11,24 +11,75 @@ typedef std::list<std::string> LineList;
 typedef LineList::iterator LineIterator;
 typedef std::string_view LineView;
 
+template<typename T>
 struct IndexedIterator {
-	LineIterator it;
+	T::iterator it;
 	s32 index;
 
 	IndexedIterator() = default;
-	IndexedIterator(LineIterator lineIt) : it(lineIt), index(0){}
-	IndexedIterator(LineIterator lineIt,s32 index) : it(lineIt), index(index){}
+	IndexedIterator(T::iterator lineIt) : it(lineIt), index(0){}
+	IndexedIterator(T::iterator lineIt,s32 index) : it(lineIt), index(index){}
 
-	IndexedIterator& operator+=(s32);
+	IndexedIterator& operator+=(s32 n){
+		while (n--){
+			++index;
+			if (index>0)
+				++it;
+		}
 
-	IndexedIterator& operator-=(s32);
+		return *this;
+	}
 
-	IndexedIterator& operator++();
+	IndexedIterator& operator-=(s32 n){
+		while (n--){
+			--index;
+			if (index>=0)
+				--it;
+		}
 
-	IndexedIterator& operator--();
+		return *this;
+	}
 
-	const std::string& operator*() const;
+	IndexedIterator& operator++(){
+		++index;
+		if (index>0)
+			++it;
+
+		return *this;
+	}
+
+	IndexedIterator& operator--(){
+		--index;
+		if (index>=0)
+			--it;
+
+		return *this;
+	}
+
+	IndexedIterator operator++(int){
+		IndexedIterator old = *this;
+		++index;
+		if (index>0)
+			++it;
+
+		return old;
+	}
+
+	IndexedIterator operator--(int){
+		IndexedIterator old = *this;
+		--index;
+		if (index>=0)
+			--it;
+
+		return old;
+	}
+
+	const auto& operator*() const {
+		return *it;
+	}
 };
+
+typedef IndexedIterator<LineList> LineIndexedIterator;
 
 class TextBuffer {
 	LineList lines;

@@ -1,6 +1,12 @@
 #include "editmode.h"
 
-EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {}
+EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {
+	auto tempSH = new ConfigurableSyntaxHighlighter(*textBuffer);
+	tempSH->SetKeywords({"if","else","while","for","do","switch","case","default","break","return"});
+	tempSH->SetTypes({"void","bool","int","float","double","long","char","auto","size_t","const","inline","noexcept"});
+
+	syntaxHighlighter = Handle<SyntaxHighlighter>(tempSH);
+}
 
 void EditMode::ProcessTextAction(TextAction a){
 	VisualCursor& cursor = cursors[0];
@@ -107,5 +113,6 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 	}
 	if (selecting) UpdateSelection(cursor);
+	UpdateHighlighter();
 }
 

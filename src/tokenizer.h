@@ -9,6 +9,7 @@ enum class TokenType : u8 {
 	Name,
 	Number,
 	String,
+	Comment,
 	SpecialChar
 };
 
@@ -19,37 +20,86 @@ struct Token {
 
 typedef std::vector<Token> TokenVector;
 
+void ClipString(std::string_view&,std::string_view::iterator&);
+void SkipWhitespace(std::string_view&,std::string_view::iterator&);
+
 class TokenizerBase {
 protected:
 	std::string_view str;
+	std::string_view::iterator pos;
 
 public:
-	TokenizerBase(std::string_view sv) : str(sv){}
+	TokenizerBase(std::string_view sv) : str(sv){
+		pos = str.begin();
+	}
 
-	virtual bool TokensLeft() const = 0;
+	virtual void Reset(std::string_view newStr);
+
+	virtual bool TokensLeft() const;
+	virtual TokenVector GetTokens();
 	virtual Token EmitToken() = 0;
-	virtual TokenVector GetTokens() = 0;
 
 	virtual ~TokenizerBase() = default;
 };
 
 class CommandTokenizer : public TokenizerBase {
 protected:
-	std::string_view::iterator pos;
-
 	inline void TokenizeName();
 	inline void TokenizeNumber();
 	inline void TokenizeSingleQuoteString();
 	inline void TokenizeDoubleQuoteString();
-
-	inline void ClipString(std::string_view::iterator);
-	void SkipWhitespace();
 public:
-	CommandTokenizer(std::string_view sv) : TokenizerBase(sv), pos(str.begin()){
-		SkipWhitespace();
+	CommandTokenizer(std::string_view sv) : TokenizerBase(sv){
+		SkipWhitespace(str,pos);
 	}
 
-	inline bool TokensLeft() const override;
 	Token EmitToken() override;
-	TokenVector GetTokens() override;
+};
+
+class SyntaxTokenizer : public TokenizerBase {
+	std::string strDelim1,strDelim2,strEscape;
+	std::string comment,multiLineCommentStart,multiLineCommentEnd;
+
+	inline void TokenizeName();
+	inline void TokenizeNumber();
+	inline void TokenizeString1();
+	inline void TokenizeString2();
+	inline void TokenizeSingleLineComment();
+	inline void TokenizeMultiLineComment();
+public:
+	SyntaxTokenizer(std::string_view sv) : TokenizerBase(sv){
+		SkipWhitespace(str,pos);
+		strDelim1 = "'";
+		strDelim2 = "\"";
+		strEscape = "\\";
+		comment = "//";
+		multiLineCommentStart = "/*";
+		multiLineCommentEnd = "*/";
+	}
+
+	Token EmitToken() override;
+};
+
+class TokenInterface {
+	TokenizerBase& tokenizer;
+	TokenVector tokens;
+public:
+	TokenInterface(TokenizerBase& t) : tokenizer(t){}
+
+	void Reset(std::string_view sv){
+		tokenizer.Reset(sv);
+		tokens = tokenizer.GetTokens();
+	}
+	
+	inline TokenVector::const_iterator begin() const noexcept {
+		return tokens.cbegin();
+	}
+
+	inline TokenVector::const_iterator end() const noexcept {
+		return tokens.cend();
+	}
+
+	inline size_t size() const noexcept {
+		return tokens.size();
+	}
 };

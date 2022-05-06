@@ -1,50 +1,14 @@
 #include "textbuffer.h"
 
-IndexedIterator& IndexedIterator::operator+=(s32 n){
-	while (n--){
-		++index;
-		if (index>0)
-			++it;
-	}
+//static const std::string nullStr = "";
 
-	return *this;
-}
-
-IndexedIterator& IndexedIterator::operator-=(s32 n){
-	while (n--){
-		--index;
-		if (index>=0)
-			--it;
-	}
-
-	return *this;
-}
-
-IndexedIterator& IndexedIterator::operator++(){
-	++index;
-	if (index>0)
-		++it;
-
-	return *this;
-}
-
-IndexedIterator& IndexedIterator::operator--(){
-	--index;
-	if (index>=0)
-		--it;
-
-	return *this;
-}
-
-static const std::string nullStr = "";
-
-const std::string& IndexedIterator::operator*() const {
+/*const std::string& IndexedIterator::operator*() const {
 	if (index>=0){
 		return *it;
 	}
 
 	return nullStr;
-}
+}*/
 
 void TextBuffer::clear() noexcept {
 	lines.clear();
