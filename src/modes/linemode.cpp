@@ -235,10 +235,9 @@ bool LineModeBase::HasSavePath(){
 void LineModeBase::SetPath(const OSInterface& os,std::string_view path){
 	bufferPath.clear();
 	bufferPath += path;
-	modified = true;
 	readonly = !os.FileIsWritable(bufferPath);
 	GetSyntaxHighlighter(bufferPath);
-	UpdateHighlighter();
+	SetModified();
 }
 
 void LineModeBase::GetSyntaxHighlighter(std::string_view path){
@@ -505,8 +504,8 @@ void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 			cursor.column==(s32)cursor.line.it->size())
 		return;
 
-	char deletedChar;
 	modified = true;
+	char deletedChar;
 	
 	if (cursor.column==(s32)cursor.line.it->size()){
 		deletedChar = '\n';
@@ -522,6 +521,7 @@ void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 	} else {
 		cursor.line.it->erase(cursor.column,1);
 	}
+
 }
 
 void LineModeBase::DeleteCharCountAt(Cursor cursor,s32 count){
@@ -552,6 +552,11 @@ void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoab
 		} else
 			++cursor.column;
 	}
+}
+
+void LineModeBase::SetModified(){
+	modified = true;
+	UpdateHighlighter();
 }
 
 void LineModeBase::Undo(VisualCursor& cursor){

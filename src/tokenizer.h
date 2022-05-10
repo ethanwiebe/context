@@ -88,6 +88,18 @@ public:
 		unfinishedToken = false;
 	}
 
+	inline void SetComment(const std::string& s){
+		comment = s;
+	}
+
+	inline void SetMultiLineCommentStart(const std::string& s){
+		multiLineCommentStart = s;
+	}
+
+	inline void SetMultiLineCommentEnd(const std::string& s){
+		multiLineCommentEnd = s;
+	}
+
 	Token EmitToken() override;
 };
 

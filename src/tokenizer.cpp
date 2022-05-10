@@ -34,6 +34,7 @@ void SkipWhitespace(std::string_view& str,std::string_view::iterator& pos){
 }
 
 bool SVPosStartsWith(std::string_view str,std::string_view::iterator pos,std::string_view check){
+	if (check.empty()) return false;
 	std::string_view::iterator checkIt = check.begin();
 	while (pos!=str.end()){
 		if (*pos!=*checkIt)

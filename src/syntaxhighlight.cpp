@@ -28,15 +28,19 @@ TextStyle ConfigurableSyntaxHighlighter::GetStyleFromTokenType(TokenType type) c
 	return defaultStyle;
 }
 
-TokenizerBase* ConfigurableSyntaxHighlighter::GetTokenizer() const {
+SyntaxTokenizer* ConfigurableSyntaxHighlighter::GetTokenizer() const {
 	return new SyntaxTokenizer("");
 }
 
 void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c){
 	c.resize(buffer.size());
 	
-	Handle<TokenizerBase> tokenizer = Handle<TokenizerBase>(GetTokenizer());
+	Handle<SyntaxTokenizer> tokenizer = Handle<SyntaxTokenizer>(GetTokenizer());
 	TokenInterface tokenInterface{*tokenizer};
+
+	tokenizer->SetComment(comment);
+	tokenizer->SetMultiLineCommentStart(multiLineCommentStart);
+	tokenizer->SetMultiLineCommentEnd(multiLineCommentEnd);
 
 	auto colorIt = c.begin();
 	std::string_view token;
@@ -46,7 +50,6 @@ void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c){
 		colorIt->reserve(4);
 
 		for (Token token : tokenInterface){
-			logger << (s32)token.type << ":" << token.token << ",";
 			auto index = (token.token.data()-line.data());
 			if (token.type==TokenType::Name){
 				TextStyle style;
@@ -56,7 +59,6 @@ void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c){
 				AddColorData(colorIt,token.token,index,GetStyleFromTokenType(token.type));
 			}
 		}
-		logger << "\n";
 		++colorIt;
 	}
 }
@@ -74,7 +76,7 @@ void ConfigurableSyntaxHighlighter::AddColorData(ColorIterator it,std::string_vi
 	it->emplace_back(index,token.size(),style);
 }
 
-TokenizerBase* CPPSyntaxHighlighter::GetTokenizer() const {
+SyntaxTokenizer* CPPSyntaxHighlighter::GetTokenizer() const {
 	return new CPPTokenizer("");
 }
 
@@ -106,8 +108,13 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 
 }
 
-static std::vector<std::string> pythonKeywords = {"for","if","elif","return","yield"};
-static std::vector<std::string> pythonTypes = {"int","float","bool","object"};
+static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",
+	"True","False","import","from","in","del","def","class","with","as","and","or","not","None",
+	"try","except","finally","global","continue","break"};
+static std::vector<std::string> pythonFuncs = {"range","len","print","repr","ord","chr","isinstance",
+	"type","hex","round","enumerate","zip","pow","dir","open","quit","help","hash"};
+static std::vector<std::string> pythonTypes = {"int","float","bool","object","str","tuple",
+	"list","map","set","dict"};
 
 SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::string_view ext){
 	if (ext.empty())
@@ -118,7 +125,10 @@ SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::str
 	} else if (ext=="pyc"||ext=="pyw"||ext=="py"){
 		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);
 		sh->AddKeywords(pythonKeywords,statementStyle);
+		sh->AddKeywords(pythonFuncs,funcStyle);
 		sh->AddKeywords(pythonTypes,typeStyle);
+		sh->SetComment("#");
+		sh->SetMultiLineComment("","");
 		return sh;
 	}
 	

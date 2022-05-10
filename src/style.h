@@ -42,4 +42,5 @@ const TextStyle yellowHighlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag
 const TextStyle greenHighlightStyle = {ColorBlack,ColorGreen,StyleFlag::NoFlag};
 const TextStyle statementStyle = {ColorYellow,ColorBlack,StyleFlag::NoFlag};
 const TextStyle typeStyle = {ColorGreen,ColorBlack,StyleFlag::NoFlag};
+const TextStyle funcStyle = {ColorCyan,ColorBlack,StyleFlag::NoFlag};
 

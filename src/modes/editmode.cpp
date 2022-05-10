@@ -1,22 +1,7 @@
 #include "editmode.h"
 
 EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {
-	auto tempSH = new ConfigurableSyntaxHighlighter(*textBuffer);
-	auto statementStyle = TextStyle{ColorYellow,ColorBlack,StyleFlag::NoFlag};
-	auto typeStyle = TextStyle{ColorGreen,ColorBlack,StyleFlag::NoFlag};
-	auto compilerStyle = TextStyle{ColorMagenta,ColorBlack,StyleFlag::NoFlag};
-	
-	//tempSH->SetKeywords({"if","else","while","for","do",
-	//		"switch","case","default","break","return"},statementStyle);
 
-	//tempSH->SetKeywords({"void","bool","int","float","double",
-	//		"long","char","auto","size_t","const","inline",
-	//		"noexcept","constexpr","extern"},typeStyle);
-
-	//tempSH->SetKeywords({"#if","#else","#pragma",
-	//		"#define","#include","#ifdef","#endif","#ifndef"},compilerStyle);
-
-	//syntaxHighlighter = Handle<SyntaxHighlighter>(tempSH);
 }
 
 void EditMode::ProcessTextAction(TextAction a){
@@ -55,10 +40,12 @@ void EditMode::ProcessTextAction(TextAction a){
 		case Action::InsertLine:
 			InsertCharAt(cursor.cursor,'\n');
 			MoveVisualCursorRight(cursor,1);
+			UpdateHighlighter();
 			break;
 		case Action::DeletePreviousChar:
 			if (selecting){
 				DeleteSelection(cursor);
+				UpdateHighlighter();
 				break;
 			}
 
@@ -67,10 +54,12 @@ void EditMode::ProcessTextAction(TextAction a){
 
 			MoveVisualCursorLeft(cursor,1);
 			DeleteCharAt(cursor.cursor);
+			UpdateHighlighter();
 			break;
 		case Action::DeleteCurrentChar:
 			if (selecting){
 				DeleteSelection(cursor);
+				UpdateHighlighter();
 				break;
 			}
 
@@ -78,6 +67,7 @@ void EditMode::ProcessTextAction(TextAction a){
 				break;
 
 			DeleteCharAt(cursor.cursor);
+			UpdateHighlighter();
 			break;
 		case Action::MoveToLineStart:
 			SetVisualCursorColumn(cursor,0);
@@ -101,19 +91,24 @@ void EditMode::ProcessTextAction(TextAction a){
 			if (selecting) DeleteSelection(cursor);
 			InsertCharAt(cursor.cursor,a.character);
 			MoveVisualCursorRight(cursor,1);
+			UpdateHighlighter();
 			break;
 		case Action::InsertTab:
 			InsertCharAt(cursor.cursor,'\t');
 			MoveVisualCursorRight(cursor,1);
+			UpdateHighlighter();
 			break;
 		case Action::DeleteLine:
 			DeleteLine(cursor);
+			UpdateHighlighter();
 			break;
 		case Action::UndoAction:
 			Undo(cursor);
+			UpdateHighlighter();
 			break;
 		case Action::RedoAction:
 			Redo(cursor);
+			UpdateHighlighter();
 			break;
 		case Action::ToggleSelect:
 			if (selecting) StopSelecting();
@@ -124,6 +119,5 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 	}
 	if (selecting) UpdateSelection(cursor);
-	UpdateHighlighter();
 }
 

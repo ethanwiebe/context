@@ -125,6 +125,8 @@ public:
 	void DeleteCharAt(Cursor,bool=true);
 	void DeleteCharCountAt(Cursor,s32);
 
+	void SetModified();
+
 	void PerformBufferAction(VisualCursor&,const BufferAction&);
 
 	void Undo(VisualCursor&);

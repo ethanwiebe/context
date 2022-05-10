@@ -70,6 +70,7 @@ protected:
 	std::list<std::string> keywords;
 	KeywordStyleMap styleMap;
 	TextStyle highlightStyle,stringStyle,numberStyle,commentStyle;
+	std::string comment,multiLineCommentStart,multiLineCommentEnd;
 public:
 	ConfigurableSyntaxHighlighter(TextBuffer& b) : SyntaxHighlighter(b){
 		highlightStyle = TextStyle(ColorYellow,ColorBlack,StyleFlag::NoFlag);		
@@ -78,14 +79,26 @@ public:
 		commentStyle = TextStyle(ColorBlue,ColorBlack,StyleFlag::NoFlag);
 		keywords = {};
 		styleMap = {};
+		
+		comment = "//";
+		multiLineCommentStart = "/*";
+		multiLineCommentEnd = "*/";
 	}
 
 	void AddKeywords(const std::vector<std::string>&,TextStyle);
 
 	void FillColorBuffer(ColorBuffer& c) override;
 
+	void SetComment(const std::string& s){
+		comment = s;
+	}
 
-	virtual TokenizerBase* GetTokenizer() const;
+	void SetMultiLineComment(const std::string& start,const std::string& end){
+		multiLineCommentStart = start;
+		multiLineCommentEnd = end;
+	}
+
+	virtual SyntaxTokenizer* GetTokenizer() const;
 	virtual TextStyle GetStyleFromTokenType(TokenType) const;
 
 	~ConfigurableSyntaxHighlighter() override;
@@ -103,7 +116,7 @@ public:
 		directiveStyle = {ColorMagenta,ColorBlack,StyleFlag::NoFlag};
 	}
 
-	TokenizerBase* GetTokenizer() const override;
+	SyntaxTokenizer* GetTokenizer() const override;
 	TextStyle GetStyleFromTokenType(TokenType) const override;
 
 };
