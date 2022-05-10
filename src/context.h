@@ -54,7 +54,7 @@ class ContextEditor {
 	void ProcessYesNoEntry(TextAction);
 	void Loop();
 public:
-	ContextEditor();
+	ContextEditor(const std::string& file);
 
 	void CloseMode(size_t);
 	void ForceCloseMode(size_t);

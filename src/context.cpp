@@ -1,6 +1,6 @@
 #include "context.h"
 
-ContextEditor::ContextEditor(){
+ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();
 
 	yesAction = [](){};
@@ -14,7 +14,17 @@ ContextEditor::ContextEditor(){
 	interface = Handle<TextInterfaceBase>(new CursesInterface());	
 	osInterface = Handle<OSInterface>(new LinuxOSImpl());
 
-	NewMode();
+	if (!file.empty()){
+		OpenMode(file);
+		if (!errorMessage.empty()){
+			NewMode();
+			modes[0]->SetPath(*osInterface,file);
+			errorMessage.clear();
+		}
+	} else {
+		NewMode();
+	}
+
 	currentMode = 0;
 
 	Loop();

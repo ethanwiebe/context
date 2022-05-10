@@ -1,9 +1,12 @@
 #include "context.h"
 
-int main(){
-	logger << (s64)sizeof(std::basic_string<char>) << "\n";
-	ContextEditor ct;
+int main(int argc,char** argv){
+	std::string file = {};
+	if (argc==2){
+		file = {argv[1]};
+	}
 
+	ContextEditor ct(file);
 	return 0;
 }
 
