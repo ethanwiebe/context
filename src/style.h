@@ -17,6 +17,7 @@ const Color ColorGreen = {0,255,0};
 const Color ColorYellow = {255,255,0};
 const Color ColorBlue = {0,0,255};
 const Color ColorCyan = {0,255,255};
+const Color ColorMagenta = {255,0,255};
 
 struct TextStyle {
 	Color fg;
@@ -39,3 +40,6 @@ const TextStyle lineDrawingStyle = {ColorWhite,ColorBlack,StyleFlag::AlternateCh
 const TextStyle errorStyle = {ColorRed,ColorBlack,StyleFlag::NoFlag};
 const TextStyle yellowHighlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag};
 const TextStyle greenHighlightStyle = {ColorBlack,ColorGreen,StyleFlag::NoFlag};
+const TextStyle statementStyle = {ColorYellow,ColorBlack,StyleFlag::NoFlag};
+const TextStyle typeStyle = {ColorGreen,ColorBlack,StyleFlag::NoFlag};
+

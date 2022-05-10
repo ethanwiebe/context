@@ -2,10 +2,21 @@
 
 EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {
 	auto tempSH = new ConfigurableSyntaxHighlighter(*textBuffer);
-	tempSH->SetKeywords({"if","else","while","for","do","switch","case","default","break","return"});
-	tempSH->SetTypes({"void","bool","int","float","double","long","char","auto","size_t","const","inline","noexcept"});
+	auto statementStyle = TextStyle{ColorYellow,ColorBlack,StyleFlag::NoFlag};
+	auto typeStyle = TextStyle{ColorGreen,ColorBlack,StyleFlag::NoFlag};
+	auto compilerStyle = TextStyle{ColorMagenta,ColorBlack,StyleFlag::NoFlag};
+	
+	//tempSH->SetKeywords({"if","else","while","for","do",
+	//		"switch","case","default","break","return"},statementStyle);
 
-	syntaxHighlighter = Handle<SyntaxHighlighter>(tempSH);
+	//tempSH->SetKeywords({"void","bool","int","float","double",
+	//		"long","char","auto","size_t","const","inline",
+	//		"noexcept","constexpr","extern"},typeStyle);
+
+	//tempSH->SetKeywords({"#if","#else","#pragma",
+	//		"#define","#include","#ifdef","#endif","#ifndef"},compilerStyle);
+
+	//syntaxHighlighter = Handle<SyntaxHighlighter>(tempSH);
 }
 
 void EditMode::ProcessTextAction(TextAction a){

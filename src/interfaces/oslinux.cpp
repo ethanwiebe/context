@@ -19,8 +19,16 @@ bool LinuxOSImpl::FileIsReadable(std::string_view path) const {
 }
 
 bool LinuxOSImpl::FileIsWritable(std::string_view path) const {
-	std::ofstream file(path.data(),std::ios::out|std::ios::app);
-	return file.good();
+	bool good;
+	bool exists = PathExists(path);
+	{
+		std::ofstream file(path.data(),std::ios::out|std::ios::app);
+		good = file.good();
+	}
+	if (!exists)
+		std::remove(path.data());
+
+	return good;
 }
 
 s64 LinuxOSImpl::GetModifyTime(std::string_view path) const {

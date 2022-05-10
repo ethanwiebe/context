@@ -20,6 +20,8 @@ protected:
 	bool readonly,modified;
 public:
 	ModeBase(ContextEditor* c) : ctx(c){}
+	ModeBase(const ModeBase&) = delete;
+	ModeBase& operator=(const ModeBase&) = delete;
 
 	std::string& GetErrorMessage(){
 		return modeErrorMessage;

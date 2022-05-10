@@ -41,7 +41,7 @@ void LineModeBase::UpdateHighlighter(){
 }
 
 TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
-	if (!it->size())
+	if (!syntaxHighlighter||!it->size())
 		return defaultStyle;
 
 	for (const ColorData& cd : *it){
@@ -207,10 +207,9 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 		textBuffer->InsertLine(textBuffer->end(),{});
 	}
 
+	GetSyntaxHighlighter(bufferPath);
 	UpdateHighlighter();
 	InitIterators();
-
-	logger << "bufferPath: " << bufferPath << "\n";
 
 	return true;
 }
@@ -238,6 +237,20 @@ void LineModeBase::SetPath(const OSInterface& os,std::string_view path){
 	bufferPath += path;
 	modified = true;
 	readonly = !os.FileIsWritable(bufferPath);
+	GetSyntaxHighlighter(bufferPath);
+	UpdateHighlighter();
+}
+
+void LineModeBase::GetSyntaxHighlighter(std::string_view path){
+	size_t start = path.find_last_of('.');
+	if (start==std::string_view::npos||start==path.size()-1){
+		syntaxHighlighter = nullptr;
+		return;
+	}
+
+	std::string_view extension = path.substr(start+1);
+
+	syntaxHighlighter = Handle<SyntaxHighlighter>(GetSyntaxHighlighterFromExtension(*textBuffer,extension));
 }
 
 void LineModeBase::InitIterators(){
@@ -245,6 +258,8 @@ void LineModeBase::InitIterators(){
 	colorLine = colorBuffer.begin();
 	cursors.clear();
 	cursors.emplace_back(textBuffer->begin());
+	selectAnchor = cursors[0].cursor;
+	selectCursor = cursors[0].cursor;
 }
 
 void UpdateSublineUpwards(LineIndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false){

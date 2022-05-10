@@ -2,42 +2,41 @@
 
 typedef IndexedIterator<std::string> CharIndexedIterator;
 
-void ConfigurableSyntaxHighlighter::SetKeywords(std::vector<std::string>&& kws){
-	keywords = kws;
-	for (const auto& keyword : keywords){
-		styleMap[keyword] = TextStyle(ColorYellow,ColorBlack,StyleFlag::NoFlag);
+void ConfigurableSyntaxHighlighter::AddKeywords(const std::vector<std::string>& kws,TextStyle style){
+	for (auto keyword : kws){
+		keywords.push_back(keyword);
+		styleMap[keywords.back()] = style;
 	}
 }
 
-void ConfigurableSyntaxHighlighter::SetTypes(std::vector<std::string>&& t){
-	types = t;
-	for (const auto& type : types){
-		styleMap[type] = TextStyle(ColorGreen,ColorBlack,StyleFlag::NoFlag);
+ConfigurableSyntaxHighlighter::~ConfigurableSyntaxHighlighter(){
+	styleMap.clear();
+	keywords.clear();
+}
+
+TextStyle ConfigurableSyntaxHighlighter::GetStyleFromTokenType(TokenType type) const {
+	switch (type){
+		case TokenType::String:
+			return stringStyle;
+		case TokenType::Comment:
+			return commentStyle;
+		case TokenType::Number:
+			return numberStyle;
+		default:
+			break;
 	}
+	return defaultStyle;
 }
 
-void SkipWhitespace(CharIndexedIterator& charIt,std::string::iterator end){
-	while (charIt.it!=end&&(*charIt==' '||*charIt=='\t'))
-		++charIt;
+TokenizerBase* ConfigurableSyntaxHighlighter::GetTokenizer() const {
+	return new SyntaxTokenizer("");
 }
 
-std::string_view PeekToken(CharIndexedIterator charIt,std::string::iterator end){
-	auto startIt = charIt++;
-	while (charIt.it!=end &&
-			((*charIt >= 'A' && *charIt <= 'Z') ||
-			(*charIt >= 'a' && *charIt <= 'z') ||
-			(*charIt >= '0' && *charIt <= '9')) &&
-			*charIt!=' '&&*charIt!='\t')
-		++charIt;
-
-	return std::string_view{startIt.it,charIt.it};
-}
-
-void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c) const {
+void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c){
 	c.resize(buffer.size());
 	
-	SyntaxTokenizer tokenizer{""};
-	TokenInterface tokenInterface{tokenizer};
+	Handle<TokenizerBase> tokenizer = Handle<TokenizerBase>(GetTokenizer());
+	TokenInterface tokenInterface{*tokenizer};
 
 	auto colorIt = c.begin();
 	std::string_view token;
@@ -47,27 +46,82 @@ void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c) const {
 		colorIt->reserve(4);
 
 		for (Token token : tokenInterface){
+			logger << (s32)token.type << ":" << token.token << ",";
 			auto index = (token.token.data()-line.data());
 			if (token.type==TokenType::Name){
-				if (TokenInKeywords(token.token))
-					AddColorData(colorIt,token.token,index,styleMap.at(token.token));
-			} else if (token.type==TokenType::String){
-				AddColorData(colorIt,token.token,index,stringStyle);
-			} else if (token.type==TokenType::Number){
-				AddColorData(colorIt,token.token,index,numberStyle);
-			} else if (token.type==TokenType::Comment){
-				AddColorData(colorIt,token.token,index,commentStyle);
+				TextStyle style;
+				if (TokenInKeywords(token.token,style))
+					AddColorData(colorIt,token.token,index,style);
+			} else {
+				AddColorData(colorIt,token.token,index,GetStyleFromTokenType(token.type));
 			}
 		}
-
+		logger << "\n";
 		++colorIt;
 	}
 }
 
-bool ConfigurableSyntaxHighlighter::TokenInKeywords(std::string_view token) const {
-	return styleMap.contains(token);
+bool ConfigurableSyntaxHighlighter::TokenInKeywords(std::string_view token,TextStyle& style) const {
+	if (styleMap.contains(token)){
+		style = styleMap.at(token);
+		return true;
+	}
+
+	return false;
 }
 
 void ConfigurableSyntaxHighlighter::AddColorData(ColorIterator it,std::string_view token,s32 index,TextStyle style) const {
 	it->emplace_back(index,token.size(),style);
+}
+
+TokenizerBase* CPPSyntaxHighlighter::GetTokenizer() const {
+	return new CPPTokenizer("");
+}
+
+TextStyle CPPSyntaxHighlighter::GetStyleFromTokenType(TokenType type) const {
+	switch (type){
+		case TokenType::String:
+			return stringStyle;
+		case TokenType::Comment:
+			return commentStyle;
+		case TokenType::Number:
+			return numberStyle;
+		case TokenType::Directive:
+			return directiveStyle;
+		default:
+			break;
+	}
+	return defaultStyle;
+}
+
+void CPPSyntaxHighlighter::BuildKeywords(){
+	AddKeywords({"if","else","while","for","do",
+			"switch","case","default","break","return",
+			"using","template","typedef","typename","new",
+			"delete"},statementStyle);
+
+	AddKeywords({"void","bool","int","float","double",
+			"long","char","auto","size_t","const","inline",
+			"noexcept","constexpr","extern","static"},typeStyle);
+
+}
+
+static std::vector<std::string> pythonKeywords = {"for","if","elif","return","yield"};
+static std::vector<std::string> pythonTypes = {"int","float","bool","object"};
+
+SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::string_view ext){
+	if (ext.empty())
+		return nullptr;
+
+	if (ext=="cpp"||ext=="hpp"||ext=="c"||ext=="h"||ext=="c++"||ext=="h++"){
+		return new CPPSyntaxHighlighter(buffer);
+	} else if (ext=="pyc"||ext=="pyw"||ext=="py"){
+		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);
+		sh->AddKeywords(pythonKeywords,statementStyle);
+		sh->AddKeywords(pythonTypes,typeStyle);
+		return sh;
+	}
+	
+
+	return nullptr;
 }

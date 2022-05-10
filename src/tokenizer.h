@@ -4,13 +4,15 @@
 
 #include <vector>
 #include <string_view>
+#include <assert.h>
 
 enum class TokenType : u8 {
 	Name,
 	Number,
 	String,
 	Comment,
-	SpecialChar
+	SpecialChar,
+	Directive
 };
 
 struct Token {
@@ -57,9 +59,17 @@ public:
 };
 
 class SyntaxTokenizer : public TokenizerBase {
-	std::string strDelim1,strDelim2,strEscape;
-	std::string comment,multiLineCommentStart,multiLineCommentEnd;
+	
+protected:
+	bool unfinishedToken;
+	u8 unfinishedStringType;
+	TokenType unfinishedTokenType;
 
+	std::string strDelim1,strDelim2;
+	std::string comment,multiLineCommentStart,multiLineCommentEnd;
+	char strEscape;
+
+	virtual void ChooseToken(Token&,char,char);
 	inline void TokenizeName();
 	inline void TokenizeNumber();
 	inline void TokenizeString1();
@@ -71,13 +81,23 @@ public:
 		SkipWhitespace(str,pos);
 		strDelim1 = "'";
 		strDelim2 = "\"";
-		strEscape = "\\";
+		strEscape = '\\';
 		comment = "//";
 		multiLineCommentStart = "/*";
 		multiLineCommentEnd = "*/";
+		unfinishedToken = false;
 	}
 
 	Token EmitToken() override;
+};
+
+class CPPTokenizer : public SyntaxTokenizer {
+
+protected:
+	void ChooseToken(Token&,char,char) override;
+	inline void TokenizeDirective();
+public:
+	CPPTokenizer(std::string_view sv) : SyntaxTokenizer(sv){}
 };
 
 class TokenInterface {

@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <string_view>
 #include <fstream>
+#include <cstdio>
 
 class LinuxOSImpl : public OSInterface {
 public:
