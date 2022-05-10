@@ -9,6 +9,10 @@
 		"-o",
 		"%output",
 		"-Wall",
+		"-Wextra",
+		"-fno-exceptions",
+		"-fno-rtti",
+		"-pedantic",
 		"-DCURSES_INTERFACE"
 	],
 	"linkFlags":[
@@ -32,6 +36,23 @@
 			],
 			"linkFlags":[
 				"-s"
+			]
+		},
+		"size":{
+			"objectDir":"build/size",
+			"compileFlags":[
+				"-Os",
+				"-fdata-sections",
+				"-ffunction-sections",
+				"-fvisibility=hidden",
+				"-fvisibility-inlines-hidden",
+				"-DNDEBUG"
+			],
+			"linkFlags":[
+				"-s",
+				"-Wl,--gc-sections",
+				"-Bsymbolic",
+				"-Wl,--exclude-libs,ALL"
 			]
 		}
 	}
