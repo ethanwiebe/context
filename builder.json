@@ -1,6 +1,8 @@
 {
 	"sourceDir":"src",
 	"outputDir":"bin",
+	"headerExtension":"h",
+	"sourceExtension":"cpp",
 	"outputName":"context",
 	"compileCommand": "g++ -c",
 	"linkCommand": "g++",
@@ -13,12 +15,14 @@
 		"-fno-exceptions",
 		"-fno-rtti",
 		"-pedantic",
-		"-DCURSES_INTERFACE"
+		"-DCURSES_INTERFACE",
+		"%input"
 	],
 	"linkFlags":[
 		"-o",
 		"%output",
-		"-lncurses"
+		"-lncurses",
+		"%input"
 	],
 	"modes": {
 		"debug":{

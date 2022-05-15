@@ -58,9 +58,11 @@ s32 ToNextMultiple(s32 x,s32 d,s32 w){
 void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
 	if (str[i]=='\t'){
 		x = std::min(ToNextMultiple(x,Config::tabSize,width),ToNextMultiple(x,width,width));
-		i++;
+		++i;
 	} else if (str[i]&128){ //utf8 handling
-		if ((str[i]>>5)==6){
+		++i;
+		++x;
+		/*if ((str[i]>>5)==6){
 			x++;
 			i += 2;
 		} else if ((str[i]>>4)==14){
@@ -69,10 +71,10 @@ void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
 		} else if ((str[i]>>3)==30){
 			x++;
 			i += 4;
-		}
+		}*/
 	} else {
-		x++;
-		i++;
+		++x;
+		++i;
 	}
 }
 
@@ -82,7 +84,7 @@ s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width){
 	for (s32 i=0;i<index;){
 		UpdateXI(str,x,i,width);
 
-		if (index>strLen) break;
+		if (i>strLen) break;
 	}
 
 	return x;
@@ -94,7 +96,7 @@ s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width){
 	for (s32 i=0;i<x;){
 		UpdateXI(str,i,index,width);
 
-		if (index>strLen) break;
+		if (i>strLen) break;
 	}
 
 	return index;

@@ -100,12 +100,15 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 	AddKeywords({"if","else","while","for","do",
 			"switch","case","default","break","return",
 			"using","template","typedef","typename","new",
-			"delete"},statementStyle);
+			"delete","struct","class","enum","union","sizeof",
+			"alignof"},statementStyle);
 
-	AddKeywords({"void","bool","int","float","double",
-			"long","char","auto","size_t","const","inline",
-			"noexcept","constexpr","extern","static"},typeStyle);
-
+	AddKeywords({"void","bool","int","float","double","ptrdiff_t",
+			"long","char","auto","size_t","ssize_t","const","inline",
+			"noexcept","constexpr","extern","static","int8_t",
+			"int16_t","int32_t","int64_t","uint8_t","uint16_t",
+			"uint32_t","uint64_t","u8","u16","u32","u64","s8",
+			"s16","s32","s64","f32","f64","unsigned"},typeStyle);
 }
 
 static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",

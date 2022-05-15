@@ -100,6 +100,10 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 		lineLen = it.it->size();
 
 		if (Config::displayLineNumbers){ //line numbers
+			for (s32 n=0;n<lineNumberWidth;++n){ //fill in style
+				textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
+			}
+
 			if (i==0){ //only print line numbers if this is the start of a line
 				lineNumber = it.index+1;
 				s32 x;
@@ -109,7 +113,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 					powerOfTen = tenPow(i);
 					if (powerOfTen>lineNumber) break;
 	
-					textScreen[y*w+x] = TextCell('0'+(lineNumber/tenPow(i))%10, lineNumberStyle);
+					textScreen[y*w+x] = TextCell('0'+(lineNumber/powerOfTen)%10, lineNumberStyle);
 				}
 			}
 			lineStart += lineNumberWidth;
@@ -149,6 +153,10 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 				y++;
 				x = 0;
 				if (y>=innerHeight) break;
+
+				for (s32 n=0;n<lineNumberWidth;++n){
+					textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
+				}
 			}
 		}
 		i = 0;

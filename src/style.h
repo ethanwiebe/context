@@ -10,14 +10,21 @@ struct Color {
 	}
 };
 
-const Color ColorBlack = {0,0,0};
-const Color ColorWhite = {255,255,255};
-const Color ColorRed = {255,0,0};
-const Color ColorGreen = {0,255,0};
-const Color ColorYellow = {255,255,0};
-const Color ColorBlue = {0,0,255};
-const Color ColorCyan = {0,255,255};
-const Color ColorMagenta = {255,0,255};
+extern Color ColorBlack;
+extern Color ColorWhite;
+extern Color ColorRed;
+extern Color ColorGreen;
+extern Color ColorYellow;
+extern Color ColorBlue;
+extern Color ColorCyan;
+extern Color ColorMagenta;
+
+extern Color ColorBackgroundDark;
+extern Color ColorBackgroundLight;
+extern Color ColorForegroundDark;
+extern Color ColorForegroundLight;
+
+void SetColors();
 
 struct TextStyle {
 	Color fg;
@@ -32,15 +39,13 @@ enum StyleFlag : u8 {
 	AlternateCharacterSet = 4
 };
 
-const TextStyle defaultStyle = {ColorWhite,ColorBlack,StyleFlag::NoFlag};
-const TextStyle cursorStyle = {ColorBlack,ColorWhite,StyleFlag::NoFlag};
-const TextStyle lineNumberStyle = {ColorBlue,ColorBlack,StyleFlag::NoFlag};
-const TextStyle blankLineStyle = {ColorCyan,ColorBlack,StyleFlag::NoFlag};
-const TextStyle lineDrawingStyle = {ColorWhite,ColorBlack,StyleFlag::AlternateCharacterSet};
-const TextStyle errorStyle = {ColorRed,ColorBlack,StyleFlag::NoFlag};
-const TextStyle yellowHighlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag};
-const TextStyle greenHighlightStyle = {ColorBlack,ColorGreen,StyleFlag::NoFlag};
-const TextStyle statementStyle = {ColorYellow,ColorBlack,StyleFlag::NoFlag};
-const TextStyle typeStyle = {ColorGreen,ColorBlack,StyleFlag::NoFlag};
-const TextStyle funcStyle = {ColorCyan,ColorBlack,StyleFlag::NoFlag};
+extern TextStyle defaultStyle;
+extern TextStyle cursorStyle;
+extern TextStyle lineNumberStyle;
+extern TextStyle blankLineStyle;
+extern TextStyle lineDrawingStyle;
+extern TextStyle errorStyle;
+extern TextStyle statementStyle;
+extern TextStyle typeStyle;
+extern TextStyle funcStyle;
 

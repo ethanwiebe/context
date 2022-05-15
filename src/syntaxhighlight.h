@@ -73,10 +73,9 @@ protected:
 	std::string comment,multiLineCommentStart,multiLineCommentEnd;
 public:
 	ConfigurableSyntaxHighlighter(TextBuffer& b) : SyntaxHighlighter(b){
-		highlightStyle = TextStyle(ColorYellow,ColorBlack,StyleFlag::NoFlag);		
-		stringStyle = TextStyle(ColorGreen,ColorBlack,StyleFlag::NoFlag);
-		numberStyle = TextStyle(ColorRed,ColorBlack,StyleFlag::NoFlag);
-		commentStyle = TextStyle(ColorBlue,ColorBlack,StyleFlag::NoFlag);
+		stringStyle = TextStyle(ColorGreen,ColorBackgroundDark,StyleFlag::NoFlag);
+		numberStyle = TextStyle(ColorRed,ColorBackgroundDark,StyleFlag::NoFlag);
+		commentStyle = TextStyle(ColorBlue,ColorBackgroundDark,StyleFlag::NoFlag);
 		keywords = {};
 		styleMap = {};
 		
@@ -113,7 +112,7 @@ class CPPSyntaxHighlighter : public ConfigurableSyntaxHighlighter {
 public:
 	CPPSyntaxHighlighter(TextBuffer& b) : ConfigurableSyntaxHighlighter(b){
 		BuildKeywords();
-		directiveStyle = {ColorMagenta,ColorBlack,StyleFlag::NoFlag};
+		directiveStyle = {ColorMagenta,ColorBackgroundDark,StyleFlag::NoFlag};
 	}
 
 	SyntaxTokenizer* GetTokenizer() const override;
