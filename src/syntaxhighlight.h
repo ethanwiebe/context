@@ -69,13 +69,12 @@ class ConfigurableSyntaxHighlighter : public SyntaxHighlighter {
 protected:
 	std::list<std::string> keywords;
 	KeywordStyleMap styleMap;
-	TextStyle highlightStyle,stringStyle,numberStyle,commentStyle;
+	TextStyle stringStyle,numberStyle;
 	std::string comment,multiLineCommentStart,multiLineCommentEnd;
 public:
 	ConfigurableSyntaxHighlighter(TextBuffer& b) : SyntaxHighlighter(b){
 		stringStyle = TextStyle(ColorGreen,ColorBackgroundDark,StyleFlag::NoFlag);
 		numberStyle = TextStyle(ColorRed,ColorBackgroundDark,StyleFlag::NoFlag);
-		commentStyle = TextStyle(ColorBlue,ColorBackgroundDark,StyleFlag::NoFlag);
 		keywords = {};
 		styleMap = {};
 		

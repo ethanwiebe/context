@@ -101,29 +101,31 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 			"switch","case","default","break","return",
 			"using","template","typedef","typename","new",
 			"delete","struct","class","enum","union","sizeof",
-			"alignof"},statementStyle);
+			"alignof","public","private","protected","continue"},statementStyle);
 
 	AddKeywords({"void","bool","int","float","double","ptrdiff_t",
 			"long","char","auto","size_t","ssize_t","const","inline",
-			"noexcept","constexpr","extern","static","int8_t",
+			"noexcept","constexpr","extern","static","int8_t","virtual",
 			"int16_t","int32_t","int64_t","uint8_t","uint16_t",
 			"uint32_t","uint64_t","u8","u16","u32","u64","s8",
-			"s16","s32","s64","f32","f64","unsigned"},typeStyle);
+			"s16","s32","s64","f32","f64","unsigned","friend",
+			"nullptr_t","short"},typeStyle);
+	AddKeywords({"nullptr","NULL","true","false"},numberStyle);
 }
 
 static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",
 	"True","False","import","from","in","del","def","class","with","as","and","or","not","None",
 	"try","except","finally","global","continue","break"};
 static std::vector<std::string> pythonFuncs = {"range","len","print","repr","ord","chr","isinstance",
-	"type","hex","round","enumerate","zip","pow","dir","open","quit","help","hash"};
+	"hex","round","pow","dir","open","quit","help","hash","next"};
 static std::vector<std::string> pythonTypes = {"int","float","bool","object","str","tuple",
-	"list","map","set","dict"};
+	"list","map","set","dict","zip","enumerate","type"};
 
 SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::string_view ext){
 	if (ext.empty())
 		return nullptr;
 
-	if (ext=="cpp"||ext=="hpp"||ext=="c"||ext=="h"||ext=="c++"||ext=="h++"){
+	if (ext=="cpp"||ext=="hpp"||ext=="c"||ext=="h"||ext=="c++"||ext=="h++"||ext=="cc"||ext=="hh"){
 		return new CPPSyntaxHighlighter(buffer);
 	} else if (ext=="pyc"||ext=="pyw"||ext=="py"){
 		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);

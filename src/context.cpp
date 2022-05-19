@@ -188,14 +188,14 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	std::string modeStr = ConstructModeString(currentMode);
 
 	for (s32 x=0;x<w;++x){
-		ts.SetAt(x,h-1,TextCell(' ',defaultStyle));
+		ts.SetAt(x,h-1,TextCell(' ',barStyle));
 	}
 
 	std::string modeError = modes[currentMode]->GetErrorMessage();
 	if (entryMode==EntryMode::Command){
-		ts.RenderString(0,h-1,entryPrefix + entryString);
+		ts.RenderString(0,h-1,entryPrefix + entryString,barStyle);
 	} else if (entryMode==EntryMode::YesNo){
-		ts.RenderString(0,h-1,yesNoMessage + " Y/N ");
+		ts.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
 		if (!errorMessage.empty()){
 			ts.RenderString(0,h-1,errorMessage,errorStyle);
@@ -205,7 +205,7 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 			modeError.clear();
 		}
 
-		ts.RenderString(w-1-modeStr.size(),h-1,modeStr);
+		ts.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle|StyleFlag::Bold);
 	}
 }
 

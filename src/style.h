@@ -26,17 +26,21 @@ extern Color ColorForegroundLight;
 
 void SetColors();
 
-struct TextStyle {
-	Color fg;
-	Color bg;
-	u8 flags;
-};
-
 enum StyleFlag : u8 {
 	NoFlag = 0,
 	Bold = 1,
 	Underline = 2,
 	AlternateCharacterSet = 4
+};
+
+struct TextStyle {
+	Color fg;
+	Color bg;
+	u8 flags;
+
+	TextStyle operator|(u8 f){
+		return {fg,bg,(u8)(flags|f)};
+	}
 };
 
 extern TextStyle defaultStyle;
@@ -48,4 +52,6 @@ extern TextStyle errorStyle;
 extern TextStyle statementStyle;
 extern TextStyle typeStyle;
 extern TextStyle funcStyle;
+extern TextStyle commentStyle;
+extern TextStyle barStyle;
 

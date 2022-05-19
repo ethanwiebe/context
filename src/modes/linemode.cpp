@@ -57,7 +57,7 @@ TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	TextScreen textScreen;
 
-	s32 lineNumberWidth = std::max(numWidth(viewLine.index+h)+1,4);
+	s32 lineNumberWidth = std::max(numWidth(viewLine.index+h)+2,5);
 
 	screenWidth = w;
 	screenHeight = h;
@@ -86,13 +86,13 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 		i = GetIndexOfXPos(*it.it,screenSubline*lineWidth,lineWidth);
 
 	for (s32 y=0;y<innerHeight;y++){
-		if (it.index<0){
-			textScreen[y*w] = TextCell('~',blankLineStyle);
-			++it;
-			continue;
-		}
-		if (it.it==textBuffer->end()){
-			textScreen[y*w] = TextCell('~',blankLineStyle);
+		if (it.index<0||it.it==textBuffer->end()){
+			for (s32 n=0;n<lineNumberWidth;++n){
+				textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
+			}
+
+			textScreen[y*w+lineNumberWidth] = TextCell('~',blankLineStyle);
+			if (it.index<0) ++it;
 			continue;
 		}
 
@@ -108,7 +108,7 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 				lineNumber = it.index+1;
 				s32 x;
 				s32 powerOfTen;
-				for (s32 i=0;i<lineNumberWidth-1;i++){
+				for (s32 i=0;i<lineNumberWidth-2;i++){
 					x = lineNumberWidth-2-i;
 					powerOfTen = tenPow(i);
 					if (powerOfTen>lineNumber) break;

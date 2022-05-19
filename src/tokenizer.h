@@ -26,11 +26,10 @@ void ClipString(std::string_view&,std::string_view::iterator&);
 void SkipWhitespace(std::string_view&,std::string_view::iterator&);
 
 class TokenizerBase {
-protected:
+public:
 	std::string_view str;
 	std::string_view::iterator pos;
 
-public:
 	TokenizerBase(std::string_view sv) : str(sv){
 		pos = str.begin();
 	}
@@ -45,11 +44,6 @@ public:
 };
 
 class CommandTokenizer : public TokenizerBase {
-protected:
-	inline void TokenizeName();
-	inline void TokenizeNumber();
-	inline void TokenizeSingleQuoteString();
-	inline void TokenizeDoubleQuoteString();
 public:
 	CommandTokenizer(std::string_view sv) : TokenizerBase(sv){
 		SkipWhitespace(str,pos);
@@ -59,7 +53,6 @@ public:
 };
 
 class SyntaxTokenizer : public TokenizerBase {
-	
 protected:
 	bool unfinishedToken;
 	u8 unfinishedStringType;
@@ -70,12 +63,7 @@ protected:
 	char strEscape;
 
 	virtual void ChooseToken(Token&,char,char);
-	inline void TokenizeName();
-	inline void TokenizeNumber();
-	inline void TokenizeString1();
-	inline void TokenizeString2();
-	inline void TokenizeSingleLineComment();
-	inline void TokenizeMultiLineComment();
+	void SetUnfinishedToken(TokenType,u8=0);
 public:
 	SyntaxTokenizer(std::string_view sv) : TokenizerBase(sv){
 		SkipWhitespace(str,pos);
@@ -107,7 +95,6 @@ class CPPTokenizer : public SyntaxTokenizer {
 
 protected:
 	void ChooseToken(Token&,char,char) override;
-	inline void TokenizeDirective();
 public:
 	CPPTokenizer(std::string_view sv) : SyntaxTokenizer(sv){}
 };

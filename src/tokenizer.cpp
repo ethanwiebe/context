@@ -49,20 +49,20 @@ bool SVPosStartsWith(std::string_view str,std::string_view::iterator pos,std::st
 	return false;
 }
 
-inline void CommandTokenizer::TokenizeNumber(){
-	while (*pos>='0'&&*pos<='9') ++pos;
+inline void TokenizeNumber(TokenizerBase& t){
+	while ((*t.pos>='0'&&*t.pos<='9')||*t.pos=='.') ++t.pos;
 }
 
-inline void CommandTokenizer::TokenizeName(){
-	while (IsAlphabet(*pos)||(*pos>='0'&&*pos<='9')||*pos=='_'||*pos=='.'||*pos=='/'||*pos=='-') ++pos;
+inline void TokenizeName(TokenizerBase& t){
+	while (IsAlphabet(*t.pos)||(*t.pos>='0'&&*t.pos<='9')||*t.pos=='_'||*t.pos=='.'||*t.pos=='/'||*t.pos=='-') ++t.pos;
 }
 
-inline void CommandTokenizer::TokenizeSingleQuoteString(){
-	while (pos!=str.end()&&*pos!='\'') ++pos;
+inline void TokenizeSingleQuoteString(TokenizerBase& t){
+	while (t.pos!=t.str.end()&&*t.pos!='\'') ++t.pos;
 }
 
-inline void CommandTokenizer::TokenizeDoubleQuoteString(){
-	while (pos!=str.end()&&*pos!='"') ++pos;
+inline void TokenizeDoubleQuoteString(TokenizerBase& t){
+	while (t.pos!=t.str.end()&&*t.pos!='"') ++t.pos;
 }
 
 Token CommandTokenizer::EmitToken(){
@@ -71,18 +71,18 @@ Token CommandTokenizer::EmitToken(){
 
 	if (initialC>='0'&&initialC<='9'){
 		t.type = TokenType::Number;
-		TokenizeNumber();
+		TokenizeNumber(*this);
 	} else if (IsAlphabet(initialC)||initialC=='_'||initialC=='.'||initialC=='/'){
 		t.type = TokenType::Name;
-		TokenizeName();
+		TokenizeName(*this);
 	} else if (initialC=='\''){
 		t.type = TokenType::String;
 		ClipString(str,++pos);
-		TokenizeSingleQuoteString();
+		TokenizeSingleQuoteString(*this);
 	} else if (initialC=='"'){
 		t.type = TokenType::String;
 		ClipString(str,++pos);
-		TokenizeDoubleQuoteString();
+		TokenizeDoubleQuoteString(*this);
 	} else {
 		t.type = TokenType::SpecialChar;
 		++pos; //tokenize one char
@@ -97,89 +97,60 @@ Token CommandTokenizer::EmitToken(){
 	return t;
 }
 
-
-inline void SyntaxTokenizer::TokenizeName(){
-	while (IsAlphabet(*pos)||(*pos>='0'&&*pos<='9')||*pos=='_') ++pos;
+inline void TokenizeSyntaxName(TokenizerBase& t){
+	while (IsAlphabet(*t.pos)||(*t.pos>='0'&&*t.pos<='9')||*t.pos=='_') ++t.pos;
 }
 
-inline void SyntaxTokenizer::TokenizeNumber(){
-	while ((*pos>='0'&&*pos<='9')||*pos=='.') ++pos;
-}
-
-inline void SyntaxTokenizer::TokenizeString1(){
-	while (pos!=str.end()&&!SVPosStartsWith(str,pos,strDelim1)){
-		if (*pos==strEscape){
-			++pos;
-			if (pos==str.end()) break;
+inline bool TokenizeUntilDelimiter(TokenizerBase& t,std::string_view delim,char escape='\0'){
+	while (!SVPosStartsWith(t.str,t.pos,delim)){
+		if (escape&&*t.pos==escape){
+			++t.pos;
 		}
-		++pos;
+		if (t.pos==t.str.end()) return false;
+		++t.pos;
 	}
-	if (pos==str.end()){
-		unfinishedToken = true;
-		unfinishedTokenType = TokenType::String;
-		unfinishedStringType = 1;
-		return;
-	}
-	size_t count = strDelim1.size();
-	while (pos!=str.end()&&count--) ++pos;
+
+	size_t count = delim.size();
+	while (t.pos!=t.str.end()&&count--) ++t.pos;
+
+	return true;
 }
 
-inline void SyntaxTokenizer::TokenizeString2(){
-	while (pos!=str.end()&&!SVPosStartsWith(str,pos,strDelim2)){
-		if (*pos==strEscape){
-			++pos;
-			if (pos==str.end()) break;
-		}
-		++pos;
-	}
-	if (pos==str.end()){
-		unfinishedToken = true;
-		unfinishedTokenType = TokenType::String;
-		unfinishedStringType = 2;
-		return;
-	}
-	size_t count = strDelim2.size();
-	while (pos!=str.end()&&count--) ++pos;
-
+inline void TokenizeSingleLineComment(TokenizerBase& t){
+	while (t.pos!=t.str.end()&&*t.pos!='\n') ++t.pos;
 }
 
-inline void SyntaxTokenizer::TokenizeSingleLineComment(){
-	while (pos!=str.end()&&*pos!='\n') ++pos;
-}
-
-inline void SyntaxTokenizer::TokenizeMultiLineComment(){
-	while (pos!=str.end()&&!SVPosStartsWith(str,pos,multiLineCommentEnd)) ++pos;
-	if (pos==str.end()){
-		unfinishedToken = true;
-		unfinishedTokenType = TokenType::Comment;
-		return;
-	}
-	size_t count = multiLineCommentEnd.size();
-	while (pos!=str.end()&&count--) ++pos;
+void SyntaxTokenizer::SetUnfinishedToken(TokenType type,u8 str){
+	unfinishedToken = true;
+	unfinishedTokenType = type;
+	unfinishedStringType = str;
 }
 
 inline void SyntaxTokenizer::ChooseToken(Token& t,char initialC,char nextC){
 	if ((initialC>='0'&&initialC<='9')||(initialC=='.'&&nextC>='0'&&nextC<='9')){
 		t.type = TokenType::Number;
-		TokenizeNumber();
+		TokenizeNumber(*this);
 	} else if (IsAlphabet(initialC)||initialC=='_'){
 		t.type = TokenType::Name;
-		TokenizeName();
+		TokenizeSyntaxName(*this);
 	} else if (SVPosStartsWith(str,pos,strDelim1)){
 		t.type = TokenType::String;
 		++pos;
-		TokenizeString1();
+		if (!TokenizeUntilDelimiter(*this,strDelim1,strEscape))
+			SetUnfinishedToken(TokenType::String,1);
 	} else if (SVPosStartsWith(str,pos,strDelim2)){
 		t.type = TokenType::String;
 		++pos;
-		TokenizeString2();
+		if (!TokenizeUntilDelimiter(*this,strDelim2,strEscape))
+			SetUnfinishedToken(TokenType::String,2);
 	} else if (SVPosStartsWith(str,pos,comment)){
 		t.type = TokenType::Comment;
-		TokenizeSingleLineComment();
+		TokenizeSingleLineComment(*this);
 	} else if (SVPosStartsWith(str,pos,multiLineCommentStart)){
 		t.type = TokenType::Comment;
 		++pos;
-		TokenizeMultiLineComment();
+		if (!TokenizeUntilDelimiter(*this,multiLineCommentEnd))
+			SetUnfinishedToken(TokenType::Comment);
 	} else {
 		t.type = TokenType::SpecialChar;
 		++pos; //tokenize one char
@@ -199,15 +170,19 @@ Token SyntaxTokenizer::EmitToken(){
 		unfinishedToken = false;
 		if (unfinishedTokenType==TokenType::String){
 			t.type = TokenType::String;
-			if (unfinishedStringType==1)
-				TokenizeString1();
-			else if (unfinishedStringType==2)
-				TokenizeString2();
-			else
+			if (unfinishedStringType==1){
+				if (!TokenizeUntilDelimiter(*this,strDelim1,strEscape))
+					SetUnfinishedToken(TokenType::String,1);
+			} else if (unfinishedStringType==2){
+				if (!TokenizeUntilDelimiter(*this,strDelim2,strEscape))
+					SetUnfinishedToken(TokenType::String,2);
+			} else {
 				assert(false);
+			}
 		} else if (unfinishedTokenType==TokenType::Comment){
 			t.type = TokenType::Comment;
-			TokenizeMultiLineComment();
+			if (!TokenizeUntilDelimiter(*this,multiLineCommentEnd))
+				SetUnfinishedToken(TokenType::Comment);
 		}
 
 	}
@@ -217,35 +192,50 @@ Token SyntaxTokenizer::EmitToken(){
 	return t;
 }
 
-void CPPTokenizer::TokenizeDirective(){
-	while (pos!=str.end()&&*pos!='\n') ++pos;
+inline void TokenizeDirective(TokenizerBase& t){
+	while (t.pos!=t.str.end()&&*t.pos!='\n') ++t.pos;
+}
+
+inline void TokenizeHexNumber(TokenizerBase& t){
+	while ((*t.pos>='0'&&*t.pos<='9')||(*t.pos>='a'&&*t.pos<='f')||(*t.pos>='A'&&*t.pos<='F')) ++t.pos;
 }
 
 void CPPTokenizer::ChooseToken(Token& t,char initialC,char nextC){
 	if ((initialC>='0'&&initialC<='9')||(initialC=='.'&&nextC>='0'&&nextC<='9')){
 		t.type = TokenType::Number;
-		TokenizeNumber();
+		if (initialC=='0'&&nextC=='x'){
+			++pos;++pos;
+			TokenizeHexNumber(*this);
+		} else {
+			if (initialC=='0'&&(nextC=='b'||nextC=='o')) {++pos;++pos;}
+			TokenizeNumber(*this);
+		}
 	} else if (IsAlphabet(initialC)||initialC=='_'){
 		t.type = TokenType::Name;
-		TokenizeName();
+		TokenizeSyntaxName(*this);
 	} else if (SVPosStartsWith(str,pos,strDelim1)){
 		t.type = TokenType::String;
 		++pos;
-		TokenizeString1();
+		if (!TokenizeUntilDelimiter(*this,strDelim1,strEscape))
+			SetUnfinishedToken(TokenType::String,1);
 	} else if (SVPosStartsWith(str,pos,strDelim2)){
 		t.type = TokenType::String;
 		++pos;
-		TokenizeString2();
+		if (!TokenizeUntilDelimiter(*this,strDelim2,strEscape))
+			SetUnfinishedToken(TokenType::String,2);
+
 	} else if (SVPosStartsWith(str,pos,comment)){
 		t.type = TokenType::Comment;
-		TokenizeSingleLineComment();
+		TokenizeSingleLineComment(*this);
 	} else if (SVPosStartsWith(str,pos,multiLineCommentStart)){
 		t.type = TokenType::Comment;
 		++pos;
-		TokenizeMultiLineComment();
+
+		if (!TokenizeUntilDelimiter(*this,multiLineCommentEnd))
+			SetUnfinishedToken(TokenType::Comment);
 	} else if (initialC=='#'&&IsAlphabet(nextC)){
 		t.type = TokenType::Directive;
-		TokenizeDirective();
+		TokenizeDirective(*this);
 	} else {
 		t.type = TokenType::SpecialChar;
 		++pos; //tokenize one char
