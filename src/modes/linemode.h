@@ -92,6 +92,7 @@ public:
 	LineModeBase(ContextEditor* ctx);
 	void InitIterators();
 	inline void CalculateScreenData();
+	inline void SetColorLine();
 
 	TextScreen GetTextScreen(s32,s32) override;
 	TextStyle GetTextStyleAt(ColorIterator,s32);

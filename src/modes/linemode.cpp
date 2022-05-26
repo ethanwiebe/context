@@ -39,6 +39,7 @@ void LineModeBase::UpdateHighlighter(){
 		return;
 
 	syntaxHighlighter->FillColorBuffer(colorBuffer);
+	SetColorLine();
 }
 
 TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
@@ -306,12 +307,16 @@ void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,s
 	}
 }
 
+inline void LineModeBase::SetColorLine(){
+	if (viewLine.index<0) colorLine = colorBuffer.begin();
+	else colorLine = colorBuffer.begin()+viewLine.index;
+}
+
 inline void LineModeBase::CalculateScreenData(){
 	lineNumberWidth = std::max(numWidth(std::max(viewLine.index+screenHeight,0))+2,5);
 	lineWidth = screenWidth-lineNumberWidth;
 
-	if (viewLine.index<0) colorLine = colorBuffer.begin();
-	else colorLine = colorBuffer.begin()+viewLine.index;
+	SetColorLine();
 }
 
 void LineModeBase::MoveScreenDown(s32 num,bool constrain){
