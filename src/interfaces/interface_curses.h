@@ -33,7 +33,6 @@ public:
 	s32 GetWidth() override;
 
 private:
-	void InitColors();
 	void InitColorPairs();
 	void ListColorPairs();
 	inline s32 ColorsToPair(s32,s32) const;

@@ -70,8 +70,6 @@ CursesInterface::CursesInterface(){
 	
 	curs_set(0); //make default cursor invisible
 
-
-	InitColors();
 	InitColorPairs();
 
 	colorDefinitions = {};
@@ -93,36 +91,9 @@ CursesInterface::~CursesInterface(){
 	delete[] charArray;
 }
 
-void CursesInterface::InitColors(){
-	/*definedColors = 8;
-
-	init_color(definedColors++,300,300,300); //bright black (gray)
-	init_color(definedColors++,1000,    0,    0); //bright red
-	init_color(definedColors++,0,    1000,    0); //bright green
-	init_color(definedColors++,1000, 1000,    0); //bright yellow
-	init_color(definedColors++,   0,    0, 1000); //bright blue
-	init_color(definedColors++,1000,    0, 1000); //bright magenta
-	init_color(definedColors++,   0, 1000, 1000); //bright cyan
-	init_color(definedColors++,  1000, 1000, 1000); //bright white
-*/
-}
-
 void CursesInterface::InitColorPairs(){
 	reset_color_pairs();
-/*	definedPairs = 0;
-	
-	s32 colorN,colorFore,colorBack;
-
-	for (s32 i=0;i<definedColors*definedColors;i++){
-		colorFore = i%definedColors;
-		colorBack = i/definedColors;
-		
-		init_pair(i,colorFore,colorBack);
-		++definedPairs;
-	}
-*/
 };
-
 
 void CursesInterface::ListColorPairs(){
 	s16 fg,bg;
@@ -231,7 +202,6 @@ void CursesInterface::RenderScreen(const TextScreen& textScreen){
 	}
 
 }
-
 
 inline void NormalizeAlphabetKeys(s32& key,s32& mod){
 	// alt letters
