@@ -10,4 +10,5 @@ namespace Config {
 	const bool cursorLock = false;
 	const s32 cursorMoveHeight = 3;
 	const s32 multiAmount = 4;
+	const s32 pageSize = 50;
 };

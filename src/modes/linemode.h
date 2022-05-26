@@ -76,6 +76,9 @@ protected:
 	s32 screenSubline;
 	std::vector<VisualCursor> cursors;
 	s32 lineWidth,innerHeight;
+	s32 lineNumberWidth;
+
+	bool showDebugInfo;
 
 	UndoStack<BufferAction> undoStack;
 	BufferAction currentAction;
@@ -88,7 +91,7 @@ protected:
 public:
 	LineModeBase(ContextEditor* ctx);
 	void InitIterators();
-	void CalculateColorLine();
+	inline void CalculateScreenData();
 
 	TextScreen GetTextScreen(s32,s32) override;
 	TextStyle GetTextStyleAt(ColorIterator,s32);

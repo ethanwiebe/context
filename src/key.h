@@ -101,7 +101,9 @@ enum class Action : u16 {
 	NextMode,
 	PreviousMode,
 	SaveMode,
-	SaveAsMode
+	SaveAsMode,
+
+	DebugAction
 };
 
 struct TextAction {

@@ -27,8 +27,11 @@ void SetKeybinds(){
 	ADD_BIND(Action::MoveDownLine,        'j',                 KeyModifier::Alt);
 	ADD_BIND(Action::MoveDownMulti,       'j',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
-	ADD_BIND(Action::MoveScreenUpLine,    KeyEnum::PageUp,     KeyModifier::None);
-	ADD_BIND(Action::MoveScreenDownLine,  KeyEnum::PageDown,   KeyModifier::None);
+	ADD_BIND(Action::MoveScreenUpLine,    KeyEnum::PageUp,     KeyModifier::Shift);
+	ADD_BIND(Action::MoveScreenDownLine,  KeyEnum::PageDown,   KeyModifier::Shift);
+
+	ADD_BIND(Action::MoveUpPage,          KeyEnum::PageUp,     KeyModifier::None);
+	ADD_BIND(Action::MoveDownPage,        KeyEnum::PageDown,   KeyModifier::None);
 
 	ADD_BIND(Action::InsertLine,          KeyEnum::Enter,      KeyModifier::None);
 	ADD_BIND(Action::InsertLine,          KeyEnum::Enter,      KeyModifier::Shift);
@@ -67,6 +70,8 @@ void SetKeybinds(){
 	ADD_BIND(Action::OpenMode,            'e',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
 
+	ADD_BIND(Action::DebugAction,            KeyEnum::F11,        KeyModifier::Ctrl);
+
 	for (const auto& [action, keybindlist] : gKeyBindings)
 		for (const auto& keybind : keybindlist)
 			gBoundKeys[keybind] = action;
@@ -103,6 +108,10 @@ TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
 			case Action::MoveUpMulti:
 			case Action::MoveDownMulti:
 				textAction.num = Config::multiAmount;
+				break;
+			case Action::MoveUpPage:
+			case Action::MoveDownPage:
+				textAction.num = Config::pageSize;
 				break;
 
 			default:

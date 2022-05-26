@@ -30,6 +30,8 @@ LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0),
 	undoStack = {};
 	selecting = false;
 
+	showDebugInfo = false;
+
 }
 
 void LineModeBase::UpdateHighlighter(){
@@ -37,7 +39,6 @@ void LineModeBase::UpdateHighlighter(){
 		return;
 
 	syntaxHighlighter->FillColorBuffer(colorBuffer);
-	CalculateColorLine();
 }
 
 TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
@@ -57,20 +58,18 @@ TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
 TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 	TextScreen textScreen;
 
-	s32 lineNumberWidth = std::max(numWidth(viewLine.index+h)+2,5);
 
 	screenWidth = w;
 	screenHeight = h;
-	lineWidth = screenWidth-lineNumberWidth;
+	textScreen.SetSize(w,h);
 	innerHeight = screenHeight - 1;
 
-	textScreen.SetSize(w,h);
-	
+	MoveScreenToVisualCursor(cursors.front());
+
 	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',defaultStyle));
 
 	auto it = viewLine;
 	auto colorLineIt = colorLine;
-	auto colorCharIt = colorLineIt->begin();
 
 	s32 lineLen,lineStart = 0;
 	s32 lineNumber;
@@ -92,7 +91,9 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			}
 
 			textScreen[y*w+lineNumberWidth] = TextCell('~',blankLineStyle);
-			if (it.index<0) ++it;
+			if (it.index<0){
+				++it;
+			}
 			continue;
 		}
 
@@ -162,7 +163,6 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 		i = 0;
 		++it;
 		++colorLineIt;
-		colorCharIt = colorLineIt->begin();
 	}
 
 	s32 loc;
@@ -172,20 +172,23 @@ TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
 			textScreen[loc].style = cursorStyle;
 	}
 	
-	std::string locString = "";
+	if (showDebugInfo){
+		std::string locString = "";
 
-	locString += "CL: " + std::to_string(cursors[0].cursor.line.index);
-	locString += ", CVL: " + std::to_string(cursors[0].visualLine);
-	locString += ", CSL: " + std::to_string(cursors[0].subline);
-	locString += ", CC: " + std::to_string(cursors[0].cursor.column);
-	textScreen.RenderString(w-locString.size()-1,h-3,locString);
-
-	locString = "";
-	locString += "SL: " + std::to_string(viewLine.index);
-	locString += ", SSL: " + std::to_string(screenSubline);
-	locString += ", UH: " + std::to_string(undoStack.UndoHeight());
-	locString += ", RH: " + std::to_string(undoStack.RedoHeight());
-	textScreen.RenderString(w-locString.size()-1,h-2,locString);
+		locString += "CL: " + std::to_string(cursors[0].cursor.line.index);
+		locString += ", CVL: " + std::to_string(cursors[0].visualLine);
+		locString += ", CSL: " + std::to_string(cursors[0].subline);
+		locString += ", CC: " + std::to_string(cursors[0].cursor.column);
+		locString += ", CX: " + std::to_string(GetXPosOfIndex(*cursors[0].cursor.line,cursors[0].cursor.column,lineWidth));
+		textScreen.RenderString(w-locString.size()-1,h-3,locString);
+	
+		locString = "";
+		locString += "SL: " + std::to_string(viewLine.index);
+		locString += ", SSL: " + std::to_string(screenSubline);
+		locString += ", UH: " + std::to_string(undoStack.UndoHeight());
+		locString += ", RH: " + std::to_string(undoStack.RedoHeight());
+		textScreen.RenderString(w-locString.size()-1,h-2,locString);
+	}
 
 	/*TUITextBox testBox{"Line Test\nNew Line\n\nLine",3,-5,20,3};
 	testBox.SetTitle("open");
@@ -303,22 +306,26 @@ void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,s
 	}
 }
 
-void LineModeBase::CalculateColorLine(){
-	colorLine = colorBuffer.begin()+viewLine.index;
+inline void LineModeBase::CalculateScreenData(){
+	lineNumberWidth = std::max(numWidth(std::max(viewLine.index+screenHeight,0))+2,5);
+	lineWidth = screenWidth-lineNumberWidth;
+
+	if (viewLine.index<0) colorLine = colorBuffer.begin();
+	else colorLine = colorBuffer.begin()+viewLine.index;
 }
 
 void LineModeBase::MoveScreenDown(s32 num,bool constrain){
 	s32 dummy;
 	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,textBuffer->size());
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
-	CalculateColorLine();
+	CalculateScreenData();
 }
 
 void LineModeBase::MoveScreenUp(s32 num,bool constrain){
 	s32 dummy;
 	UpdateSublineUpwards(viewLine,screenSubline,dummy,lineWidth,num,constrain);
 	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
-	CalculateColorLine();
+	CalculateScreenData();
 }
 
 void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor){
@@ -350,19 +357,22 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	
 
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
-	CalculateColorLine();
+	CalculateScreenData();
+
 }
 
 void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
 	UpdateSublineDownwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true,textBuffer->size());
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
-	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
+	s32 maxLine = cursor.CurrentLineLen();
+	SetVisualCursorColumn(cursor,std::min(newCursorX,maxLine));
 }
 
 void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 	UpdateSublineUpwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true);
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
-	SetVisualCursorColumn(cursor,std::min(newCursorX,cursor.CurrentLineLen()));
+	s32 maxLine = cursor.CurrentLineLen();
+	SetVisualCursorColumn(cursor,std::min(newCursorX,maxLine));
 }
 
 void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
@@ -436,7 +446,7 @@ void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
 void LineModeBase::SetVisualCursorColumn(VisualCursor& cursor,s32 col){
 	cursor.cursor.column = col;
 	cursor.subline = GetXPosOfIndex(*cursor.cursor.line,col,lineWidth)/lineWidth;
-	MoveScreenToVisualCursor(cursor);
+	//MoveScreenToVisualCursor(cursor);
 }
 
 void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){

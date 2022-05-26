@@ -183,6 +183,10 @@ Token SyntaxTokenizer::EmitToken(){
 			t.type = TokenType::Comment;
 			if (!TokenizeUntilDelimiter(*this,multiLineCommentEnd))
 				SetUnfinishedToken(TokenType::Comment);
+		} else if (unfinishedTokenType==TokenType::Directive){
+			t.type = TokenType::Directive;
+			if (TokenizeUntilDelimiter(*this,"\\"))
+				SetUnfinishedToken(TokenType::Directive);
 		}
 
 	}
@@ -235,7 +239,10 @@ void CPPTokenizer::ChooseToken(Token& t,char initialC,char nextC){
 			SetUnfinishedToken(TokenType::Comment);
 	} else if (initialC=='#'&&IsAlphabet(nextC)){
 		t.type = TokenType::Directive;
-		TokenizeDirective(*this);
+		if (TokenizeUntilDelimiter(*this,"\\")){
+			SetUnfinishedToken(TokenType::Directive);
+		}
+//		TokenizeDirective(*this);
 	} else {
 		t.type = TokenType::SpecialChar;
 		++pos; //tokenize one char

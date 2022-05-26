@@ -96,7 +96,7 @@ s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width){
 	for (s32 i=0;i<x;){
 		UpdateXI(str,i,index,width);
 
-		if (i>strLen) break;
+		if (index>strLen) break;
 	}
 
 	return index;

@@ -13,6 +13,12 @@ void EditMode::ProcessTextAction(TextAction a){
 		case Action::MoveScreenDownLine:
 			MoveScreenDown(1);
 			break;
+		case Action::MoveUpPage:
+			MoveVisualCursorUp(cursor,a.num);
+			break;
+		case Action::MoveDownPage:
+			MoveVisualCursorDown(cursor,a.num);
+			break;
 		case Action::MoveUpLine:
 			MoveVisualCursorUp(cursor,a.num);
 			break;
@@ -113,6 +119,9 @@ void EditMode::ProcessTextAction(TextAction a){
 		case Action::ToggleSelect:
 			if (selecting) StopSelecting();
 			else StartSelecting(cursor);
+			break;
+		case Action::DebugAction:
+			showDebugInfo = !showDebugInfo;
 			break;
 
 		default:
