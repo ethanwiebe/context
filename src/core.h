@@ -26,5 +26,5 @@ using Handle = std::unique_ptr<T>;
 
 template <typename T,typename ...Args>
 constexpr Handle<T> MakeHandle(Args&& ...args){
-	return std::make_unique<T>(std::forward<Args>(args)...);;
+	return std::make_unique<T>(std::forward<Args>(args)...);
 }
