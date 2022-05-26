@@ -58,6 +58,13 @@
 				"-Bsymbolic",
 				"-Wl,--exclude-libs,ALL"
 			]
+		},
+		"install":{
+			"compileCommand":"",
+			"linkCommand":"",
+			"preCommands":[
+				"cp bin/context /usr/local/bin/context"
+			]
 		}
 	}
 }
