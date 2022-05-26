@@ -109,7 +109,7 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 			"int16_t","int32_t","int64_t","uint8_t","uint16_t",
 			"uint32_t","uint64_t","u8","u16","u32","u64","s8",
 			"s16","s32","s64","f32","f64","unsigned","friend",
-			"nullptr_t","short"},typeStyle);
+			"nullptr_t","short","override"},typeStyle);
 	AddKeywords({"nullptr","NULL","true","false"},numberStyle);
 }
 
