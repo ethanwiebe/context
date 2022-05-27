@@ -103,7 +103,7 @@ public:
 
 	void GetSyntaxHighlighter(std::string_view);
 	
-	bool HasSavePath() override;
+	bool HasPath() override;
 
 	void MoveScreenDown(s32,bool = true);
 	void MoveScreenUp(s32,bool = false);

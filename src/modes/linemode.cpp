@@ -253,7 +253,7 @@ bool LineModeBase::SaveAction(const OSInterface& os){
 	return true;
 }
 
-bool LineModeBase::HasSavePath(){
+bool LineModeBase::HasPath(){
 	return !bufferPath.empty();
 }
 

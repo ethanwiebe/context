@@ -243,7 +243,7 @@ void ContextEditor::ForceCloseMode(size_t index){
 }
 
 void ContextEditor::SaveMode(size_t index){
-	if (!modes[index]->HasSavePath()||modes[index]->Readonly()){
+	if (!modes[index]->HasPath()||modes[index]->Readonly()){
 		entryMode = EntryMode::Command;
 		entryString = "saveas ";
 		return;
