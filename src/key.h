@@ -98,6 +98,8 @@ enum class Action : u16 {
 
 	Escape,
 
+	Entry,
+
 	NewMode,
 	OpenMode,
 	CloseMode,
@@ -121,4 +123,3 @@ struct TextAction {
 
 s32 CharLower(s32);
 s32 IsPrintable(s32,s32);
-bool ActionIsCommand(Action);

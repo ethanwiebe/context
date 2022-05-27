@@ -21,7 +21,7 @@ enum class EntryMode {
 };
 
 class ContextEditor {
-	const std::string entryPrefix = "ctx> ";
+	const std::string entryPrefix = "> ";
 
 	std::vector<Handle<ModeBase>> modes;
 	Handle<TextInterfaceBase> interface;
@@ -49,7 +49,7 @@ class ContextEditor {
 	std::string ConstructModeString(size_t);
 	void DrawStatusBar(TextScreen&);
 
-	void ProcessKeyboardEvent(Action);
+	bool ProcessKeyboardEvent(TextAction);
 	void ProcessCommandEntry(TextAction);
 	void ProcessYesNoEntry(TextAction);
 	void Loop();

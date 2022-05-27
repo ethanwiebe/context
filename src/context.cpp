@@ -46,42 +46,45 @@ void ContextEditor::Loop(){
 				ProcessCommandEntry(textAction);
 			} else if (entryMode==EntryMode::YesNo){
 				ProcessYesNoEntry(textAction);
-			} else if (ActionIsCommand(textAction.action)){
-				ProcessKeyboardEvent(textAction.action);
 			} else {
-				modes[currentMode]->ProcessTextAction(textAction);
+				if (!ProcessKeyboardEvent(textAction))
+					modes[currentMode]->ProcessTextAction(textAction);
 			}
 
 		}
 	}
 }
 
-void ContextEditor::ProcessKeyboardEvent(Action action){
-	switch (action){
+bool ContextEditor::ProcessKeyboardEvent(TextAction action){
+	switch (action.action){
 		case Action::CloseMode:
 			CloseMode(currentMode);
-			break;
+			return true;
 		case Action::SaveMode:
 			SaveMode(currentMode);
-			break;
+			return true;
 		case Action::NextMode:
 			SwitchMode(currentMode+1);
-			break;
+			return true;
 		case Action::PreviousMode:
 			SwitchMode(currentMode-1);
-			break;
+			return true;
 		case Action::NewMode:
 			NewMode();
 			SwitchMode(modes.size()-1);
-			break;
+			return true;
+		case Action::Entry:
+			BeginCommand();
+			return true;
 		case Action::OpenMode:
 			BeginCommand();
 			entryString = "open ";
-			break;
+			return true;
 
 		default:
 			break;
 	}
+	return false;
 }
 
 void ContextEditor::ProcessCommandEntry(TextAction textAction){
@@ -159,6 +162,9 @@ void ContextEditor::ProcessCommand(std::string_view sv){
 		} else if (tokens[0].type==TokenType::Name&&tokens[0].token=="saveas"){
 			std::string_view path = tokens[1].token;
 			SaveAsMode(path,currentMode);
+		} else if (tokens[0].type==TokenType::Name&&tokens[0].token=="setpath"){
+			std::string_view path = tokens[1].token;
+			SetPathMode(path,currentMode);
 		}
 	}
 }

@@ -52,7 +52,6 @@ void SetKeybinds(){
 	ADD_BIND(Action::DeleteCurrentChar,   KeyEnum::Delete,     KeyModifier::None);
 	ADD_BIND(Action::DeleteCurrentChar,   'i',                 KeyModifier::Alt);
 
-	ADD_BIND(Action::DeletePreviousMulti, 'h',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::DeletePreviousMulti, 'u',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::DeleteCurrentMulti,  KeyEnum::Delete,     KeyModifier::Ctrl);
@@ -69,12 +68,14 @@ void SetKeybinds(){
 	ADD_BIND(Action::ToggleSelect,        's',                 KeyModifier::Alt);
 
 	ADD_BIND(Action::Escape,              KeyEnum::Escape,     KeyModifier::None);
-
+	
+	ADD_BIND(Action::Entry,               'e',                 KeyModifier::Ctrl);
+	
 	ADD_BIND(Action::CloseMode,           'q',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::NewMode,             'n',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::NextMode,            KeyEnum::PageUp,     KeyModifier::Ctrl);
 	ADD_BIND(Action::PreviousMode,        KeyEnum::PageDown,   KeyModifier::Ctrl);
-	ADD_BIND(Action::OpenMode,            'e',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::OpenMode,            'o',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
 
 	ADD_BIND(Action::DebugAction,            KeyEnum::F11,        KeyModifier::Ctrl);
