@@ -285,7 +285,10 @@ inline void NormalizePageKeys(s32& key,s32& mod){
 }
 
 inline void NormalizeBackspaceKey(s32& key,s32& mod){
-	
+	if (key==8){
+		key = KeyEnum::Backspace;
+		mod |= KeyModifier::Ctrl;
+	}
 }
 
 inline void NormalizeHomeEndKeys(s32& key,s32& mod){

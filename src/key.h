@@ -83,6 +83,9 @@ enum class Action : u16 {
 	DeletePreviousChar,
 	DeleteCurrentChar,
 
+	DeletePreviousMulti,
+	DeleteCurrentMulti,
+
 	DeleteLine,
 
 	UndoAction,

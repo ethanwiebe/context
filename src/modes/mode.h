@@ -28,7 +28,7 @@ public:
 	}
 
 	virtual void ProcessTextAction(TextAction) = 0;
-	virtual TextScreen GetTextScreen(s32,s32) = 0;
+	virtual TextScreen& GetTextScreen(s32,s32) = 0;
 
 	virtual bool SaveAction(const OSInterface&){return true;}
 	virtual bool OpenAction(const OSInterface&,std::string_view){return true;}
@@ -46,6 +46,7 @@ public:
 
 	virtual std::string_view GetBufferName(){return {};}
 	virtual std::string_view GetModeName() = 0;
+	virtual std::string_view GetStatusBarText(){return {};}
 
 	virtual ~ModeBase() = default;
 };

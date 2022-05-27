@@ -84,10 +84,7 @@ typedef IndexedIterator<LineList> LineIndexedIterator;
 class TextBuffer {
 	LineList lines;
 public:
-//	TextBuffer();
 	
-	LineIterator GetLineIterator(size_t) noexcept;
-
 	void SetLine(LineIterator,const std::string&);
 	void InsertLine(LineIterator,const std::string&); //increases length of line list by one
 	void InsertLineAfter(LineIterator,const std::string&);
@@ -111,6 +108,8 @@ public:
 	inline bool empty() const noexcept {
 		return lines.empty();
 	}
+
+	s32 GetIndentationAt(LineIterator,s32=4);
 };
 
 void UpdateXI(const std::string&, s32&, s32&, s32);

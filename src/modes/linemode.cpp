@@ -32,6 +32,9 @@ LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0),
 
 	showDebugInfo = false;
 
+	screenWidth = -1;
+	screenHeight = -1;
+
 }
 
 void LineModeBase::UpdateHighlighter(){
@@ -56,14 +59,16 @@ TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
 	return defaultStyle;
 }
 
-TextScreen LineModeBase::GetTextScreen(s32 w,s32 h){
-	TextScreen textScreen;
+TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
+	if (w!=screenWidth||h!=screenHeight){
+		screenWidth = w;
+		screenHeight = h;
+		innerHeight = screenHeight - 1;
+	
+		textScreen.SetSize(w,h);
 
-
-	screenWidth = w;
-	screenHeight = h;
-	textScreen.SetSize(w,h);
-	innerHeight = screenHeight - 1;
+		CalculateScreenData();
+	}
 
 	MoveScreenToVisualCursor(cursors.front());
 
@@ -205,6 +210,14 @@ std::string_view LineModeBase::GetBufferName(){
 	result.remove_prefix(index);
 
 	return result;
+}
+
+std::string_view LineModeBase::GetStatusBarText(){
+	cursorPosText = " ";
+	cursorPosText += std::to_string(cursors[0].cursor.line.index+1);
+	cursorPosText += ", ";
+	cursorPosText += std::to_string(cursors[0].cursor.column+1);
+	return cursorPosText;
 }
 
 bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
@@ -451,7 +464,6 @@ void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
 void LineModeBase::SetVisualCursorColumn(VisualCursor& cursor,s32 col){
 	cursor.cursor.column = col;
 	cursor.subline = GetXPosOfIndex(*cursor.cursor.line,col,lineWidth)/lineWidth;
-	//MoveScreenToVisualCursor(cursor);
 }
 
 void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){

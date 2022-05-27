@@ -33,9 +33,8 @@ ContextEditor::ContextEditor(const std::string& file){
 void ContextEditor::Loop(){
 	KeyboardEvent* event;
 	TextAction textAction;
-	TextScreen textScreen;
 	while (!quit){
-		textScreen = modes[currentMode]->GetTextScreen(interface->GetWidth(),interface->GetHeight());
+		TextScreen& textScreen = modes[currentMode]->GetTextScreen(interface->GetWidth(),interface->GetHeight());
 		DrawStatusBar(textScreen);
 
 		interface->RenderScreen(textScreen);
@@ -186,6 +185,8 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	h = ts.GetHeight();
 
 	std::string modeStr = ConstructModeString(currentMode);
+	std::string modeInfo = {};
+	modeInfo += modes[currentMode]->GetStatusBarText();
 
 	for (s32 x=0;x<w;++x){
 		ts.SetAt(x,h-1,TextCell(' ',barStyle));
@@ -197,6 +198,9 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	} else if (entryMode==EntryMode::YesNo){
 		ts.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
+		if (!modeInfo.empty())
+			ts.RenderString(0,h-1,modeInfo,barStyle);
+
 		if (!errorMessage.empty()){
 			ts.RenderString(0,h-1,errorMessage,errorStyle);
 			errorMessage.clear();
@@ -205,7 +209,7 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 			modeError.clear();
 		}
 
-		ts.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle|StyleFlag::Bold);
+		ts.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);
 	}
 }
 

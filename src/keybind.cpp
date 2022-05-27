@@ -36,6 +36,7 @@ void SetKeybinds(){
 	ADD_BIND(Action::InsertLine,          KeyEnum::Enter,      KeyModifier::None);
 	ADD_BIND(Action::InsertLine,          KeyEnum::Enter,      KeyModifier::Shift);
 	ADD_BIND(Action::InsertLine,          'j',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::InsertLine,          'm',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::MoveToLineStart,     KeyEnum::Home,       KeyModifier::None);
 	ADD_BIND(Action::MoveToLineStart,     'y',                 KeyModifier::Alt);
@@ -50,6 +51,12 @@ void SetKeybinds(){
 	
 	ADD_BIND(Action::DeleteCurrentChar,   KeyEnum::Delete,     KeyModifier::None);
 	ADD_BIND(Action::DeleteCurrentChar,   'i',                 KeyModifier::Alt);
+
+	ADD_BIND(Action::DeletePreviousMulti, 'h',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::DeletePreviousMulti, 'u',                 KeyModifier::Ctrl|KeyModifier::Alt);
+
+	ADD_BIND(Action::DeleteCurrentMulti,  KeyEnum::Delete,     KeyModifier::Ctrl);
+	ADD_BIND(Action::DeleteCurrentMulti,  'i',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::InsertTab,           KeyEnum::Tab,        KeyModifier::None);
 	ADD_BIND(Action::InsertTab,           'i',                 KeyModifier::Ctrl);
@@ -107,6 +114,8 @@ TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
 			case Action::MoveRightMulti:
 			case Action::MoveUpMulti:
 			case Action::MoveDownMulti:
+			case Action::DeletePreviousMulti:
+			case Action::DeleteCurrentMulti:
 				textAction.num = Config::multiAmount;
 				break;
 			case Action::MoveUpPage:

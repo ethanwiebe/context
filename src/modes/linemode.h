@@ -8,13 +8,9 @@
 #include "../logger.h"
 #include "../undo.h"
 #include "../syntaxhighlight.h"
+#include "../cursor.h"
 
 #include <vector>
-
-struct Cursor {
-	LineIndexedIterator line;
-	s32 column;
-};
 
 struct VisualCursor {
 	Cursor cursor;
@@ -67,9 +63,11 @@ struct BufferAction {
 
 class LineModeBase : public ModeBase {
 protected:
+	TextScreen textScreen;
 	Ref<TextBuffer> textBuffer;
 	ColorBuffer colorBuffer;
 	std::string bufferPath;
+	std::string cursorPosText;
 
 	LineIndexedIterator viewLine;
 	ColorIterator colorLine;
@@ -94,9 +92,10 @@ public:
 	inline void CalculateScreenData();
 	inline void SetColorLine();
 
-	TextScreen GetTextScreen(s32,s32) override;
+	TextScreen& GetTextScreen(s32,s32) override;
 	TextStyle GetTextStyleAt(ColorIterator,s32);
 	std::string_view GetBufferName() override;
+	std::string_view GetStatusBarText() override;
 
 	bool OpenAction(const OSInterface& os,std::string_view path) override;
 	bool SaveAction(const OSInterface& os) override;

@@ -1,26 +1,7 @@
 #include "textbuffer.h"
 
-//static const std::string nullStr = "";
-
-/*const std::string& IndexedIterator::operator*() const {
-	if (index>=0){
-		return *it;
-	}
-
-	return nullStr;
-}*/
-
 void TextBuffer::clear() noexcept {
 	lines.clear();
-}
-
-LineIterator TextBuffer::GetLineIterator(size_t s) noexcept {
-	auto it = lines.begin();
-	while (s--){ //TODO: use begin AND end for optimization
-		it++;
-	}
-
-	return it;
 }
 
 void TextBuffer::InsertLine(LineIterator it,const std::string& s){
@@ -48,6 +29,29 @@ void TextBuffer::ForwardDeleteLine(LineIterator it){
 
 void TextBuffer::SetLine(LineIterator it,const std::string& s){
 	*it = s;
+}
+
+s32 TextBuffer::GetIndentationAt(LineIterator it,s32 size){
+	s32 count = 0;
+	s32 spaceCount = 0;
+	char first = (*it)[0];
+
+	if (first=='\t'){
+		for (char c : *it){
+			if (c!='\t') break;
+			++count;
+		}
+	} else if (first==' '){
+		for (char c : *it){
+			if (c!=' ') break;
+			++spaceCount;
+			if (spaceCount==size){
+				spaceCount = 0;
+				++count;
+			}
+		}
+	}
+	return count;
 }
 
 s32 ToNextMultiple(s32 x,s32 d,s32 w){

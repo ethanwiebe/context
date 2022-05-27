@@ -45,7 +45,16 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 		case Action::InsertLine:
 			InsertCharAt(cursor.cursor,'\n');
-			MoveVisualCursorRight(cursor,1);
+			{
+				s32 iLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,Config::tabSize);
+				MoveVisualCursorRight(cursor,1);
+				if (Config::autoIndent){
+					while (--iLevel>=0){
+						InsertCharAt(cursor.cursor,'\t');
+						MoveVisualCursorRight(cursor,1);
+					}
+				}
+			}
 			UpdateHighlighter();
 			break;
 		case Action::DeletePreviousChar:
@@ -69,10 +78,42 @@ void EditMode::ProcessTextAction(TextAction a){
 				break;
 			}
 
-			if (cursor.cursor.column==cursor.CurrentLineLen()&&cursor.cursor.line.index==(s32)textBuffer->size()-1)
+			if (cursor.cursor.column==cursor.CurrentLineLen()
+					&&cursor.cursor.line.index==(s32)(textBuffer->size()-1))
 				break;
 
 			DeleteCharAt(cursor.cursor);
+			UpdateHighlighter();
+			break;
+		case Action::DeletePreviousMulti:
+			if (selecting){
+				DeleteSelection(cursor);
+				UpdateHighlighter();
+				break;
+			}
+
+			while (--a.num>=0){
+				if (cursor.cursor.column==0&&cursor.cursor.line.index==0)
+					break;
+
+				MoveVisualCursorLeft(cursor,1);
+				DeleteCharAt(cursor.cursor);
+			}
+			UpdateHighlighter();
+			break;
+		case Action::DeleteCurrentMulti:
+			if (selecting){
+				DeleteSelection(cursor);
+				UpdateHighlighter();
+				break;
+			}
+
+			while (--a.num>=0){
+				if (cursor.cursor.column==cursor.CurrentLineLen()&&
+						cursor.cursor.line.index==(s32)(textBuffer->size()-1))
+					break;
+				DeleteCharAt(cursor.cursor);
+			}
 			UpdateHighlighter();
 			break;
 		case Action::MoveToLineStart:
@@ -84,13 +125,13 @@ void EditMode::ProcessTextAction(TextAction a){
 			cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.CurrentLineLen(),lineWidth)%lineWidth;
 			break;
 		case Action::MoveToBufferStart:
-			cursor.cursor.line = {textBuffer->begin()};
-			SetVisualCursorColumn(cursor,0);
+			cursor.cursor = MakeCursorAtBufferStart(*textBuffer);
+			SetVisualCursorColumn(cursor,cursor.cursor.column);
 			cursor.cachedX = 0;
 			break;
 		case Action::MoveToBufferEnd:
-			cursor.cursor.line = {--textBuffer->end(),(s32)textBuffer->size()-1};
-			SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
+			cursor.cursor = MakeCursorAtBufferEnd(*textBuffer);
+			SetVisualCursorColumn(cursor,cursor.cursor.column);
 			cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.CurrentLineLen(),lineWidth)%lineWidth;
 			break;
 		case Action::InsertChar:
