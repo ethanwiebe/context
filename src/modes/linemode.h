@@ -66,6 +66,7 @@ protected:
 	TextScreen textScreen;
 	Ref<TextBuffer> textBuffer;
 	ColorBuffer colorBuffer;
+	std::string copiedText;
 	std::string bufferPath;
 	std::string cursorPosText;
 
@@ -154,7 +155,7 @@ public:
 	void UpdateSelection(const VisualCursor&);
 	Cursor GetSelectStartPos() const;
 	Cursor GetSelectEndPos() const;
-	void DeleteSelection(VisualCursor&);
+	void VisualCursorDeleteSelection(VisualCursor&,bool=false);
 
 	void UpdateHighlighter();
 };

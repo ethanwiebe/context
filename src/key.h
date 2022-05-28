@@ -95,6 +95,7 @@ enum class Action : u16 {
 
 	ToggleSelect,
 
+	CutSelection,
 	CopySelection,
 	PasteClipboard,
 

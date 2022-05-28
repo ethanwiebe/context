@@ -13,7 +13,6 @@ public:
 		redoStack = {};
 	}
 
-
 	bool CanUndo() const {
 		return !undoStack.empty();
 	}
@@ -21,7 +20,7 @@ public:
 	bool CanRedo() const {
 		return !redoStack.empty();
 	}
-
+	
 	T PopUndo(){
 		T a = undoStack.top();
 		undoStack.pop();

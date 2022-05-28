@@ -12,10 +12,10 @@ void EditMode::ProcessTextAction(TextAction a){
 			MoveScreenDown(1);
 			break;
 		case Action::MoveUpPage:
-			MoveVisualCursorUp(cursor,a.num);
+			MoveVisualCursorUp(cursor,innerHeight-1);
 			break;
 		case Action::MoveDownPage:
-			MoveVisualCursorDown(cursor,a.num);
+			MoveVisualCursorDown(cursor,innerHeight-1);
 			break;
 		case Action::MoveUpLine:
 			MoveVisualCursorUp(cursor,a.num);
@@ -52,7 +52,7 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 		case Action::DeletePreviousChar:
 			if (selecting){
-				DeleteSelection(cursor);
+				VisualCursorDeleteSelection(cursor);
 				UpdateHighlighter();
 				break;
 			}
@@ -66,7 +66,7 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 		case Action::DeleteCurrentChar:
 			if (selecting){
-				DeleteSelection(cursor);
+				VisualCursorDeleteSelection(cursor);
 				UpdateHighlighter();
 				break;
 			}
@@ -80,7 +80,7 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 		case Action::DeletePreviousMulti:
 			if (selecting){
-				DeleteSelection(cursor);
+				VisualCursorDeleteSelection(cursor);
 				UpdateHighlighter();
 				break;
 			}
@@ -96,7 +96,7 @@ void EditMode::ProcessTextAction(TextAction a){
 			break;
 		case Action::DeleteCurrentMulti:
 			if (selecting){
-				DeleteSelection(cursor);
+				VisualCursorDeleteSelection(cursor);
 				UpdateHighlighter();
 				break;
 			}
@@ -126,31 +126,46 @@ void EditMode::ProcessTextAction(TextAction a){
 			SetCachedX(cursor);
 			break;
 		case Action::InsertChar:
-			if (selecting) DeleteSelection(cursor);
+			if (selecting) VisualCursorDeleteSelection(cursor);
 			InsertCharAt(cursor.cursor,a.character);
 			MoveVisualCursorRight(cursor,1);
 			UpdateHighlighter();
 			break;
 		case Action::InsertTab:
+			if (selecting) VisualCursorDeleteSelection(cursor);
 			InsertCharAt(cursor.cursor,'\t');
 			MoveVisualCursorRight(cursor,1);
 			UpdateHighlighter();
 			break;
 		case Action::DeleteLine:
+			if (selecting) StopSelecting();
 			DeleteLine(cursor);
 			UpdateHighlighter();
 			break;
 		case Action::UndoAction:
+			if (selecting) StopSelecting();
 			Undo(cursor);
 			UpdateHighlighter();
 			break;
 		case Action::RedoAction:
+			if (selecting) StopSelecting();
 			Redo(cursor);
 			UpdateHighlighter();
 			break;
 		case Action::ToggleSelect:
 			if (selecting) StopSelecting();
 			else StartSelecting(cursor);
+			break;
+		case Action::CutSelection:
+			if (!selecting) break;
+			VisualCursorDeleteSelection(cursor,true);
+			UpdateHighlighter();
+			break;
+		case Action::PasteClipboard:
+			if (selecting) VisualCursorDeleteSelection(cursor);
+			InsertStringAt(cursor.cursor,copiedText);
+			MoveVisualCursorRight(cursor,copiedText.size());
+			UpdateHighlighter();
 			break;
 		case Action::DebugAction:
 			showDebugInfo = !showDebugInfo;

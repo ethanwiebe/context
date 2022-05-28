@@ -17,7 +17,11 @@ s32 numWidth(s32 i){
 	return c;
 }
 
-LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0),currentAction(BufferActionType::TextInsertion,0,0) {
+LineModeBase::LineModeBase(ContextEditor* ctx) : 
+	ModeBase(ctx),
+	screenSubline(0),
+	currentAction(BufferActionType::TextInsertion,0,0)
+{		
 	textBuffer = MakeRef<TextBuffer>();
 	textBuffer->InsertLine(textBuffer->begin(),"");
 	colorBuffer = {};
@@ -33,7 +37,6 @@ LineModeBase::LineModeBase(ContextEditor* ctx) : ModeBase(ctx),screenSubline(0),
 
 	screenWidth = -1;
 	screenHeight = -1;
-
 }
 
 void LineModeBase::UpdateHighlighter(){
@@ -567,6 +570,11 @@ void LineModeBase::DeleteLine(VisualCursor& cursor){
 
 }
 
+inline char GetCharAt(Cursor cursor){
+	if (cursor.column==(s32)cursor.line.it->size()) return '\n';
+	return (*cursor.line.it)[cursor.column];
+}
+
 void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 	if (cursor.line.index==(s32)textBuffer->size()-1 &&
 			cursor.column==(s32)cursor.line.it->size())
@@ -574,12 +582,7 @@ void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 
 	modified = true;
 	char deletedChar;
-	
-	if (cursor.column==(s32)cursor.line.it->size()){
-		deletedChar = '\n';
-	} else {
-		deletedChar = (*cursor.line.it)[cursor.column];
-	}
+	deletedChar = GetCharAt(cursor);
 
 	if (undoable)
 		PushDeletionAction(cursor,deletedChar);
@@ -589,7 +592,7 @@ void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 	} else {
 		cursor.line.it->erase(cursor.column,1);
 	}
-
+	
 }
 
 void LineModeBase::DeleteCharCountAt(Cursor cursor,s32 count){
@@ -766,16 +769,22 @@ Cursor LineModeBase::GetSelectEndPos() const {
 	return selectCursor;
 }
 
-void LineModeBase::DeleteSelection(VisualCursor& cursor){
+void LineModeBase::VisualCursorDeleteSelection(VisualCursor& cursor,bool copy){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
+	
+	if (end.line.index==(s32)(textBuffer->size()-1)&&end.column==(s32)end.line.it->size())
+		MoveCursorLeft(end,1);
+	
+	if (copy) copiedText.clear();
 
 	while (end.line.index>start.line.index||end.column>start.column){
+		if (copy) copiedText.insert(copiedText.begin(),GetCharAt(end));
 		DeleteCharAt(end);
 		MoveCursorLeft(end,1);
 	}
 	
-	//if (end.line.it->size())
+	if (copy) copiedText.insert(copiedText.begin(),GetCharAt(end));
 	DeleteCharAt(end);
 
 	cursor.cursor = start;

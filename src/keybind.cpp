@@ -69,6 +69,10 @@ void SetKeybinds(){
 	ADD_BIND(Action::RedoAction,          'y',                 KeyModifier::Ctrl);
 
 	ADD_BIND(Action::ToggleSelect,        's',                 KeyModifier::Alt);
+	
+	ADD_BIND(Action::CutSelection,        'x',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::CopySelection,       'c',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::PasteClipboard,      'v',                 KeyModifier::Ctrl);
 
 	ADD_BIND(Action::Escape,              KeyEnum::Escape,     KeyModifier::None);
 	
@@ -122,11 +126,7 @@ TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
 			case Action::DeleteCurrentMulti:
 				textAction.num = Config::multiAmount;
 				break;
-			case Action::MoveUpPage:
-			case Action::MoveDownPage:
-				textAction.num = Config::pageSize;
-				break;
-
+			
 			default:
 				break;
 		}
