@@ -161,6 +161,11 @@ void EditMode::ProcessTextAction(TextAction a){
 			VisualCursorDeleteSelection(cursor,true);
 			UpdateHighlighter();
 			break;
+		case Action::CopySelection:
+			if (!selecting) break;
+			CopySelection();
+			StopSelecting();
+			break;
 		case Action::PasteClipboard:
 			if (selecting) VisualCursorDeleteSelection(cursor);
 			InsertStringAt(cursor.cursor,copiedText);

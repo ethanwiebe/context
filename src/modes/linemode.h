@@ -156,6 +156,7 @@ public:
 	Cursor GetSelectStartPos() const;
 	Cursor GetSelectEndPos() const;
 	void VisualCursorDeleteSelection(VisualCursor&,bool=false);
+	void CopySelection();
 
 	void UpdateHighlighter();
 };

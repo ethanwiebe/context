@@ -791,3 +791,20 @@ void LineModeBase::VisualCursorDeleteSelection(VisualCursor& cursor,bool copy){
 	SetVisualCursorColumn(cursor,cursor.cursor.column);
 	StopSelecting();
 }
+
+void LineModeBase::CopySelection(){
+	Cursor start = GetSelectStartPos();
+	Cursor end = GetSelectEndPos();
+	
+	if (end.line.index==(s32)(textBuffer->size()-1)&&end.column==(s32)end.line.it->size())
+		MoveCursorLeft(end,1);
+	
+	copiedText.clear();
+	
+	while (end.line.index>start.line.index||end.column>start.column){
+		copiedText.insert(copiedText.begin(),GetCharAt(end));
+		MoveCursorLeft(end,1);
+	}
+	
+	copiedText.insert(copiedText.begin(),GetCharAt(end));
+}
