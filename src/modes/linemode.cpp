@@ -2,9 +2,8 @@
 
 s32 tenPow(s32 i){
 	s32 p = 1;
-	while (i--){
+	while (i--)
 		p *= 10;
-	}
 
 	return p;
 }
@@ -422,7 +421,6 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 
 		newCol -= cursor.CurrentLineLen()+1;
 		++cursor.cursor.line;
-		//MoveVisualCursorDown(cursor,1);
 	}
 
 	SetVisualCursorColumn(cursor,newCol);
@@ -461,9 +459,23 @@ void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
 	cursor.column = newCol;
 }
 
+void LineModeBase::MoveVisualCursorToLineStart(VisualCursor& cursor){
+	SetVisualCursorColumn(cursor,0);
+	SetCachedX(cursor);
+}
+
+void LineModeBase::MoveVisualCursorToLineEnd(VisualCursor& cursor){
+	SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
+	SetCachedX(cursor);
+}
+
 void LineModeBase::SetVisualCursorColumn(VisualCursor& cursor,s32 col){
 	cursor.cursor.column = col;
 	cursor.subline = GetXPosOfIndex(*cursor.cursor.line,col,lineWidth)/lineWidth;
+}
+
+void LineModeBase::SetCachedX(VisualCursor& cursor){
+	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth;
 }
 
 void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){
@@ -520,6 +532,27 @@ Cursor LineModeBase::MakeCursorFromLineIndexedIterator(s32 line,s32 column,LineI
 	}
 
 	return {it,column};
+}
+
+void LineModeBase::InsertLine(VisualCursor& cursor){
+	InsertCharAt(cursor.cursor,'\n');
+	s32 indentLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,Config::tabSize);
+	bool tabs = textBuffer->IsTabIndented(cursor.cursor.line.it);
+	MoveVisualCursorRight(cursor,1);
+	if (Config::autoIndent){
+		if (tabs){
+			while (--indentLevel>=0){
+				InsertCharAt(cursor.cursor,'\t');
+				MoveVisualCursorRight(cursor,1);
+			}
+		} else {
+			s32 spaceCount = Config::tabSize*indentLevel;
+			while (--spaceCount>=0){
+				InsertCharAt(cursor.cursor,' ');
+				MoveVisualCursorRight(cursor,1);
+			}
+		}
+	}
 }
 
 void LineModeBase::DeleteLine(VisualCursor& cursor){

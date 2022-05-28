@@ -54,6 +54,11 @@ s32 TextBuffer::GetIndentationAt(LineIterator it,s32 size){
 	return count;
 }
 
+bool TextBuffer::IsTabIndented(LineIterator it){
+	char first = (*it)[0];
+	return first=='\t';
+}
+
 s32 ToNextMultiple(s32 x,s32 d,s32 w){
 	s32 xproper = x%w;
 	return x + (d-xproper%d);

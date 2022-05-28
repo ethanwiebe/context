@@ -37,6 +37,8 @@ void SetKeybinds(){
 	ADD_BIND(Action::InsertLine,          KeyEnum::Enter,      KeyModifier::Shift);
 	ADD_BIND(Action::InsertLine,          'j',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::InsertLine,          'm',                 KeyModifier::Ctrl|KeyModifier::Alt);
+	
+	ADD_BIND(Action::InsertLineAtEnd,     'p',                 KeyModifier::Alt);
 
 	ADD_BIND(Action::MoveToLineStart,     KeyEnum::Home,       KeyModifier::None);
 	ADD_BIND(Action::MoveToLineStart,     'y',                 KeyModifier::Alt);
@@ -47,6 +49,7 @@ void SetKeybinds(){
 	ADD_BIND(Action::MoveToBufferEnd,     'o',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::DeletePreviousChar,  KeyEnum::Backspace,  KeyModifier::None);
+	ADD_BIND(Action::DeletePreviousChar,  'h',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::DeletePreviousChar,  'u',                 KeyModifier::Alt);
 	
 	ADD_BIND(Action::DeleteCurrentChar,   KeyEnum::Delete,     KeyModifier::None);

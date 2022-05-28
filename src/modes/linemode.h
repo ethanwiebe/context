@@ -92,6 +92,8 @@ public:
 	inline void CalculateScreenData();
 	inline void SetColorLine();
 
+	void SetCachedX(VisualCursor&);
+
 	TextScreen& GetTextScreen(s32,s32) override;
 	TextStyle GetTextStyleAt(ColorIterator,s32);
 	std::string_view GetBufferName() override;
@@ -120,7 +122,11 @@ public:
 	void MoveCursorLeft(Cursor&,s32) const;
 	void MoveCursorRight(Cursor&,s32) const;
 	void SetVisualCursorColumn(VisualCursor&,s32);
-
+	
+	void MoveVisualCursorToLineStart(VisualCursor&);
+	void MoveVisualCursorToLineEnd(VisualCursor&);
+	
+	void InsertLine(VisualCursor&);
 	void DeleteLine(VisualCursor&);
 
 	void InsertCharAt(Cursor,char,bool=true);

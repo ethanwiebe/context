@@ -1,8 +1,6 @@
 #include "editmode.h"
 
-EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {
-
-}
+EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {}
 
 void EditMode::ProcessTextAction(TextAction a){
 	VisualCursor& cursor = cursors[0];
@@ -44,17 +42,12 @@ void EditMode::ProcessTextAction(TextAction a){
 			MoveVisualCursorDown(cursor,a.num);
 			break;
 		case Action::InsertLine:
-			InsertCharAt(cursor.cursor,'\n');
-			{
-				s32 iLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,Config::tabSize);
-				MoveVisualCursorRight(cursor,1);
-				if (Config::autoIndent){
-					while (--iLevel>=0){
-						InsertCharAt(cursor.cursor,'\t');
-						MoveVisualCursorRight(cursor,1);
-					}
-				}
-			}
+			InsertLine(cursor);
+			UpdateHighlighter();
+			break;
+		case Action::InsertLineAtEnd:
+			MoveVisualCursorToLineEnd(cursor);
+			InsertLine(cursor);
 			UpdateHighlighter();
 			break;
 		case Action::DeletePreviousChar:
@@ -117,22 +110,20 @@ void EditMode::ProcessTextAction(TextAction a){
 			UpdateHighlighter();
 			break;
 		case Action::MoveToLineStart:
-			SetVisualCursorColumn(cursor,0);
-			cursor.cachedX = 0;
+			MoveVisualCursorToLineStart(cursor);
 			break;
 		case Action::MoveToLineEnd:
-			SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
-			cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.CurrentLineLen(),lineWidth)%lineWidth;
+			MoveVisualCursorToLineEnd(cursor);
 			break;
 		case Action::MoveToBufferStart:
 			cursor.cursor = MakeCursorAtBufferStart(*textBuffer);
 			SetVisualCursorColumn(cursor,cursor.cursor.column);
-			cursor.cachedX = 0;
+			SetCachedX(cursor);
 			break;
 		case Action::MoveToBufferEnd:
 			cursor.cursor = MakeCursorAtBufferEnd(*textBuffer);
 			SetVisualCursorColumn(cursor,cursor.cursor.column);
-			cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.CurrentLineLen(),lineWidth)%lineWidth;
+			SetCachedX(cursor);
 			break;
 		case Action::InsertChar:
 			if (selecting) DeleteSelection(cursor);

@@ -79,6 +79,8 @@ enum class Action : u16 {
 	InsertChar,
 	InsertLine,
 	InsertTab,
+	
+	InsertLineAtEnd,
 
 	DeletePreviousChar,
 	DeleteCurrentChar,

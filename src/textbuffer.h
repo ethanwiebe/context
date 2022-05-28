@@ -110,6 +110,7 @@ public:
 	}
 
 	s32 GetIndentationAt(LineIterator,s32=4);
+	bool IsTabIndented(LineIterator);
 };
 
 void UpdateXI(const std::string&, s32&, s32&, s32);
