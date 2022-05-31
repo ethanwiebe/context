@@ -27,6 +27,7 @@
 	"modes": {
 		"debug":{
 			"objectDir":"build/debug",
+			"outputDir":"bin/debug",
 			"compileFlags":[
 				"-ggdb3",
 				"-Og"
@@ -44,6 +45,7 @@
 		},
 		"size":{
 			"objectDir":"build/size",
+			"outputDir":"bin/size",
 			"compileFlags":[
 				"-Os",
 				"-fdata-sections",

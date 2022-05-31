@@ -69,6 +69,7 @@ protected:
 	std::string copiedText;
 	std::string bufferPath;
 	std::string cursorPosText;
+	bool highlighterNeedsUpdate;
 
 	LineIndexedIterator viewLine;
 	ColorIterator colorLine;
@@ -127,6 +128,9 @@ public:
 	void MoveVisualCursorToLineStart(VisualCursor&);
 	void MoveVisualCursorToLineEnd(VisualCursor&);
 	
+	void MoveVisualCursorToBufferStart(VisualCursor&);
+	void MoveVisualCursorToBufferEnd(VisualCursor&);
+	
 	void InsertLine(VisualCursor&);
 	void DeleteLine(VisualCursor&);
 
@@ -157,6 +161,8 @@ public:
 	Cursor GetSelectEndPos() const;
 	void VisualCursorDeleteSelection(VisualCursor&,bool=false);
 	void CopySelection();
+	void IndentSelection();
+	void DedentSelection();
 
 	void UpdateHighlighter();
 };

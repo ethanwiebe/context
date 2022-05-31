@@ -78,9 +78,11 @@ enum class Action : u16 {
 
 	InsertChar,
 	InsertLine,
-	InsertTab,
+	InsertLineBelow,
+	InsertLineAbove,
 	
-	InsertLineAtEnd,
+	Tab,
+	Untab,
 
 	DeletePreviousChar,
 	DeleteCurrentChar,
@@ -94,6 +96,7 @@ enum class Action : u16 {
 	RedoAction,
 
 	ToggleSelect,
+	SelectAll,
 
 	CutSelection,
 	CopySelection,

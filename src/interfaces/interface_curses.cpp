@@ -404,6 +404,10 @@ inline void NormalizeKeys(s32& key,s32& mod){
 	NormalizeNavPad(key,mod);
 	NormalizeBackspaceKey(key,mod);
 	NormalizeDirectionKeys(key,mod);
+	if (key==353){
+		key = KeyEnum::Tab;
+		mod = KeyModifier::Shift;
+	}
 }
 
 

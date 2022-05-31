@@ -18,14 +18,16 @@ s32 numWidth(s32 i){
 }
 
 LineModeBase::LineModeBase(ContextEditor* ctx) : 
-	ModeBase(ctx),
-	screenSubline(0),
-	currentAction(BufferActionType::TextInsertion,0,0)
+		ModeBase(ctx),
+		screenSubline(0),
+		currentAction(BufferActionType::TextInsertion,0,0)
 {		
 	textBuffer = MakeRef<TextBuffer>();
 	textBuffer->InsertLine(textBuffer->begin(),"");
 	colorBuffer = {};
 	colorBuffer.resize(textBuffer->size());
+	highlighterNeedsUpdate = true;
+	
 	readonly = false;
 	modified = false;
 	InitIterators();
@@ -45,6 +47,7 @@ void LineModeBase::UpdateHighlighter(){
 
 	syntaxHighlighter->FillColorBuffer(colorBuffer);
 	SetColorLine();
+	highlighterNeedsUpdate = false;
 }
 
 TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
@@ -71,6 +74,9 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 		CalculateScreenData();
 	}
+	
+	if (highlighterNeedsUpdate)
+		UpdateHighlighter();
 
 	MoveScreenToVisualCursor(cursors.front());
 
@@ -235,7 +241,7 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	}
 
 	GetSyntaxHighlighter(bufferPath);
-	UpdateHighlighter();
+	highlighterNeedsUpdate = true;
 	InitIterators();
 
 	return true;
@@ -365,7 +371,6 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	if (cursor.visualLine > Config::cursorMoveHeight && 
 			cursor.visualLine < innerHeight-1-Config::cursorMoveHeight) return;
 
-
 	s32 lineDiff = cursor.cursor.line.index-viewLine.index;
 	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
@@ -375,21 +380,23 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	else
 		MoveScreenUp(Config::cursorMoveHeight,true);
 	
-
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
 	CalculateScreenData();
-
 }
 
 void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
-	UpdateSublineDownwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true,textBuffer->size());
+	UpdateSublineDownwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,
+			lineWidth,num,true,textBuffer->size());
+			
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	s32 maxLine = cursor.CurrentLineLen();
 	SetVisualCursorColumn(cursor,std::min(newCursorX,maxLine));
 }
 
 void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
-	UpdateSublineUpwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,lineWidth,num,true);
+	UpdateSublineUpwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,
+			lineWidth,num,true);
+			
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	s32 maxLine = cursor.CurrentLineLen();
 	SetVisualCursorColumn(cursor,std::min(newCursorX,maxLine));
@@ -404,7 +411,6 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 			return;
 		}
 
-		//MoveVisualCursorUp(cursor,1);
 		--cursor.cursor.line;
 		newCol += cursor.CurrentLineLen()+1;
 	}
@@ -469,6 +475,18 @@ void LineModeBase::MoveVisualCursorToLineStart(VisualCursor& cursor){
 
 void LineModeBase::MoveVisualCursorToLineEnd(VisualCursor& cursor){
 	SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
+	SetCachedX(cursor);
+}
+
+void LineModeBase::MoveVisualCursorToBufferStart(VisualCursor& cursor){
+	cursor.cursor = MakeCursorAtBufferStart(*textBuffer);
+	SetVisualCursorColumn(cursor,cursor.cursor.column);
+	SetCachedX(cursor);
+}
+
+void LineModeBase::MoveVisualCursorToBufferEnd(VisualCursor& cursor){
+	cursor.cursor = MakeCursorAtBufferEnd(*textBuffer);
+	SetVisualCursorColumn(cursor,cursor.cursor.column);
 	SetCachedX(cursor);
 }
 
@@ -567,7 +585,6 @@ void LineModeBase::DeleteLine(VisualCursor& cursor){
 		MoveVisualCursorLeft(cursor,1);
 		DeleteCharAt(cursor.cursor);
 	}
-
 }
 
 inline char GetCharAt(Cursor cursor){
@@ -580,7 +597,6 @@ void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 			cursor.column==(s32)cursor.line.it->size())
 		return;
 
-	modified = true;
 	char deletedChar;
 	deletedChar = GetCharAt(cursor);
 
@@ -593,6 +609,8 @@ void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 		cursor.line.it->erase(cursor.column,1);
 	}
 	
+	modified = true;
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::DeleteCharCountAt(Cursor cursor,s32 count){
@@ -602,8 +620,6 @@ void LineModeBase::DeleteCharCountAt(Cursor cursor,s32 count){
 }
 
 void LineModeBase::InsertCharAt(Cursor cursor,char c,bool undoable){
-	modified = true;
-
 	if (c=='\n'){
 		textBuffer->InsertLineAfter(cursor.line.it,cursor.line.it->substr(cursor.column));
 		cursor.line.it->erase(cursor.column);
@@ -612,6 +628,9 @@ void LineModeBase::InsertCharAt(Cursor cursor,char c,bool undoable){
 
 	if (undoable)
 		PushInsertionAction(cursor,c);
+		
+	modified = true;
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoable){
@@ -623,11 +642,13 @@ void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoab
 		} else
 			++cursor.column;
 	}
+	
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::SetModified(){
 	modified = true;
-	UpdateHighlighter();
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::Undo(VisualCursor& cursor){
@@ -649,6 +670,8 @@ void LineModeBase::Undo(VisualCursor& cursor){
 	std::swap(undoAction.column,undoAction.extendColumn);
 
 	PerformBufferAction(cursor,undoAction);
+	
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::Redo(VisualCursor& cursor){
@@ -662,6 +685,8 @@ void LineModeBase::Redo(VisualCursor& cursor){
 	BufferAction redoAction = undoStack.PopRedo();
 	
 	PerformBufferAction(cursor,redoAction);
+	
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::MakeNewAction(BufferActionType type,s32 line,s32 col){
@@ -790,6 +815,7 @@ void LineModeBase::VisualCursorDeleteSelection(VisualCursor& cursor,bool copy){
 	cursor.cursor = start;
 	SetVisualCursorColumn(cursor,cursor.cursor.column);
 	StopSelecting();
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::CopySelection(){
@@ -807,4 +833,34 @@ void LineModeBase::CopySelection(){
 	}
 	
 	copiedText.insert(copiedText.begin(),GetCharAt(end));
+}
+
+void LineModeBase::IndentSelection(){
+	Cursor start = GetSelectStartPos();
+	Cursor end = GetSelectEndPos();
+	
+	end.column = 0;
+	
+	while (end.line.index>=start.line.index){
+		InsertCharAt(end,'\t');
+		--end.line;
+	}
+	
+	highlighterNeedsUpdate = true;
+}
+
+void LineModeBase::DedentSelection(){
+	Cursor start = GetSelectStartPos();
+	Cursor end = GetSelectEndPos();
+	
+	end.column = 0;
+	
+	while (end.line.index>=start.line.index){
+		if (GetCharAt(end)=='\t')
+			DeleteCharAt(end);
+		
+		--end.line;
+	}
+	
+	highlighterNeedsUpdate = true;
 }

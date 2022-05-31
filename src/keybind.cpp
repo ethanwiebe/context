@@ -38,7 +38,8 @@ void SetKeybinds(){
 	ADD_BIND(Action::InsertLine,          'j',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::InsertLine,          'm',                 KeyModifier::Ctrl|KeyModifier::Alt);
 	
-	ADD_BIND(Action::InsertLineAtEnd,     'p',                 KeyModifier::Alt);
+	ADD_BIND(Action::InsertLineBelow,     'p',                 KeyModifier::Alt);
+	ADD_BIND(Action::InsertLineAbove,     'p',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::MoveToLineStart,     KeyEnum::Home,       KeyModifier::None);
 	ADD_BIND(Action::MoveToLineStart,     'y',                 KeyModifier::Alt);
@@ -60,8 +61,11 @@ void SetKeybinds(){
 	ADD_BIND(Action::DeleteCurrentMulti,  KeyEnum::Delete,     KeyModifier::Ctrl);
 	ADD_BIND(Action::DeleteCurrentMulti,  'i',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
-	ADD_BIND(Action::InsertTab,           KeyEnum::Tab,        KeyModifier::None);
-	ADD_BIND(Action::InsertTab,           'i',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Tab,                 KeyEnum::Tab,        KeyModifier::None);
+	ADD_BIND(Action::Tab,                 'i',                 KeyModifier::Ctrl);
+	
+	ADD_BIND(Action::Untab,               KeyEnum::Tab,        KeyModifier::Shift);
+	ADD_BIND(Action::Untab,               'i',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::DeleteLine,          'd',                 KeyModifier::Ctrl);
 
@@ -69,6 +73,8 @@ void SetKeybinds(){
 	ADD_BIND(Action::RedoAction,          'y',                 KeyModifier::Ctrl);
 
 	ADD_BIND(Action::ToggleSelect,        's',                 KeyModifier::Alt);
+	
+	ADD_BIND(Action::SelectAll,           'a',                 KeyModifier::Ctrl);
 	
 	ADD_BIND(Action::CutSelection,        'x',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::CopySelection,       'c',                 KeyModifier::Ctrl);
