@@ -131,8 +131,10 @@ public:
 	void MoveVisualCursorToBufferStart(VisualCursor&);
 	void MoveVisualCursorToBufferEnd(VisualCursor&);
 	
-	void InsertLine(VisualCursor&);
-	void DeleteLine(VisualCursor&);
+	void DeleteLine(Cursor);
+	
+	void VisualCursorInsertLine(VisualCursor&);
+	void VisualCursorDeleteLine(VisualCursor&);
 
 	void InsertCharAt(Cursor,char,bool=true);
 	void InsertStringAt(Cursor,const std::string&,bool=true);
@@ -153,6 +155,8 @@ public:
 	void FinishOldAction(Cursor,BufferActionType);
 	void PushInsertionAction(Cursor,char);
 	void PushDeletionAction(Cursor,char);
+	
+	void ForceFinishAction();
 
 	void StartSelecting(const VisualCursor&);
 	void StopSelecting();
@@ -163,6 +167,7 @@ public:
 	void CopySelection();
 	void IndentSelection();
 	void DedentSelection();
+	void DeleteLinesInSelection(VisualCursor&);
 
 	void UpdateHighlighter();
 };

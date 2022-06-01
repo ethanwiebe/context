@@ -17,6 +17,8 @@ s32 numWidth(s32 i){
 	return c;
 }
 
+s32 TrueLineDistance(LineIndexedIterator,s32,LineIndexedIterator,s32,s32);
+
 LineModeBase::LineModeBase(ContextEditor* ctx) : 
 		ModeBase(ctx),
 		screenSubline(0),
@@ -196,8 +198,11 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		locString += ", CX: " + std::to_string(GetXPosOfIndex(*cursors[0].cursor.line,cursors[0].cursor.column,lineWidth));
 		textScreen.RenderString(w-locString.size()-1,h-3,locString);
 	
+		s32 lineDiff = TrueLineDistance(cursors[0].cursor.line,cursors[0].subline,viewLine,screenSubline,lineWidth);
+
 		locString = "";
-		locString += "SL: " + std::to_string(viewLine.index);
+		locString += "DL: " + std::to_string(lineDiff);
+		locString += ", SL: " + std::to_string(viewLine.index);
 		locString += ", SSL: " + std::to_string(screenSubline);
 		locString += ", UH: " + std::to_string(undoStack.UndoHeight());
 		locString += ", RH: " + std::to_string(undoStack.RedoHeight());
@@ -361,6 +366,24 @@ void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor){
 	MoveScreenUp(innerHeight/2);
 }
 
+s32 TrueLineDistance(LineIndexedIterator start,s32 sublineStart,
+		LineIndexedIterator end,s32 sublineEnd,s32 lineWidth){
+	s32 dist = 0;
+	s32 dummy;
+	
+	if ((start.index==end.index&&sublineStart>sublineEnd) ||
+		(start.index>end.index)){
+		std::swap(start,end);
+		std::swap(sublineStart,sublineEnd);
+	}
+	
+	while (start!=end||sublineStart!=sublineEnd){
+		UpdateSublineUpwards(end,sublineEnd,dummy,lineWidth,1);
+		++dist;
+	}
+	return dist;
+}
+
 void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	if (Config::cursorLock){
 		LineModeBase::LockScreenToVisualCursor(cursor);
@@ -371,7 +394,12 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	if (cursor.visualLine > Config::cursorMoveHeight && 
 			cursor.visualLine < innerHeight-1-Config::cursorMoveHeight) return;
 
-	s32 lineDiff = cursor.cursor.line.index-viewLine.index;
+	s32 lineDiff = TrueLineDistance(cursor.cursor.line,cursor.subline,viewLine,screenSubline,lineWidth);
+		//if (lineDiff==0)
+		//lineDiff = cursor.subline - screenSubline;
+	
+		
+	//cursor.cursor.line.index-viewLine.index;
 	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
@@ -539,23 +567,20 @@ void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screen
 
 Cursor LineModeBase::MakeCursor(s32 line,s32 column){
 	LineIndexedIterator from{textBuffer->begin()};
-	
 	return MakeCursorFromLineIndexedIterator(line,column,from);
 }
 
 Cursor LineModeBase::MakeCursorFromLineIndexedIterator(s32 line,s32 column,LineIndexedIterator it){
-	while (it.index>line){
+	while (it.index>line)
 		--it;
-	}
 
-	while (it.index<line){
+	while (it.index<line)
 		++it;
-	}
 
 	return {it,column};
 }
 
-void LineModeBase::InsertLine(VisualCursor& cursor){
+void LineModeBase::VisualCursorInsertLine(VisualCursor& cursor){
 	InsertCharAt(cursor.cursor,'\n');
 	s32 indentLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,Config::tabSize);
 	bool tabs = textBuffer->IsTabIndented(cursor.cursor.line.it);
@@ -576,15 +601,28 @@ void LineModeBase::InsertLine(VisualCursor& cursor){
 	}
 }
 
-void LineModeBase::DeleteLine(VisualCursor& cursor){
-	SetVisualCursorColumn(cursor,0);
-	DeleteCharCountAt(cursor.cursor,cursor.CurrentLineLen());
-	if (cursor.cursor.line.index!=(s32)textBuffer->size()-1){
-		DeleteCharAt(cursor.cursor);
-	} else if (cursor.cursor.line.index!=0){
-		MoveVisualCursorLeft(cursor,1);
-		DeleteCharAt(cursor.cursor);
+void LineModeBase::DeleteLine(Cursor cursor){
+	cursor.column = 0;
+	DeleteCharCountAt(cursor,cursor.line.it->size());
+	if (cursor.line.index!=(s32)textBuffer->size()-1){
+		DeleteCharAt(cursor);
+	} else if (cursor.line.index!=0){
+		MoveCursorLeft(cursor,1);
+		DeleteCharAt(cursor);
 	}
+}
+
+void LineModeBase::VisualCursorDeleteLine(VisualCursor& cursor){
+	Cursor cachedCursor = cursor.cursor;
+	if (cursor.cursor.line.index>=(s32)textBuffer->size()-1&&
+			cursor.cursor.line.index!=0)
+		--cursor.cursor.line;
+		
+	DeleteLine(cachedCursor);
+	
+	s32 maxLine = cursor.CurrentLineLen();
+	SetVisualCursorColumn(cursor,std::min(cursor.cachedX,maxLine));
+	ForceFinishAction();
 }
 
 inline char GetCharAt(Cursor cursor){
@@ -758,6 +796,12 @@ void LineModeBase::PushDeletionAction(Cursor cursor,char c){
 	}
 }
 
+void LineModeBase::ForceFinishAction(){
+	if (!currentAction.Empty())
+		undoStack.PushAction(currentAction);
+
+	MakeNewAction(BufferActionType::TextInsertion,0,0);
+}
 
 void LineModeBase::StartSelecting(const VisualCursor& cursor){
 	selecting = true;
@@ -815,6 +859,7 @@ void LineModeBase::VisualCursorDeleteSelection(VisualCursor& cursor,bool copy){
 	cursor.cursor = start;
 	SetVisualCursorColumn(cursor,cursor.cursor.column);
 	StopSelecting();
+	ForceFinishAction();
 	highlighterNeedsUpdate = true;
 }
 
@@ -861,6 +906,25 @@ void LineModeBase::DedentSelection(){
 		
 		--end.line;
 	}
+}
+
+void LineModeBase::DeleteLinesInSelection(VisualCursor& cursor){
+	Cursor start = GetSelectStartPos();
+	Cursor end = GetSelectEndPos();
+	Cursor cached;
 	
-	highlighterNeedsUpdate = true;
+	s32 count = end.line.index-start.line.index+1;
+	
+	while (--count>=0){
+		cached = start;
+		if (cached.line.index==(s32)textBuffer->size()-1&&cached.line.index!=0)
+			--cached.line;
+			
+		DeleteLine(start);
+		start = cached;
+	}
+	
+	StopSelecting();
+	cursor.cursor = start;
+	SetVisualCursorColumn(cursor,std::min(cursor.CurrentLineLen(),cursor.cachedX));
 }

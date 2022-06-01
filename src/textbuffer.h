@@ -77,6 +77,10 @@ struct IndexedIterator {
 	const auto& operator*() const {
 		return *it;
 	}
+	
+	bool operator==(const IndexedIterator& b){
+		return index==b.index&&it==b.it;
+	}
 };
 
 typedef IndexedIterator<LineList> LineIndexedIterator;

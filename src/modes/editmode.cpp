@@ -63,7 +63,7 @@ void EditMode::ProcessTextAction(TextAction a){
 	if (selecting){
 		switch(a.action){
 			case Action::InsertChar:
-			case Action::PasteClipboard:
+			case Action::Paste:
 				VisualCursorDeleteSelection(cursor);
 				break;
 			case Action::DeleteCurrentChar:
@@ -72,10 +72,10 @@ void EditMode::ProcessTextAction(TextAction a){
 			case Action::DeletePreviousMulti:
 				VisualCursorDeleteSelection(cursor);
 				return;
-			case Action::CutSelection:
+			case Action::Cut:
 				VisualCursorDeleteSelection(cursor,true);
 				return;
-			case Action::CopySelection:
+			case Action::Copy:
 				CopySelection();
 				StopSelecting();
 				return;
@@ -85,11 +85,17 @@ void EditMode::ProcessTextAction(TextAction a){
 			case Action::Untab:
 				DedentSelection();
 				return;
+			case Action::DeleteLine:
+				DeleteLinesInSelection(cursor);
+				return;
 			case Action::UndoAction:
 			case Action::RedoAction:
 			case Action::Escape:
 				StopSelecting();
 				break;
+			case Action::ToggleSelect:
+				StopSelecting();
+				return;
 			default:
 				break;
 		}
@@ -97,23 +103,23 @@ void EditMode::ProcessTextAction(TextAction a){
 	if (!selecting){
 		switch (a.action){
 			case Action::InsertLine:
-				InsertLine(cursor);
+				VisualCursorInsertLine(cursor);
 				break;
 			case Action::InsertLineBelow:
 				MoveVisualCursorToLineEnd(cursor);
-				InsertLine(cursor);
+				VisualCursorInsertLine(cursor);
 				break;
 			case Action::InsertLineAbove:
 				if (cursor.cursor.line.index==0){
 					MoveVisualCursorToLineStart(cursor);
-					InsertLine(cursor);
+					VisualCursorInsertLine(cursor);
 					MoveVisualCursorUp(cursor,1);
 					break;
 				} else {
 					MoveVisualCursorUp(cursor,1);
 					MoveVisualCursorToLineEnd(cursor);
 				}
-				InsertLine(cursor);
+				VisualCursorInsertLine(cursor);
 				break;
 			case Action::DeletePreviousChar:
 				if (cursor.cursor.column==0&&cursor.cursor.line.index==0) //at start of textBuffer
@@ -155,7 +161,7 @@ void EditMode::ProcessTextAction(TextAction a){
 				MoveVisualCursorRight(cursor,1);
 				break;
 			case Action::DeleteLine:
-				DeleteLine(cursor);
+				VisualCursorDeleteLine(cursor);
 				break;
 			case Action::UndoAction:
 				Undo(cursor);
@@ -164,8 +170,7 @@ void EditMode::ProcessTextAction(TextAction a){
 				Redo(cursor);
 				break;
 			case Action::ToggleSelect:
-				if (selecting) StopSelecting();
-				else StartSelecting(cursor);
+				StartSelecting(cursor);
 				break;
 			case Action::SelectAll:
 				selecting = true;
@@ -173,7 +178,16 @@ void EditMode::ProcessTextAction(TextAction a){
 				selectCursor = MakeCursorAtBufferEnd(*textBuffer);
 				MoveVisualCursorToBufferEnd(cursor);
 				break;
-			case Action::PasteClipboard:
+			case Action::Copy:
+				copiedText = *cursor.cursor.line.it;
+				copiedText += '\n';
+				break;
+			case Action::Cut:
+				copiedText = *cursor.cursor.line.it;
+				copiedText += '\n';
+				VisualCursorDeleteLine(cursor);
+				break;
+			case Action::Paste:
 				InsertStringAt(cursor.cursor,copiedText);
 				MoveVisualCursorRight(cursor,copiedText.size());
 				break;
