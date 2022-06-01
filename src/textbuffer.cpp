@@ -65,22 +65,24 @@ s32 ToNextMultiple(s32 x,s32 d,s32 w){
 }
 
 void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
-	if (str[i]=='\t'){
+	u8 c = str[i];
+	if (c=='\t'){
 		x = std::min(ToNextMultiple(x,Config::tabSize,width),ToNextMultiple(x,width,width));
 		++i;
-	} else if (str[i]&128){ //utf8 handling
-		++i;
-		++x;
-		/*if ((str[i]>>5)==6){
-			x++;
+	} else if (c&128){ //utf8 handling
+		if ((c>>5)==6){
+			++x;
 			i += 2;
-		} else if ((str[i]>>4)==14){
-			x++;
+		} else if ((c>>4)==14){
+			++x;
 			i += 3;
-		} else if ((str[i]>>3)==30){
-			x++;
+		} else if ((c>>3)==30){
+			++x;
 			i += 4;
-		}*/
+		} else {
+			++i;
+			++x;
+		}
 	} else {
 		++x;
 		++i;
@@ -93,7 +95,7 @@ s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width){
 	for (s32 i=0;i<index;){
 		UpdateXI(str,x,i,width);
 
-		if (i>strLen) break;
+		if (i>=strLen) break;
 	}
 
 	return x;
@@ -105,8 +107,8 @@ s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width){
 	for (s32 i=0;i<x;){
 		UpdateXI(str,i,index,width);
 
-		if (index>strLen) break;
+		if (index>=strLen) break;
 	}
 
-	return index;
+	return std::min(index,strLen);
 }

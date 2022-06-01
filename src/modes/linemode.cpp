@@ -148,7 +148,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 			if (i>=lineLen) c = ' ';
 			else 			c = (*it.it)[i];
 
-			if (c&128) c = '?'; //utf8
+			if (c&128||c<32) c = '?'; //utf8
 			if (c=='\t') c = ' ';
 
 			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);//defaultStyle;
