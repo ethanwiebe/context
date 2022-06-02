@@ -161,8 +161,7 @@ void EditMode::ProcessTextAction(TextAction a){
 				MoveVisualCursorRight(cursor,1);
 				break;
 			case Action::Tab:
-				InsertCharAt(cursor.cursor,'\t');
-				MoveVisualCursorRight(cursor,1);
+				InsertTab(cursor);
 				break;
 			case Action::DeleteLine:
 				VisualCursorDeleteLine(cursor);

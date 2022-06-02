@@ -181,7 +181,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 			if (i>=lineLen) c = ' ';
 			else 			c = (*it.it)[i]&255;
-			assert(c>>31==0);
+			
 			if (c=='\t') c = ' ';
 			else if (c<32) c = '?';
 			else if (c&128) HandleUTF8(it,c,i);
@@ -719,6 +719,18 @@ void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoab
 	highlighterNeedsUpdate = true;
 }
 
+void LineModeBase::InsertTab(VisualCursor& cursor){
+	if (textBuffer->IsTabIndented(cursor.cursor.line.it)){
+		InsertCharAt(cursor.cursor,'\t');
+		MoveVisualCursorRight(cursor,1);
+	} else {
+		for (size_t i=0;i<Config::tabSize;++i){
+			InsertCharAt(cursor.cursor,' ');
+			MoveVisualCursorRight(cursor,1);
+		}
+	}
+}
+
 void LineModeBase::SetModified(){
 	modified = true;
 	highlighterNeedsUpdate = true;
@@ -921,8 +933,15 @@ void LineModeBase::IndentSelection(){
 	
 	end.column = 0;
 	
+	
 	while (end.line.index>=start.line.index){
-		InsertCharAt(end,'\t');
+		bool tab = textBuffer->IsTabIndented(end.line.it);
+		if (tab)
+			InsertCharAt(end,'\t');
+		else {
+			for (size_t i=0;i<Config::tabSize;++i)
+				InsertCharAt(end,' ');
+		}
 		--end.line;
 	}
 	
@@ -936,8 +955,16 @@ void LineModeBase::DedentSelection(){
 	end.column = 0;
 	
 	while (end.line.index>=start.line.index){
-		if (GetCharAt(end)=='\t')
-			DeleteCharAt(end);
+		bool tab = textBuffer->IsTabIndented(end.line.it);
+		if (tab){
+			if (GetCharAt(end)=='\t')
+				DeleteCharAt(end);
+		} else {
+			for (size_t i=0;i<Config::tabSize;++i){
+				if (GetCharAt(end)!=' ') break;
+				DeleteCharAt(end);
+			}
+		}
 		
 		--end.line;
 	}

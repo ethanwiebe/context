@@ -97,7 +97,7 @@ TextStyle CPPSyntaxHighlighter::GetStyleFromTokenType(TokenType type) const {
 }
 
 void CPPSyntaxHighlighter::BuildKeywords(){
-	AddKeywords({"if","else","while","for","do",
+	AddKeywords({"if","else","while","for","do","namespace",
 			"switch","case","default","break","return",
 			"using","template","typedef","typename","new",
 			"delete","struct","class","enum","union","sizeof",
