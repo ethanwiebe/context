@@ -18,11 +18,13 @@ ContextEditor::ContextEditor(const std::string& file){
 	osInterface = Handle<OSInterface>(new LinuxOSImpl());
 
 	if (!file.empty()){
-		OpenMode(file);
-		if (!errorMessage.empty()){
+		if (osInterface->PathExists(file)){
+			OpenMode(file);
+			if (!errorMessage.empty())
+				NewMode();
+		} else {
 			NewMode();
 			modes[0]->SetPath(*osInterface,file);
-			errorMessage.clear();
 		}
 	} else {
 		NewMode();
