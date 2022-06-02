@@ -17,6 +17,11 @@ s32 numWidth(s32 i){
 	return c;
 }
 
+inline char GetCharAt(Cursor cursor){
+	if (cursor.column==(s32)cursor.line.it->size()) return '\n';
+	return (*cursor.line.it)[cursor.column];
+}
+
 s32 TrueLineDistance(LineIndexedIterator,s32,LineIndexedIterator,s32,s32);
 
 LineModeBase::LineModeBase(ContextEditor* ctx) : 
@@ -430,11 +435,7 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 			cursor.visualLine < innerHeight-1-Config::cursorMoveHeight) return;
 
 	s32 lineDiff = TrueLineDistance(cursor.cursor.line,cursor.subline,viewLine,screenSubline,lineWidth);
-		//if (lineDiff==0)
-		//lineDiff = cursor.subline - screenSubline;
-	
 		
-	//cursor.cursor.line.index-viewLine.index;
 	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
@@ -468,14 +469,19 @@ void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column-num;
 	
-	while (newCol<0){ //move cursor up lines until only horiz adjust is left
-		if (cursor.cursor.line.index==0){
-			SetVisualCursorColumn(cursor,0);
-			return;
+	if (Config::cursorWraps){	
+		while (newCol<0){ //move cursor up lines until only horiz adjust is left
+			if (cursor.cursor.line.index==0){
+				SetVisualCursorColumn(cursor,0);
+				return;
+			}
+	
+			--cursor.cursor.line;
+			newCol += cursor.CurrentLineLen()+1;
 		}
-
-		--cursor.cursor.line;
-		newCol += cursor.CurrentLineLen()+1;
+	} else {
+		if (newCol<0)
+			newCol = 0;
 	}
 
 	SetVisualCursorColumn(cursor,newCol);
@@ -485,14 +491,19 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column+num;
 
-	while (newCol>cursor.CurrentLineLen()){
-		if (cursor.cursor.line.index==(s32)textBuffer->size()-1){
-			SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
-			return;
+	if (Config::cursorWraps){
+		while (newCol>cursor.CurrentLineLen()){
+			if (cursor.cursor.line.index==(s32)textBuffer->size()-1){
+				SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
+				return;
+			}
+	
+			newCol -= cursor.CurrentLineLen()+1;
+			++cursor.cursor.line;
 		}
-
-		newCol -= cursor.CurrentLineLen()+1;
-		++cursor.cursor.line;
+	} else {
+		if (newCol>cursor.CurrentLineLen())
+			newCol = cursor.CurrentLineLen();
 	}
 
 	SetVisualCursorColumn(cursor,newCol);
@@ -532,7 +543,15 @@ void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
 }
 
 void LineModeBase::MoveVisualCursorToLineStart(VisualCursor& cursor){
+	s32 col = cursor.cursor.column;
 	SetVisualCursorColumn(cursor,0);
+	if (Config::smartHome){
+		while (GetCharAt(cursor.cursor)==' '||GetCharAt(cursor.cursor)=='\t')
+			MoveVisualCursorRight(cursor,1);
+		
+		if (cursor.cursor.column==col) //already pressed home
+			SetVisualCursorColumn(cursor,0);
+	}
 	SetCachedX(cursor);
 }
 
@@ -658,11 +677,6 @@ void LineModeBase::VisualCursorDeleteLine(VisualCursor& cursor){
 	s32 maxLine = cursor.CurrentLineLen();
 	SetVisualCursorColumn(cursor,std::min(cursor.cachedX,maxLine));
 	ForceFinishAction();
-}
-
-inline char GetCharAt(Cursor cursor){
-	if (cursor.column==(s32)cursor.line.it->size()) return '\n';
-	return (*cursor.line.it)[cursor.column];
 }
 
 void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
