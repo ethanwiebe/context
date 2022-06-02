@@ -6,7 +6,7 @@
 #include <vector>
 
 struct TextCell {
-	u8 c;
+	u32 c;
 	TextStyle style;
 };
 
@@ -24,7 +24,7 @@ public:
 
 	std::vector<TextCell>::iterator begin();
 	std::vector<TextCell>::iterator end();
-
+	
 	size_t size() const noexcept;
 
 	TextCell operator[](size_t) const;

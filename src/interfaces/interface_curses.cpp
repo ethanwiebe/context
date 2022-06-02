@@ -58,6 +58,8 @@ CursesInterface::CursesInterface(){
 	charArray = nullptr;
 	COLS = 80;
 	LINES = 40;
+	
+	setlocale(LC_ALL,"");
 
 	initscr();
 	start_color();
@@ -107,7 +109,7 @@ void CursesInterface::WindowResized(s32 w,s32 h){
 	if (charArray)
 		delete[] charArray;
 
-	charArray = new chtype[w*h];
+	charArray = new cchar_t[w*h];
 }
 
 KeyboardEvent* CursesInterface::GetKeyboardEvent(){
@@ -147,9 +149,8 @@ inline s32 CursesInterface::ColorsToPair(s32 fg, s32 bg) const {
 s32 CursesInterface::DefineColor(Color col){
 	s32 colorIndex = 0;
 	for (const auto& defColor : colorDefinitions){
-		if (defColor == col){
+		if (defColor == col)
 			return colorIndex;
-		}
 
 		++colorIndex;
 	}
@@ -163,9 +164,8 @@ s32 CursesInterface::DefineColor(Color col){
 s32 CursesInterface::DefinePair(Color fg,Color bg){
 	s32 pairIndex = 0;
 	for (const auto& pair : pairDefinitions){
-		if (pair.first==fg && pair.second==bg){
+		if (pair.first==fg && pair.second==bg)
 			return pairIndex;
-		}
 
 		++pairIndex;
 	}
@@ -184,21 +184,24 @@ void CursesInterface::RenderScreen(const TextScreen& textScreen){
 	// convert text into chtype arrays
 	s32 flags;
 	s32 pairNum;
+	wchar_t wchars[2];
+	
 	for (size_t i=0;i<textScreen.size();i++){
 		flags = 0;
 		flags |= textScreen[i].style.flags & StyleFlag::Bold ? A_BOLD : 0;
 		flags |= textScreen[i].style.flags & StyleFlag::Underline ? A_UNDERLINE : 0; 
 		flags |= textScreen[i].style.flags & StyleFlag::AlternateCharacterSet ? A_ALTCHARSET : 0;
 
-		//boldFlag = textScreen[i].fg>=8&&textScreen[i].fg<16 ? A_BOLD : 0;
 		pairNum = DefinePair(textScreen[i].style.fg,textScreen[i].style.bg);
-
-		charArray[i] = (chtype)textScreen[i].c | COLOR_PAIR(pairNum+16) | flags;
+		wchars[0] = textScreen[i].c;
+		wchars[1] = 0;
+		
+		setcchar(&charArray[i],wchars,flags,pairNum+16,(const void*)0);
 	}
 
 	// print lines onto the terminal
 	for (s32 y=0;y<LINES;y++){
-		mvaddchnstr(y,0,&charArray[y*COLS],COLS);
+		mvadd_wchnstr(y,0,&charArray[y*COLS],COLS);
 	}
 
 }

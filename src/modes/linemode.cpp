@@ -66,6 +66,40 @@ TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
 	return defaultStyle;
 }
 
+inline void HandleUTF8(LineIndexedIterator it,u32& c,s32 i){
+	if (c>>5==6){
+		if (it.it->size()-i < 2){
+			c = '?';
+			return;
+		}
+		
+		c = (c&0x1F)<<6;
+		c |= (*it.it)[i+1]&0x3F;
+		if (wcwidth(c)!=1) c = '?';
+	} else if (c>>4==14){
+		if (it.it->size()-i < 3){
+			c = '?';
+			return;
+		}
+		
+		c = (c&0x0F)<<12;
+		c |= ((*it.it)[i+1]&0x3F)<<6;
+		c |= (*it.it)[i+2]&0x3F;
+		if (wcwidth(c)!=1) c = '?';
+	} else if (c>>3==30){
+		if (it.it->size()-i < 4){
+			c = '?';
+			return;
+		}
+		
+		c = (c&0x07)<<18;
+		c |= ((*it.it)[i+1]&0x3F)<<12;
+		c |= ((*it.it)[i+2]&0x3F)<<6;
+		c |= (*it.it)[i+3]&0x3F;
+		if (wcwidth(c)!=1) c = '?';
+	}
+}
+
 TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	if (w!=screenWidth||h!=screenHeight){
 		screenWidth = w;
@@ -89,7 +123,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	s32 lineLen,lineStart = 0;
 	s32 lineNumber;
-	char c;
+	u32 c;
 	Cursor startSelect = GetSelectStartPos();
 	Cursor endSelect = GetSelectEndPos();
 	bool inSelection = selecting && viewLine.index > startSelect.line.index; //TODO: handle sublines here
@@ -146,12 +180,13 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 			}
 
 			if (i>=lineLen) c = ' ';
-			else 			c = (*it.it)[i];
-
-			if (c&128||c<32) c = '?'; //utf8
+			else 			c = (*it.it)[i]&255;
+			assert(c>>31==0);
 			if (c=='\t') c = ' ';
+			else if (c<32) c = '?';
+			else if (c&128) HandleUTF8(it,c,i);
 
-			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);//defaultStyle;
+			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);
 			if (inSelection) std::swap(usedStyle.bg,usedStyle.fg);
 			textScreen[y*w+x+lineStart] = TextCell(c,usedStyle);
 

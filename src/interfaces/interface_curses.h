@@ -3,8 +3,10 @@
 #include "interface.h"
 #include "../logger.h"
 
+#include <locale.h>
 #include <ncurses.h>
 
+#include <cstring>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -13,7 +15,7 @@ typedef std::pair<Color,Color> ColorPair;
 
 class CursesInterface : public TextInterfaceBase {
 	KeyboardEvent lastEvent;
-	chtype* charArray;
+	cchar_t* charArray;
 
 	s32 definedColors, definedPairs;
 

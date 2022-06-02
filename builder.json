@@ -21,7 +21,7 @@
 	"linkFlags":[
 		"-o",
 		"%output",
-		"-lncurses",
+		"-lncursesw",
 		"%input"
 	],
 	"modes": {

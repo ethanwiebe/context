@@ -11,6 +11,7 @@
 #include "../cursor.h"
 
 #include <vector>
+#include <wchar.h>
 
 struct VisualCursor {
 	Cursor cursor;
