@@ -1,40 +1,45 @@
 {
 	"sourceDir":"src",
-	"outputDir":"bin",
 	"headerExtension":"h",
 	"sourceExtension":"cpp",
 	"outputName":"context",
+	"outputDir":[
+		"bin",
+		"%mode"
+	],
+	"objectDir":[
+		"build",
+		"%mode"
+	],
 	"compileCommand": "g++ -c",
 	"linkCommand": "g++",
 	"compileFlags":[
 		"-std=c++20",
 		"-o",
-		"%output",
+		"%out",
 		"-Wall",
 		"-Wextra",
 		"-fno-exceptions",
 		"-fno-rtti",
 		"-pedantic",
 		"-DCURSES_INTERFACE",
-		"%input"
+		"%in"
 	],
 	"linkFlags":[
 		"-o",
-		"%output",
+		"%out",
 		"-lncursesw",
-		"%input"
+		"%in"
 	],
 	"modes": {
 		"debug":{
-			"objectDir":"build/debug",
-			"outputDir":"bin/debug",
 			"compileFlags":[
 				"-ggdb3",
 				"-Og"
 			]
 		},
 		"release":{
-			"objectDir":"build/release",
+			"outputDir":"bin",
 			"compileFlags":[
 				"-O3",
 				"-DNDEBUG"
@@ -44,8 +49,6 @@
 			]
 		},
 		"size":{
-			"objectDir":"build/size",
-			"outputDir":"bin/size",
 			"compileFlags":[
 				"-Os",
 				"-fdata-sections",
