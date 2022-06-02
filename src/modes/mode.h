@@ -33,7 +33,7 @@ public:
 	virtual bool SaveAction(const OSInterface&){return true;}
 	virtual bool OpenAction(const OSInterface&,std::string_view){return true;}
 	virtual void SetPath(const OSInterface&,std::string_view){}
-
+	
 	virtual bool Readonly(){
 		return readonly;
 	}

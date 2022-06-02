@@ -1,5 +1,7 @@
 #include "editmode.h"
 
+#include "../context.h"
+
 EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {}
 
 void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
@@ -74,10 +76,12 @@ void EditMode::ProcessTextAction(TextAction a){
 				return;
 			case Action::Cut:
 				VisualCursorDeleteSelection(cursor,true);
+				ctx->GetClipboard() = copiedText;
 				return;
 			case Action::Copy:
 				CopySelection();
 				StopSelecting();
+				ctx->GetClipboard() = copiedText;
 				return;
 			case Action::Tab:
 				IndentSelection();
@@ -181,13 +185,16 @@ void EditMode::ProcessTextAction(TextAction a){
 			case Action::Copy:
 				copiedText = *cursor.cursor.line.it;
 				copiedText += '\n';
+				ctx->GetClipboard() = copiedText;
 				break;
 			case Action::Cut:
 				copiedText = *cursor.cursor.line.it;
 				copiedText += '\n';
 				VisualCursorDeleteLine(cursor);
+				ctx->GetClipboard() = copiedText;
 				break;
 			case Action::Paste:
+				copiedText = ctx->GetClipboard();
 				InsertStringAt(cursor.cursor,copiedText);
 				MoveVisualCursorRight(cursor,copiedText.size());
 				break;

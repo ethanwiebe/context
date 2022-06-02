@@ -1,5 +1,8 @@
 #include "context.h"
 
+#include "modes/editmode.h"
+#include "interfaces/interface_curses.h"
+
 ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();
 
@@ -348,4 +351,8 @@ void ContextEditor::SetPathMode(std::string_view path,size_t index){
 
 OSInterface* ContextEditor::GetOSInterface() const {
 	return osInterface.get();
+}
+
+std::string& ContextEditor::GetClipboard(){
+	return clipboardText;
 }

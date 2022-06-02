@@ -5,9 +5,9 @@
 #include "keybind.h"
 #include "tokenizer.h"
 
-#include "modes/editmode.h"
+#include "modes/mode.h"
 #include "interfaces/oslinux.h"
-#include "interfaces/interface_curses.h"
+#include "interfaces/interface.h"
 
 #include <vector>
 #include <string>
@@ -28,10 +28,11 @@ class ContextEditor {
 	Handle<OSInterface> osInterface;
 
 	size_t currentMode;
+	
+	std::string clipboardText;
 
 	bool quit;
 	EntryMode entryMode;
-//	bool commandEntry;
 	std::string entryString;
 	std::string yesNoMessage;
 	std::string errorMessage;
@@ -66,6 +67,8 @@ public:
 
 	void NewMode();
 	void OpenMode(std::string_view);
+	
+	std::string& GetClipboard();
 
 	OSInterface* GetOSInterface() const;
 };
