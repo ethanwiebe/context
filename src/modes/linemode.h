@@ -141,7 +141,9 @@ public:
 	void InsertStringAt(Cursor,const std::string&,bool=true);
 	void DeleteCharAt(Cursor,bool=true);
 	void DeleteCharCountAt(Cursor,s32);
-	
+
+	void VisualCursorDeletePreviousChar(VisualCursor&,s32);
+
 	void InsertTab(VisualCursor&);
 
 	void SetModified();

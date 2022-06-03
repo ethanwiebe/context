@@ -65,7 +65,6 @@ void SetKeybinds(){
 	ADD_BIND(Action::Tab,                 'i',                 KeyModifier::Ctrl);
 	
 	ADD_BIND(Action::Untab,               KeyEnum::Tab,        KeyModifier::Shift);
-	ADD_BIND(Action::Untab,               'i',                 KeyModifier::Ctrl|KeyModifier::Alt);
 
 	ADD_BIND(Action::DeleteLine,          'd',                 KeyModifier::Ctrl);
 

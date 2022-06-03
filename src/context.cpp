@@ -14,7 +14,7 @@ ContextEditor::ContextEditor(const std::string& file){
 	
 	errorMessage = {};
 
-	interface = Handle<TextInterfaceBase>(new CursesInterface());	
+	interface = Handle<TextInterfaceBase>(new CursesInterface());
 	osInterface = Handle<OSInterface>(new LinuxOSImpl());
 
 	if (!file.empty()){

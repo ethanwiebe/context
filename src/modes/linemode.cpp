@@ -119,6 +119,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	if (highlighterNeedsUpdate)
 		UpdateHighlighter();
 
+	SetVisualCursorColumn(cursors.front(),cursors.front().cursor.column);
 	MoveScreenToVisualCursor(cursors.front());
 
 	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',defaultStyle));
@@ -454,7 +455,7 @@ void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
 			
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	s32 maxLine = cursor.CurrentLineLen();
-	SetVisualCursorColumn(cursor,std::min(newCursorX,maxLine));
+	cursor.cursor.column = std::min(newCursorX,maxLine);
 }
 
 void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
@@ -463,7 +464,7 @@ void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 			
 	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
 	s32 maxLine = cursor.CurrentLineLen();
-	SetVisualCursorColumn(cursor,std::min(newCursorX,maxLine));
+	cursor.cursor.column = std::min(newCursorX,maxLine);
 }
 
 void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
@@ -484,7 +485,7 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 			newCol = 0;
 	}
 
-	SetVisualCursorColumn(cursor,newCol);
+	cursor.cursor.column = newCol;
 	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 }
 
@@ -506,7 +507,7 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 			newCol = cursor.CurrentLineLen();
 	}
 
-	SetVisualCursorColumn(cursor,newCol);
+	cursor.cursor.column = newCol;
 	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 }
 
@@ -638,7 +639,7 @@ void LineModeBase::VisualCursorInsertLine(VisualCursor& cursor){
 	InsertCharAt(cursor.cursor,'\n');
 	s32 indentLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,Config::tabSize);
 	bool tabs = textBuffer->IsTabIndented(cursor.cursor.line.it);
-	MoveVisualCursorRight(cursor,1);
+	MoveCursorRight(cursor.cursor,1);
 	if (Config::autoIndent){
 		if (tabs){
 			while (--indentLevel>=0){
@@ -704,6 +705,13 @@ void LineModeBase::DeleteCharCountAt(Cursor cursor,s32 count){
 	while (--count>=0){
 		DeleteCharAt(cursor);
 	}
+}
+
+void LineModeBase::VisualCursorDeletePreviousChar(VisualCursor& cursor,s32 count){
+	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
+	
+	MoveCursorLeft(cursor.cursor,count);
+	DeleteCharCountAt(cursor.cursor,count);
 }
 
 void LineModeBase::InsertCharAt(Cursor cursor,char c,bool undoable){

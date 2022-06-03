@@ -65,6 +65,7 @@ void EditMode::ProcessTextAction(TextAction a){
 	if (selecting){
 		switch(a.action){
 			case Action::InsertChar:
+			case Action::InsertLine:
 			case Action::Paste:
 				VisualCursorDeleteSelection(cursor);
 				break;
@@ -126,11 +127,7 @@ void EditMode::ProcessTextAction(TextAction a){
 				VisualCursorInsertLine(cursor);
 				break;
 			case Action::DeletePreviousChar:
-				if (cursor.cursor.column==0&&cursor.cursor.line.index==0) //at start of textBuffer
-					break;
-	
-				MoveVisualCursorLeft(cursor,1);
-				DeleteCharAt(cursor.cursor);
+				VisualCursorDeletePreviousChar(cursor,1);
 				break;
 			case Action::DeleteCurrentChar:
 				if (cursor.cursor.column==cursor.CurrentLineLen()
@@ -140,13 +137,7 @@ void EditMode::ProcessTextAction(TextAction a){
 				DeleteCharAt(cursor.cursor);
 				break;
 			case Action::DeletePreviousMulti:
-				while (--a.num>=0){
-					if (cursor.cursor.column==0&&cursor.cursor.line.index==0)
-						break;
-	
-					MoveVisualCursorLeft(cursor,1);
-					DeleteCharAt(cursor.cursor);
-				}
+				VisualCursorDeletePreviousChar(cursor,a.num);
 				break;
 			case Action::DeleteCurrentMulti:
 				while (--a.num>=0){
