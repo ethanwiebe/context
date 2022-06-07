@@ -89,3 +89,5 @@ TextStyle typeStyle = {ColorGreen,ColorBackgroundDark,StyleFlag::NoFlag};
 TextStyle funcStyle = {ColorMagenta,ColorBackgroundDark,StyleFlag::NoFlag};
 TextStyle commentStyle = {ColorComment,ColorBackgroundDark,StyleFlag::NoFlag};
 TextStyle barStyle = {ColorWhite,ColorBackground3,StyleFlag::NoFlag};
+TextStyle highlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag};
+TextStyle highlightStyle2 = {ColorBlack,ColorOrange,StyleFlag::NoFlag};

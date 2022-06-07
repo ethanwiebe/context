@@ -4,6 +4,7 @@
 
 #include "../key.h"
 #include "../textscreen.h"
+#include "../tokenizer.h"
 #include "../interfaces/os.h"
 
 class ContextEditor;
@@ -29,6 +30,8 @@ public:
 
 	virtual void ProcessTextAction(TextAction) = 0;
 	virtual TextScreen& GetTextScreen(s32,s32) = 0;
+
+	virtual void ProcessCommand(const TokenVector&){}
 
 	virtual bool SaveAction(const OSInterface&){return true;}
 	virtual bool OpenAction(const OSInterface&,std::string_view){return true;}

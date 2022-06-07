@@ -133,6 +133,18 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	Cursor startSelect = GetSelectStartPos();
 	Cursor endSelect = GetSelectEndPos();
 	bool inSelection = selecting && viewLine.index > startSelect.line.index; //TODO: handle sublines here
+	
+	s32 findCount = 0;
+	s32 findIndex = 0;
+	bool cursorFind = findNum==0;
+	
+	FoundList::iterator currentFind = matches.begin();
+	if (matches.size()){
+		while (currentFind!=matches.end()&&currentFind->line.index<viewLine.index){
+			++findIndex;
+			++currentFind;
+		}
+	}
 
 	s32 oldX,xDiff;
 	s32 i = 0;
@@ -184,6 +196,29 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 						(it.index==endSelect.line.index&&
 						 i>endSelect.column)) inSelection = false;
 			}
+			
+			if (findCount){
+				--findCount;
+				if (!findCount)
+					cursorFind = false;
+			}
+			
+			if (matches.size()!=0&&currentFind!=matches.end()){
+				while (currentFind!=matches.end()&&currentFind->line.index<it.index){
+					++findIndex;
+					++currentFind;
+				}
+				while (currentFind!=matches.end()&&currentFind->line.index==it.index&&
+						currentFind->column<i){
+					++findIndex;
+					++currentFind;
+				}
+				
+				if (findIndex==findNum&&!findCount) cursorFind = true;
+
+				if (it.index==currentFind->line.index&&i==currentFind->column)
+					findCount = findText.size();	
+			}
 
 			if (i>=lineLen) c = ' ';
 			else 			c = (*it.it)[i]&255;
@@ -194,6 +229,10 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);
 			if (inSelection) std::swap(usedStyle.bg,usedStyle.fg);
+			if (findCount){
+				if (cursorFind) usedStyle = highlightStyle;
+				else usedStyle = highlightStyle2;
+			}
 			textScreen[y*w+x+lineStart] = TextCell(c,usedStyle);
 
 			if (i>=lineLen) break;
@@ -204,7 +243,8 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 			if (inSelection){
 				while (--xDiff>0) //draw selection over tabs
-					std::swap(textScreen[y*w+x-xDiff+lineStart].style.fg,textScreen[y*w+x-xDiff+lineStart].style.bg);
+					std::swap(textScreen[y*w+x-xDiff+lineStart].style.fg,
+							textScreen[y*w+x-xDiff+lineStart].style.bg);
 			}
 
 			if (x >= w-lineStart){
@@ -247,6 +287,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		locString += ", SSL: " + std::to_string(screenSubline);
 		locString += ", UH: " + std::to_string(undoStack.UndoHeight());
 		locString += ", RH: " + std::to_string(undoStack.RedoHeight());
+		locString += ", FC: " + std::to_string(matches.size());
 		textScreen.RenderString(w-locString.size()-1,h-2,locString);
 	}
 
@@ -267,11 +308,39 @@ std::string_view LineModeBase::GetBufferName(){
 }
 
 std::string_view LineModeBase::GetStatusBarText(){
-	cursorPosText = " ";
-	cursorPosText += std::to_string(cursors[0].cursor.line.index+1);
-	cursorPosText += ", ";
-	cursorPosText += std::to_string(cursors[0].cursor.column+1);
+	if (finding){
+		cursorPosText = " ";
+		cursorPosText += std::to_string(findNum+1);
+		cursorPosText += "/";
+		cursorPosText += std::to_string(matches.size());
+	} else {
+		cursorPosText = " ";
+		cursorPosText += std::to_string(cursors[0].cursor.line.index+1);
+		cursorPosText += ", ";
+		cursorPosText += std::to_string(cursors[0].cursor.column+1);
+	}
 	return cursorPosText;
+}
+
+void LineModeBase::ProcessCommand(const TokenVector& tokens){
+	if (tokens.size()>=2){
+		if (tokens[0].token=="goto"){
+			s32 l = strtol(tokens[1].token.data(),NULL,10);
+			s32 c = 0;
+			if (tokens.size()>=3) c = strtol(tokens[2].token.data(),NULL,10);
+			l = std::min(std::max(l-1,0),(s32)textBuffer->size()-1);
+			c = std::max(c-1,0);
+			cursors.front().cursor = MakeCursor(l,c);
+		} else if (tokens[0].token=="find"&&!tokens[1].token.empty()){
+			FindTextInBuffer(tokens[1].token);
+			if (!matches.size()){
+				modeErrorMessage = "No matches for '"+findText+"'";
+			} else {
+				finding = true;
+				CursorToNextMatch();
+			}
+		}
+	}	
 }
 
 bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
@@ -632,6 +701,7 @@ Cursor LineModeBase::MakeCursorFromLineIndexedIterator(s32 line,s32 column,LineI
 	while (it.index<line)
 		++it;
 
+	column = std::min(column,(s32)it.it->size());
 	return {it,column};
 }
 
@@ -697,8 +767,7 @@ void LineModeBase::DeleteCharAt(Cursor cursor,bool undoable){
 		cursor.line.it->erase(cursor.column,1);
 	}
 	
-	modified = true;
-	highlighterNeedsUpdate = true;
+	SetModified();
 }
 
 void LineModeBase::DeleteCharCountAt(Cursor cursor,s32 count){
@@ -724,8 +793,7 @@ void LineModeBase::InsertCharAt(Cursor cursor,char c,bool undoable){
 	if (undoable)
 		PushInsertionAction(cursor,c);
 		
-	modified = true;
-	highlighterNeedsUpdate = true;
+	SetModified();
 }
 
 void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoable){
@@ -737,8 +805,6 @@ void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoab
 		} else
 			++cursor.column;
 	}
-	
-	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::InsertTab(VisualCursor& cursor){
@@ -756,6 +822,7 @@ void LineModeBase::InsertTab(VisualCursor& cursor){
 void LineModeBase::SetModified(){
 	modified = true;
 	highlighterNeedsUpdate = true;
+	matches.clear();
 }
 
 void LineModeBase::Undo(VisualCursor& cursor){
@@ -779,6 +846,7 @@ void LineModeBase::Undo(VisualCursor& cursor){
 	PerformBufferAction(cursor,undoAction);
 	
 	highlighterNeedsUpdate = true;
+	matches.clear();
 }
 
 void LineModeBase::Redo(VisualCursor& cursor){
@@ -794,6 +862,7 @@ void LineModeBase::Redo(VisualCursor& cursor){
 	PerformBufferAction(cursor,redoAction);
 	
 	highlighterNeedsUpdate = true;
+	matches.clear();
 }
 
 void LineModeBase::MakeNewAction(BufferActionType type,s32 line,s32 col){
@@ -1011,4 +1080,55 @@ void LineModeBase::DeleteLinesInSelection(VisualCursor& cursor){
 	StopSelecting();
 	cursor.cursor = start;
 	SetVisualCursorColumn(cursor,std::min(cursor.CurrentLineLen(),cursor.cachedX));
+}
+
+
+void LineModeBase::FindTextInBuffer(std::string_view text){
+	findText = text;
+	FindAllMatches(*textBuffer,matches,text);
+}
+
+void LineModeBase::CursorToNextMatch(){
+	auto line = cursors.front().cursor.line.index;
+	auto col = cursors.front().cursor.column;
+	Cursor found = matches.front();
+	findNum = 0;
+	s32 findCount = 0;
+	for (auto pos : matches){
+		if (pos.line.index>line){
+			found = pos;
+			findNum = findCount;
+			break;
+		}
+		
+		if (pos.line.index==line&&pos.column>col){
+			found = pos;
+			findNum = findCount;
+			break;
+		}
+		++findCount;
+	}
+	
+	cursors.front().cursor = found;
+	LockScreenToVisualCursor(cursors.front());
+}
+
+void LineModeBase::CursorToPreviousMatch(){
+	auto line = cursors.front().cursor.line.index;
+	auto col = cursors.front().cursor.column;
+	Cursor found = matches.back();
+	s32 findCount = matches.size()-1;
+	for (auto pos : matches){
+		if (pos.line.index>line)
+			break;
+		if (pos.line.index==line&&pos.column>=col)
+			break;
+		
+		found = pos;
+		++findCount;
+	}
+	
+	findNum = findCount%matches.size();
+	cursors.front().cursor = found;
+	LockScreenToVisualCursor(cursors.front());
 }

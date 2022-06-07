@@ -89,6 +89,9 @@ void SetKeybinds(){
 	ADD_BIND(Action::PreviousMode,        KeyEnum::PageDown,   KeyModifier::Ctrl);
 	ADD_BIND(Action::OpenMode,            'o',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
+	
+	ADD_BIND(Action::Goto,                'g',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Find,                'f',                 KeyModifier::Ctrl);
 
 	ADD_BIND(Action::DebugAction,            KeyEnum::F11,        KeyModifier::Ctrl);
 

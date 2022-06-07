@@ -9,6 +9,7 @@
 #include "../undo.h"
 #include "../syntaxhighlight.h"
 #include "../cursor.h"
+#include "../find.h"
 
 #include <vector>
 #include <wchar.h>
@@ -83,6 +84,11 @@ protected:
 
 	UndoStack<BufferAction> undoStack;
 	BufferAction currentAction;
+	
+	FoundList matches;
+	std::string findText;
+	s32 findNum;
+	bool finding;
 
 	bool selecting;
 	Cursor selectAnchor,selectCursor;
@@ -101,6 +107,8 @@ public:
 	TextStyle GetTextStyleAt(ColorIterator,s32);
 	std::string_view GetBufferName() override;
 	std::string_view GetStatusBarText() override;
+	
+	void ProcessCommand(const TokenVector&) override;
 
 	bool OpenAction(const OSInterface& os,std::string_view path) override;
 	bool SaveAction(const OSInterface& os) override;
@@ -175,5 +183,9 @@ public:
 	void DeleteLinesInSelection(VisualCursor&);
 
 	void UpdateHighlighter();
+	
+	void FindTextInBuffer(std::string_view);
+	void CursorToNextMatch();
+	void CursorToPreviousMatch();
 };
 

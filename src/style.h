@@ -54,4 +54,5 @@ extern TextStyle typeStyle;
 extern TextStyle funcStyle;
 extern TextStyle commentStyle;
 extern TextStyle barStyle;
-
+extern TextStyle highlightStyle;
+extern TextStyle highlightStyle2;

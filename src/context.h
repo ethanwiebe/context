@@ -45,7 +45,7 @@ class ContextEditor {
 	void BeginCommand();
 	void CancelCommand();
 	void SubmitCommand();
-	void ProcessCommand(std::string_view);
+	bool ProcessCommand(const TokenVector&);
 
 	std::string ConstructModeString(size_t);
 	void DrawStatusBar(TextScreen&);
@@ -64,6 +64,8 @@ public:
 	void SetPathMode(std::string_view,size_t);
 	void SetPathAndSaveMode(std::string_view,size_t);
 	void SwitchMode(size_t);
+	
+	void BeginEntryWithCommand(const std::string&);
 
 	void NewMode();
 	void OpenMode(std::string_view);

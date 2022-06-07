@@ -144,7 +144,12 @@ void ContextEditor::CancelCommand(){
 
 void ContextEditor::SubmitCommand(){
 	entryMode = EntryMode::None;
-	ProcessCommand(entryString);
+	
+	CommandTokenizer ct(entryString);
+	TokenVector tokens = ct.GetTokens();
+	
+	if (!ProcessCommand(tokens))
+		modes[currentMode]->ProcessCommand(tokens);
 }
 
 inline void LogTokens(TokenVector tokens){
@@ -154,24 +159,26 @@ inline void LogTokens(TokenVector tokens){
 	logger << "\n";
 }
 
-void ContextEditor::ProcessCommand(std::string_view sv){
-	CommandTokenizer ct(sv);
-	TokenVector tokens = ct.GetTokens();
-	
+bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	LogTokens(tokens);	
 	
 	if (tokens.size()>=2){
 		if (tokens[0].type==TokenType::Name&&tokens[0].token=="open"){
 			std::string_view path = tokens[1].token;
 			OpenMode(path);
+			return true;
 		} else if (tokens[0].type==TokenType::Name&&tokens[0].token=="saveas"){
 			std::string_view path = tokens[1].token;
 			SaveAsMode(path,currentMode);
+			return true;
 		} else if (tokens[0].type==TokenType::Name&&tokens[0].token=="setpath"){
 			std::string_view path = tokens[1].token;
 			SetPathMode(path,currentMode);
+			return true;
 		}
 	}
+	
+	return false;
 }
 
 std::string ContextEditor::ConstructModeString(size_t index){
@@ -203,7 +210,7 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 		ts.SetAt(x,h-1,TextCell(' ',barStyle));
 	}
 
-	std::string modeError = modes[currentMode]->GetErrorMessage();
+	std::string& modeError = modes[currentMode]->GetErrorMessage();
 	if (entryMode==EntryMode::Command){
 		ts.RenderString(0,h-1,entryPrefix + entryString,barStyle);
 	} else if (entryMode==EntryMode::YesNo){
@@ -216,7 +223,11 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 			ts.RenderString(0,h-1,errorMessage,errorStyle);
 			errorMessage.clear();
 		} else if (!modeError.empty()){
-			ts.RenderString(0,h-1,modeError,errorStyle);
+			std::string formattedError = {};
+			formattedError += modes[currentMode]->GetModeName();
+			formattedError += ": ";
+			formattedError += modeError;
+			ts.RenderString(0,h-1,formattedError,errorStyle);
 			modeError.clear();
 		}
 
@@ -357,4 +368,9 @@ OSInterface* ContextEditor::GetOSInterface() const {
 
 std::string& ContextEditor::GetClipboard(){
 	return clipboardText;
+}
+
+void ContextEditor::BeginEntryWithCommand(const std::string& s){
+	entryMode = EntryMode::Command;
+	entryString = s;
 }

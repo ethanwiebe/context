@@ -27,9 +27,10 @@ void ClipString(std::string_view& str,std::string_view::iterator& pos){
 }
 
 void SkipWhitespace(std::string_view& str,std::string_view::iterator& pos){
-	while (*pos==' '||*pos=='\n'||*pos=='\t'){
+	while (pos!=str.end()&&(*pos==' '||*pos=='\n'||*pos=='\t')){
 		++pos;
 	}
+	
 	ClipString(str,pos);
 }
 
@@ -77,12 +78,18 @@ Token CommandTokenizer::EmitToken(){
 		TokenizeName(*this);
 	} else if (initialC=='\''){
 		t.type = TokenType::String;
-		ClipString(str,++pos);
-		TokenizeSingleQuoteString(*this);
+		++pos;
+		if (pos!=str.end()){
+			ClipString(str,pos);
+			TokenizeSingleQuoteString(*this);
+		}
 	} else if (initialC=='"'){
 		t.type = TokenType::String;
-		ClipString(str,++pos);
-		TokenizeDoubleQuoteString(*this);
+		++pos;
+		if (pos!=str.end()){
+			ClipString(str,pos);
+			TokenizeDoubleQuoteString(*this);
+		}
 	} else {
 		t.type = TokenType::SpecialChar;
 		++pos; //tokenize one char

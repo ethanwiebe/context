@@ -113,7 +113,10 @@ enum class Action : u16 {
 	PreviousMode,
 	SaveMode,
 	SaveAsMode,
-
+	
+	Goto,
+	Find,
+	
 	DebugAction
 };
 

@@ -62,6 +62,24 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 void EditMode::ProcessTextAction(TextAction a){
 	VisualCursor& cursor = cursors[0];
 	ProcessMoveAction(cursor,a);
+	
+	if (finding){
+		switch (a.action){
+			case Action::InsertLine:
+			case Action::Tab:
+				CursorToNextMatch();
+				return;
+			case Action::Untab:
+				CursorToPreviousMatch();
+				return;
+		
+			default:
+				finding = false;
+				matches.clear();
+				break;
+		}
+	}
+	
 	if (selecting){
 		switch(a.action){
 			case Action::InsertChar:
@@ -187,6 +205,15 @@ void EditMode::ProcessTextAction(TextAction a){
 				copiedText = ctx->GetClipboard();
 				InsertStringAt(cursor.cursor,copiedText);
 				MoveVisualCursorRight(cursor,copiedText.size());
+				break;
+			case Action::Goto:
+				ctx->BeginEntryWithCommand("goto ");
+				break;
+			case Action::Find:
+				ctx->BeginEntryWithCommand("find ");
+				break;
+			case Action::Escape:
+				matches.clear();
 				break;
 			case Action::DebugAction:
 				showDebugInfo = !showDebugInfo;
