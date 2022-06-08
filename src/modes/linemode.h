@@ -118,10 +118,10 @@ public:
 	
 	bool HasPath() override;
 
-	void MoveScreenDown(s32,bool = true);
-	void MoveScreenUp(s32,bool = false);
+	void MoveScreenDown(s32,bool=true);
+	void MoveScreenUp(s32,bool=false);
 	void MoveScreenToVisualCursor(VisualCursor&);
-	void LockScreenToVisualCursor(VisualCursor&);
+	void LockScreenToVisualCursor(VisualCursor&,bool=false);
 
 	Cursor MakeCursorFromLineIndexedIterator(s32,s32,LineIndexedIterator);
 	Cursor MakeCursor(s32,s32);

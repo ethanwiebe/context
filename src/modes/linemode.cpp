@@ -230,8 +230,8 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);
 			if (inSelection) std::swap(usedStyle.bg,usedStyle.fg);
 			if (findCount){
-				if (cursorFind) usedStyle = highlightStyle;
-				else usedStyle = highlightStyle2;
+				if (cursorFind) usedStyle = highlightStyle2;
+				else usedStyle = highlightStyle;
 			}
 			textScreen[y*w+x+lineStart] = TextCell(c,usedStyle);
 
@@ -469,11 +469,11 @@ void LineModeBase::MoveScreenUp(s32 num,bool constrain){
 	CalculateScreenData();
 }
 
-void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor){
+void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor,bool constrain){
 	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
-	MoveScreenUp(innerHeight/2);
+	MoveScreenUp(innerHeight/2,constrain);
 }
 
 s32 TrueLineDistance(LineIndexedIterator start,s32 sublineStart,
@@ -1110,7 +1110,7 @@ void LineModeBase::CursorToNextMatch(){
 	}
 	
 	cursors.front().cursor = found;
-	LockScreenToVisualCursor(cursors.front());
+	LockScreenToVisualCursor(cursors.front(),true);
 }
 
 void LineModeBase::CursorToPreviousMatch(){
@@ -1130,5 +1130,5 @@ void LineModeBase::CursorToPreviousMatch(){
 	
 	findNum = findCount%matches.size();
 	cursors.front().cursor = found;
-	LockScreenToVisualCursor(cursors.front());
+	LockScreenToVisualCursor(cursors.front(),true);
 }
