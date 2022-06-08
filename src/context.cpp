@@ -104,6 +104,7 @@ void ContextEditor::ProcessCommandEntry(TextAction textAction){
 			SubmitCommand();
 			break;
 		case Action::Escape:
+		case Action::CloseMode:
 			CancelCommand();
 			break;
 
