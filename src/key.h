@@ -99,8 +99,11 @@ enum class Action : u16 {
 	SelectAll,
 
 	Cut,
+	CutLines,
 	Copy,
+	CopyLines,
 	Paste,
+	PasteLines,
 
 	Escape,
 

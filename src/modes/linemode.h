@@ -147,6 +147,7 @@ public:
 
 	void InsertCharAt(Cursor,char,bool=true);
 	void InsertStringAt(Cursor,const std::string&,bool=true);
+	void InsertLinesAt(Cursor,const std::string&);
 	void DeleteCharAt(Cursor,bool=true);
 	void DeleteCharCountAt(Cursor,s32);
 
@@ -178,6 +179,7 @@ public:
 	Cursor GetSelectEndPos() const;
 	void VisualCursorDeleteSelection(VisualCursor&,bool=false);
 	void CopySelection();
+	void CopyLinesInSelection();
 	void IndentSelection();
 	void DedentSelection();
 	void DeleteLinesInSelection(VisualCursor&);

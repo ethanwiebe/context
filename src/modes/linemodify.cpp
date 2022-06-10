@@ -102,6 +102,16 @@ void LineModeBase::InsertStringAt(Cursor cursor,const std::string& s,bool undoab
 	}
 }
 
+void LineModeBase::InsertLinesAt(Cursor cursor,const std::string& s){
+	cursor.column = cursor.line.it->size();
+	InsertCharAt(cursor,'\n');
+	MoveCursorRight(cursor,1);
+	for (auto c : s){
+		InsertCharAt(cursor,c);
+		MoveCursorRight(cursor,1);
+	}
+}
+
 void LineModeBase::InsertTab(VisualCursor& cursor){
 	if (textBuffer->IsTabIndented(cursor.cursor.line.it)){
 		InsertCharAt(cursor.cursor,'\t');

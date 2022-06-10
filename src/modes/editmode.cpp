@@ -85,6 +85,7 @@ void EditMode::ProcessTextAction(TextAction a){
 			case Action::InsertChar:
 			case Action::InsertLine:
 			case Action::Paste:
+			case Action::PasteLines:
 				VisualCursorDeleteSelection(cursor);
 				break;
 			case Action::DeleteCurrentChar:
@@ -97,8 +98,18 @@ void EditMode::ProcessTextAction(TextAction a){
 				VisualCursorDeleteSelection(cursor,true);
 				ctx->GetClipboard() = copiedText;
 				return;
+			case Action::CutLines:
+				CopyLinesInSelection();
+				DeleteLinesInSelection(cursor);
+				ctx->GetClipboard() = copiedText;
+				return;
 			case Action::Copy:
 				CopySelection();
+				StopSelecting();
+				ctx->GetClipboard() = copiedText;
+				return;
+			case Action::CopyLines:
+				CopyLinesInSelection();
 				StopSelecting();
 				ctx->GetClipboard() = copiedText;
 				return;
@@ -191,20 +202,24 @@ void EditMode::ProcessTextAction(TextAction a){
 				MoveVisualCursorToBufferEnd(cursor);
 				break;
 			case Action::Copy:
+			case Action::CopyLines:
 				copiedText = *cursor.cursor.line.it;
-				copiedText += '\n';
 				ctx->GetClipboard() = copiedText;
 				break;
 			case Action::Cut:
+			case Action::CutLines:
 				copiedText = *cursor.cursor.line.it;
-				copiedText += '\n';
 				VisualCursorDeleteLine(cursor);
 				ctx->GetClipboard() = copiedText;
 				break;
 			case Action::Paste:
 				copiedText = ctx->GetClipboard();
 				InsertStringAt(cursor.cursor,copiedText);
-				MoveVisualCursorRight(cursor,copiedText.size());
+				MoveCursorRight(cursor.cursor,copiedText.size());
+				break;
+			case Action::PasteLines:
+				copiedText = ctx->GetClipboard();
+				InsertLinesAt(cursor.cursor,copiedText);
 				break;
 			case Action::Goto:
 				ctx->BeginEntryWithCommand("goto ");

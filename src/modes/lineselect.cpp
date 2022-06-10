@@ -79,6 +79,22 @@ void LineModeBase::CopySelection(){
 	copiedText.insert(copiedText.begin(),GetCharAt(end));
 }
 
+void LineModeBase::CopyLinesInSelection(){
+	Cursor start = GetSelectStartPos();
+	Cursor end = GetSelectEndPos();
+	
+	copiedText.clear();
+	
+	while (start.line.index!=end.line.index){
+		copiedText += *start.line.it;
+		copiedText += '\n';
+		
+		++start.line;
+	}
+	
+	copiedText += *end.line.it;
+}
+
 void LineModeBase::IndentSelection(){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();

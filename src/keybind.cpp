@@ -76,8 +76,11 @@ void SetKeybinds(){
 	ADD_BIND(Action::SelectAll,           'a',                 KeyModifier::Ctrl);
 	
 	ADD_BIND(Action::Cut,                 'x',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::CutLines,            'x',                 KeyModifier::Alt);
 	ADD_BIND(Action::Copy,                'c',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::CopyLines,           'c',                 KeyModifier::Alt);
 	ADD_BIND(Action::Paste,               'v',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::PasteLines,          'v',                 KeyModifier::Alt);
 
 	ADD_BIND(Action::Escape,              KeyEnum::Escape,     KeyModifier::None);
 	
