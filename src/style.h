@@ -18,6 +18,7 @@ extern Color ColorYellow;
 extern Color ColorBlue;
 extern Color ColorCyan;
 extern Color ColorMagenta;
+extern Color ColorOrange;
 
 extern Color ColorBackgroundDark;
 extern Color ColorBackgroundLight;

@@ -56,8 +56,6 @@ std::string GetModName(s32 mod){
 
 CursesInterface::CursesInterface(){
 	charArray = nullptr;
-	COLS = 80;
-	LINES = 40;
 	
 	setlocale(LC_ALL,"");
 
@@ -81,11 +79,15 @@ CursesInterface::CursesInterface(){
 
 	WindowResized(COLS,LINES);
 
+	logger << "Has colors: " << 
+			(has_colors() ? "TRUE" : "FALSE") << '\n';
+			
+	logger << "Can change colors: " << 
+			(can_change_color() ? "TRUE" : "FALSE") << '\n';
+			
 	logger << "Max color pairs: " << COLOR_PAIRS << "\n";
 	logger << "Max colors: " << COLORS << "\n";
 	logger << "Escape delay: " << ESCDELAY << "\n";
-	logger << (s32)ACS_ULCORNER << "\n";
-	logger << (s32)A_ALTCHARSET << "\n";
 }
 
 CursesInterface::~CursesInterface(){
@@ -146,11 +148,36 @@ inline s32 CursesInterface::ColorsToPair(s32 fg, s32 bg) const {
 	return bg*definedColors + fg;
 }
 
+s32 GetFallbackColor8(Color c){
+	if (c==ColorBackgroundDark) return COLOR_BLACK;
+	if (c==ColorForegroundDark) return COLOR_WHITE;
+	if (c==ColorRed) return COLOR_RED;
+	if (c==ColorYellow) return COLOR_YELLOW;
+	if (c==ColorGreen) return COLOR_GREEN;
+	if (c==ColorOrange) return COLOR_RED;
+	if (c==ColorMagenta) return COLOR_MAGENTA;
+	if (c==ColorBlue) return COLOR_BLUE;
+	if (c==ColorCyan) return COLOR_CYAN;
+	
+	
+	if (c.r>=110&&c.g>=110&&c.b>=110) return COLOR_WHITE;
+	if (c.r<=80&&c.g<=80&&c.b<=80) return COLOR_BLACK;
+	if (c.r>=160&&c.b>=160) return COLOR_MAGENTA;
+	if (c.r>=160&&c.g>=160) return COLOR_YELLOW;
+	if (c.g>=140) return COLOR_GREEN;
+	if (c.r>=140) return COLOR_RED;
+	if (c.b>=180) return COLOR_CYAN;
+	if (c.b>=140) return COLOR_BLUE;
+	return COLOR_WHITE;
+}
+
 s32 CursesInterface::DefineColor(Color col){
+	if (COLORS<=8) return GetFallbackColor8(col);
 	s32 colorIndex = 0;
+	
 	for (const auto& defColor : colorDefinitions){
 		if (defColor == col)
-			return colorIndex;
+			return colorIndex+16;
 
 		++colorIndex;
 	}
@@ -158,7 +185,7 @@ s32 CursesInterface::DefineColor(Color col){
 	init_color(colorIndex+16,col.r*1000/255,col.g*1000/255,col.b*1000/255);
 	colorDefinitions.push_back(col);
 
-	return colorIndex;
+	return colorIndex+16;
 }
 
 s32 CursesInterface::DefinePair(Color fg,Color bg){
@@ -173,7 +200,7 @@ s32 CursesInterface::DefinePair(Color fg,Color bg){
 	s32 fgIndex = DefineColor(fg);
 	s32 bgIndex = DefineColor(bg);
 
-	init_pair(pairIndex+16,fgIndex+16,bgIndex+16);
+	init_pair(pairIndex+16,fgIndex,bgIndex);
 
 	pairDefinitions.emplace_back(fg,bg);
 

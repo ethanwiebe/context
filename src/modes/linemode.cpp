@@ -291,10 +291,6 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		textScreen.RenderString(w-locString.size()-1,h-2,locString);
 	}
 
-	/*TUITextBox testBox{"Line Test\nNew Line\n\nLine",3,-5,20,3};
-	testBox.SetTitle("open");
-	testBox.Render(textScreen);*/
-
 	return textScreen;
 }
 
