@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core.h"
+#include "core.h"
 #include "../interfaces/os.h"
 #include "linemode.h"
 

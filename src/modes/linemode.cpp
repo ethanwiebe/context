@@ -304,17 +304,19 @@ std::string_view LineModeBase::GetBufferName(){
 }
 
 std::string_view LineModeBase::GetStatusBarText(){
+	cursorPosText = {};
+	cursorPosText += ' ';
+
 	if (finding){
-		cursorPosText = " ";
 		cursorPosText += std::to_string(findNum+1);
-		cursorPosText += "/";
+		cursorPosText += '/';
 		cursorPosText += std::to_string(matches.size());
 	} else {
-		cursorPosText = " ";
 		cursorPosText += std::to_string(cursors[0].cursor.line.index+1);
 		cursorPosText += ", ";
 		cursorPosText += std::to_string(cursors[0].cursor.column+1);
 	}
+	
 	return cursorPosText;
 }
 

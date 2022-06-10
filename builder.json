@@ -23,6 +23,7 @@
 		"-fno-rtti",
 		"-pedantic",
 		"-DCURSES_INTERFACE",
+		"-Iinclude",
 		"%in"
 	],
 	"linkFlags":[
