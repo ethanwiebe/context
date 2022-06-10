@@ -45,6 +45,7 @@ class ContextEditor {
 	void BeginCommand();
 	void CancelCommand();
 	void SubmitCommand();
+	void AutocompleteCommand();
 	bool ProcessCommand(const TokenVector&);
 
 	std::string ConstructModeString(size_t);

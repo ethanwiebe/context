@@ -17,6 +17,8 @@ public:
 	bool FileIsReadable(std::string_view) const override;
 	bool FileIsWritable(std::string_view) const override;
 	s64 GetModifyTime(std::string_view) const override;
+	
+	void AutocompletePath(std::string&) const override;
 
 	bool ReadFileIntoTextBuffer(std::string_view,Ref<TextBuffer>) const override;
 	bool WriteTextBufferIntoFile(std::string_view,Ref<TextBuffer>) const override;

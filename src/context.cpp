@@ -107,6 +107,9 @@ void ContextEditor::ProcessCommandEntry(TextAction textAction){
 		case Action::CloseMode:
 			CancelCommand();
 			break;
+		case Action::Tab:
+			AutocompleteCommand();
+			break;
 
 		default:
 			break;
@@ -134,6 +137,18 @@ void ContextEditor::ProcessYesNoEntry(TextAction textAction){
 	}
 }
 
+void ContextEditor::AutocompleteCommand(){
+	CommandTokenizer ct(entryString);
+	TokenVector tokens = ct.GetTokens();
+	
+	if (tokens[0].token=="open"&&tokens.size()>1){
+		std::string sub = entryString.substr(tokens[1].col,tokens[1].token.size());
+		osInterface->AutocompletePath(sub);
+		entryString = entryString.substr(0,tokens[1].col) + sub +
+				entryString.substr(tokens[1].col+tokens[1].token.size());
+	}
+}
+
 void ContextEditor::BeginCommand(){
 	entryString.clear();
 	entryMode = EntryMode::Command;
@@ -155,7 +170,7 @@ void ContextEditor::SubmitCommand(){
 
 inline void LogTokens(TokenVector tokens){
 	for (const auto& token : tokens){
-		logger << (s32)token.type << ":" << token.token << ",";
+		logger << (s32)token.type << ":'" << token.token << "' @" << token.col << ",";
 	}
 	logger << "\n";
 }
