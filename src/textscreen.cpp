@@ -15,6 +15,12 @@ void TextScreen::SetSize(s32 w,s32 h){
 	cells.resize(w*h);
 }
 
+TextCell TextScreen::GetAt(s32 x,s32 y) const {
+	if (x<0||x>=width||y<0||y>=height) return TextCell(' ',defaultStyle);
+	
+	return cells[y*width+x];
+}
+
 void TextScreen::SetAt(s32 x,s32 y,TextCell t){
 	if (x<0||x>=width||y<0||y>=height) return;
 

@@ -20,6 +20,7 @@ public:
 
 	void SetSize(s32,s32);
 
+	TextCell GetAt(s32,s32) const;
 	void SetAt(s32,s32,TextCell);
 
 	std::vector<TextCell>::iterator begin();

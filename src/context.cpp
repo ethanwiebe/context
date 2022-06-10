@@ -214,6 +214,10 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	std::string& modeError = modes[currentMode]->GetErrorMessage();
 	if (entryMode==EntryMode::Command){
 		ts.RenderString(0,h-1,entryPrefix + entryString,barStyle);
+		auto x = entryPrefix.size()+entryString.size();
+		auto cell = ts.GetAt(x,h-1);
+		cell.style = cursorStyle;
+		ts.SetAt(x,h-1,cell);
 	} else if (entryMode==EntryMode::YesNo){
 		ts.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
