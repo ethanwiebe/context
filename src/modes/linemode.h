@@ -98,7 +98,7 @@ protected:
 public:
 	LineModeBase(ContextEditor* ctx);
 	void InitIterators();
-	inline void CalculateScreenData();
+	void CalculateScreenData();
 	inline void SetColorLine();
 
 	void SetCachedX(VisualCursor&);
@@ -189,3 +189,7 @@ public:
 	void CursorToPreviousMatch();
 };
 
+inline char GetCharAt(Cursor cursor){
+	if (cursor.column==(s32)cursor.line.it->size()) return '\n';
+	return (*cursor.line.it)[cursor.column];
+}
