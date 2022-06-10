@@ -53,7 +53,7 @@ void ChooseBestPrefix(
 		const std::vector<std::string>& choices,
 		std::string& best){
 	
-	best = {};
+	best.clear();
 	size_t lowest = std::string::npos;
 	for (const auto& choice : choices){
 		if (best.empty()){
@@ -98,7 +98,9 @@ void LinuxOSImpl::AutocompletePath(std::string& path) const {
 		}
 	}
 	
-	ChooseBestPrefix(validPrefixes,path);
+	ChooseBestPrefix(validPrefixes,closest);
+	if (!closest.empty())
+		path = closest;
 }
 
 s64 LinuxOSImpl::GetModifyTime(std::string_view path) const {
