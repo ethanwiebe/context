@@ -17,6 +17,7 @@ enum class TokenType : u8 {
 
 struct Token {
 	TokenType type;
+	s16 col;
 	std::string_view token;
 };
 
@@ -29,9 +30,11 @@ class TokenizerBase {
 public:
 	std::string_view str;
 	std::string_view::iterator pos;
+	std::string_view::iterator begin;
 
 	TokenizerBase(std::string_view sv) : str(sv){
 		pos = str.begin();
+		begin = str.begin();
 	}
 
 	virtual void Reset(std::string_view newStr);

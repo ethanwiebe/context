@@ -10,6 +10,7 @@ inline bool TokenizerBase::TokensLeft() const {
 
 void TokenizerBase::Reset(std::string_view newStr){
 	str = newStr;
+	begin = str.begin();
 	pos = str.begin();
 }
 
@@ -96,6 +97,7 @@ Token CommandTokenizer::EmitToken(){
 	}
 
 	t.token = {str.begin(),pos};
+	t.col = pos-begin-t.token.size();
 	
 	if (t.type==TokenType::String&&pos!=str.end()) ++pos; //skip second quote
 
