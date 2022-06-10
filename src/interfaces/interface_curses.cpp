@@ -19,14 +19,16 @@ void DefineAltKeys(){
 	
 	//ctrl-alt alpha
 	for (s32 i=1;i<=26;i++){
-		s = "\033";
+		s = {};
+		s += "\033";
 		s += (char)i;
 		define_key(s.c_str(),446+i);
 	}
 
 	//alt numbers
 	for (s32 i=0;i<10;i++){
-		s = "\033";
+		s = {};
+		s += "\033";
 		s += '0'+i;
 		define_key(s.c_str(),473+i);
 	}
