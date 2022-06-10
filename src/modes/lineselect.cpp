@@ -54,7 +54,8 @@ void LineModeBase::VisualCursorDeleteSelection(VisualCursor& cursor,bool copy){
 	DeleteCharAt(end);
 
 	cursor.cursor = start;
-	viewLine = start.line; //viewLine might be invalidated
+	if (start.line.index<=viewLine.index)
+		viewLine = start.line; //viewLine invalidated
 	SetVisualCursorColumn(cursor,cursor.cursor.column);
 	StopSelecting();
 	ForceFinishAction();
@@ -139,6 +140,8 @@ void LineModeBase::DeleteLinesInSelection(VisualCursor& cursor){
 	
 	StopSelecting();
 	cursor.cursor = start;
+	if (start.line.index<=viewLine.index)
+		viewLine = start.line;
 	SetVisualCursorColumn(cursor,std::min(cursor.CurrentLineLen(),cursor.cachedX));
 }
 
