@@ -1,7 +1,8 @@
 #include "context.h"
 
+#include "platform.h"
+
 #include "modes/editmode.h"
-#include "interfaces/interface_curses.h"
 
 ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();

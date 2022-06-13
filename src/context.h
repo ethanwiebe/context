@@ -5,9 +5,9 @@
 #include "keybind.h"
 #include "tokenizer.h"
 
-#include "modes/mode.h"
-#include "interfaces/oslinux.h"
-#include "interfaces/interface.h"
+#include "mode.h"
+#include "os.h"
+#include "interface.h"
 
 #include <vector>
 #include <string>

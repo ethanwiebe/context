@@ -2,7 +2,7 @@
 
 #include "core.h"
 
-#include "os.h"
+#include "../os.h"
 #include "../logger.h"
 
 #include <sys/stat.h>

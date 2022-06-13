@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../key.h"
-#include "../textscreen.h"
+#include "key.h"
+#include "textscreen.h"
 
 //inherit from this to support a platform
 class TextInterfaceBase {

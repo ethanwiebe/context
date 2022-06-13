@@ -1,8 +1,7 @@
 #pragma once
 
-#include "mode.h"
+#include "../mode.h"
 #include "../keybind.h"
-#include "../config.h"
 #include "../textbuffer.h"
 #include "../tui.h"
 #include "../logger.h"
@@ -10,6 +9,7 @@
 #include "../syntaxhighlight.h"
 #include "../cursor.h"
 #include "../find.h"
+#include "config.h"
 
 #include <vector>
 #include <wchar.h>
