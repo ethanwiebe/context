@@ -1,8 +1,17 @@
 {
 	"sourceDir":"src",
-	"headerExtension":"h",
-	"sourceExtension":"cpp",
+	"headerExt":"h",
+	"sourceExt":"cpp",
 	"outputName":"context",
+	"testVar":[
+		"this",
+		"is",
+		"a",
+		"%platform",
+		"test at",
+		"time:",
+		"#%utime"
+	],
 	"outputDir":[
 		"bin",
 		"%mode"
@@ -11,8 +20,8 @@
 		"build",
 		"%mode"
 	],
-	"compileCommand": "g++ -c",
-	"linkCommand": "g++",
+	"compileCmd": "g++ -c",
+	"linkCmd": "g++",
 	"compileFlags":[
 		"-std=c++20",
 		"-o",
@@ -66,9 +75,10 @@
 			]
 		},
 		"install":{
-			"compileCommand":"",
-			"linkCommand":"",
-			"preCommands":[
+			"compileCmd":"",
+			"linkCmd":"",
+			"preCmds":[
+				"echo Installing context at /usr/local/bin/context...",
 				"cp bin/context /usr/local/bin/context"
 			]
 		}
