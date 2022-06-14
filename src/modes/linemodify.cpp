@@ -76,6 +76,7 @@ void LineModeBase::VisualCursorDeletePreviousChar(VisualCursor& cursor,s32 count
 	
 	MoveCursorLeft(cursor.cursor,count);
 	DeleteCharCountAt(cursor.cursor,count);
+	SetCachedX(cursor);
 }
 
 void LineModeBase::InsertCharAt(Cursor cursor,char c,bool undoable){

@@ -36,6 +36,7 @@ LineModeBase::LineModeBase(ContextEditor* ctx) :
 	bufferPath = {};
 	undoStack = {};
 	selecting = false;
+	finding = false;
 
 	showDebugInfo = false;
 
@@ -465,6 +466,8 @@ void LineModeBase::CursorToNextMatch(){
 	}
 	
 	cursors.front().cursor = found;
+	SetVisualCursorColumn(cursors.front(),found.column);
+	SetCachedX(cursors.front());
 	LockScreenToVisualCursor(cursors.front(),true);
 }
 
@@ -485,5 +488,7 @@ void LineModeBase::CursorToPreviousMatch(){
 	
 	findNum = findCount%matches.size();
 	cursors.front().cursor = found;
+	SetVisualCursorColumn(cursors.front(),found.column);
+	SetCachedX(cursors.front());
 	LockScreenToVisualCursor(cursors.front(),true);
 }
