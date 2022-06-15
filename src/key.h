@@ -33,6 +33,7 @@ enum class KeyEnum : s32 {
 	PageDown = 338,
 
 	Delete = 330,
+	Insert = 331,
 	Home = 262,
 	End = 360
 };

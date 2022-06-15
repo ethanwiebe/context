@@ -80,6 +80,7 @@ CursesInterface::CursesInterface(){
 	pairDefinitions = {};
 
 	DefineAltKeys();
+	SetMappings();
 
 	WindowResized(COLS,LINES);
 
@@ -118,6 +119,46 @@ void CursesInterface::WindowResized(s32 w,s32 h){
 	charArray = new cchar_t[w*h];
 }
 
+void CursesInterface::SetMappings(){
+	for (s32 i=0;i<=25;++i){
+		keyMapping['A'+i] = {(KeyEnum)(i+'A'),KeyModifier::Shift};
+		keyMapping[417+i] = {(KeyEnum)(i+'A'),KeyModifier::Alt};
+		keyMapping[447+i] = {(KeyEnum)(i+'A'),(KeyModifier)((s32)KeyModifier::Ctrl | 
+								(s32)KeyModifier::Alt)};
+		
+		keyMapping[i+1] = {(KeyEnum)(i+'A'),KeyModifier::Ctrl};
+	}
+	
+	for (s32 i=0;i<10;++i){
+		keyMapping[473+i] = {(KeyEnum)('0'+i),KeyModifier::Alt};
+	}
+	
+	for (s32 i=0;i<12;++i){
+		keyMapping[277+i] = {(KeyEnum)((s32)KeyEnum::F1+i),KeyModifier::Shift};
+		keyMapping[289+i] = {(KeyEnum)((s32)KeyEnum::F1+i),KeyModifier::Ctrl};
+		keyMapping[313+i] = {(KeyEnum)((s32)KeyEnum::F1+i),KeyModifier::Alt};
+	}
+	
+	keyMapping[329] = {KeyEnum::Insert,KeyModifier::Ctrl};
+	keyMapping[333] = {KeyEnum::Delete,KeyModifier::Ctrl};
+	
+	keyMapping[398] = {KeyEnum::PageUp,KeyModifier::Shift};
+	keyMapping[443] = {KeyEnum::PageUp,KeyModifier::Ctrl};
+	
+	keyMapping[396] = {KeyEnum::PageDown,KeyModifier::Shift};
+	keyMapping[444] = {KeyEnum::PageDown,KeyModifier::Ctrl};
+	
+	keyMapping[8] = {KeyEnum::Backspace,KeyModifier::Ctrl};
+	
+	keyMapping[391] = {KeyEnum::Home,KeyModifier::Shift};
+	keyMapping[386] = {KeyEnum::End,KeyModifier::Shift};
+	
+	keyMapping[353] = {KeyEnum::Tab,KeyModifier::Shift};
+	
+	keyMapping[445] = {(KeyEnum)';',KeyModifier::Alt};
+	keyMapping[446] = {(KeyEnum)'\'',KeyModifier::Alt};
+}
+
 KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 	s32 key = getch();
 
@@ -131,11 +172,13 @@ KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 
 	logger << "Pre:" << (char)key << " " << key << " " << GetModName(mod) << "\n";
 
-	NormalizeKeys(key,mod);
+	CursesKeyBind k = {(KeyEnum)key,(KeyModifier)0};
+	if (keyMapping.contains(key))
+		k = keyMapping[key];
+	
+	logger << "Post:" << (char)k.key << " " << (s32)k.key << " " << GetModName(k.mod) << "\n";
 
-	logger << "Post:" << (char)key << " " << key << " " << GetModName(mod) << "\n";
-
-	lastEvent = KeyboardEvent(key,mod);
+	lastEvent = KeyboardEvent((s32)k.key,k.mod);
 
 	return &lastEvent;
 }
@@ -235,213 +278,6 @@ void CursesInterface::RenderScreen(const TextScreen& textScreen){
 		mvadd_wchnstr(y,0,&charArray[y*COLS],COLS);
 	}
 
-}
-
-inline void NormalizeAlphabetKeys(s32& key,s32& mod){
-	// alt letters
-	if (key>=417&&key<=442){
-		key -= 417-97;
-		mod |= KeyModifier::Alt;
-	}
-
-	if (key>=447&&key<=446+26){
-		key -= 447-97;
-		mod |= KeyModifier::Alt | KeyModifier::Ctrl;
-	}
-
-	if (key>=473&&key<484){
-		key = '0'+key-473;
-		mod |= KeyModifier::Alt;
-	}
-
-	if (key==445){
-		key = 59;
-		mod |= KeyModifier::Alt;
-	}
-
-	if (key==446){
-		key = 39;
-		mod |= KeyModifier::Alt;
-	}
-
-	// control letters
-	if (key>=1&&key<=26){
-		key += 97-1;
-		mod |= KeyModifier::Ctrl;
-	}	
-}
-
-inline void NormalizeFKeys(s32& key,s32& mod){
-	if (key>=277&&key<=324){
-		if (key>276&&key<=288)
-			mod |= KeyModifier::Shift;
-		if (key>288&&key<=312)
-			mod |= KeyModifier::Ctrl;
-		if (key>312)
-			mod |= KeyModifier::Alt;
-
-		key = (key-265)%12+265;
-	}
-}
-
-inline void NormalizeInsertDeleteKeys(s32& key,s32& mod){
-	if (key==329){ //insert
-		key = 331;
-		mod |= KeyModifier::Ctrl;
-	}
-
-	if (key==333){ //delete
-		key = 330;
-		mod |= KeyModifier::Ctrl;
-	}
-}
-
-inline void NormalizePageKeys(s32& key,s32& mod){
-	if (key==398){ //page up
-		key = 339;
-		mod |= KeyModifier::Shift;
-	}
-
-	if (key==396){ //page down
-		key = 338;
-		mod |= KeyModifier::Shift;
-	}
-
-	if (key==443){ //page up
-		key = 339;
-		mod |= KeyModifier::Ctrl;
-	}
-
-	if (key==444){ //page down
-		key = 338;
-		mod |= KeyModifier::Ctrl;
-	}
-}
-
-inline void NormalizeBackspaceKey(s32& key,s32& mod){
-	if (key==8){
-		key = KeyEnum::Backspace;
-		mod |= KeyModifier::Ctrl;
-	}
-}
-
-inline void NormalizeHomeEndKeys(s32& key,s32& mod){
-	if (key==391){ //shift home
-		key = 262;
-		mod |= KeyModifier::Shift;
-	}
-
-	if (key==386){ //shift end
-		key = 360;
-		mod |= KeyModifier::Shift;
-	}
-
-	if (key==334){ //ctrl end
-		key = 360;
-		mod |= KeyModifier::Ctrl;
-	}
-
-}
-
-inline void NormalizeNavPad(s32& key,s32& mod){
-	NormalizeHomeEndKeys(key,mod);
-	NormalizeInsertDeleteKeys(key,mod);
-	NormalizePageKeys(key,mod);
-}
-
-inline s32 NormalizeUpKey(s32 key,s32 mod){
-	// shift up
-	if (key==547&&(mod & KeyModifier::Shift)){
-		return KeyEnum::Up;
-	}
-
-	// control up
-	if (key==480&&(mod & KeyModifier::Ctrl)){
-		key = KeyEnum::Up;
-	}
-
-	// alt up
-	if (key==490&&(mod & KeyModifier::Alt)){
-		key = KeyEnum::Up;
-	}
-
-	return key;
-}
-
-inline s32 NormalizeDownKey(s32 key,s32 mod){
-	// shift down
-	if (key==548&&(mod & KeyModifier::Shift)){
-		key = KeyEnum::Down;
-	}
-
-	// control down
-	if (key==481&&(mod & KeyModifier::Ctrl)){
-		key = KeyEnum::Down;
-	}
-
-	// alt down
-	if (key==491&&(mod & KeyModifier::Alt)){
-		key = KeyEnum::Down;
-	}
-
-	return key;
-}
-
-inline s32 NormalizeLeftKey(s32 key,s32 mod){
-	// shift left
-	if (key==391&&(mod & KeyModifier::Shift)){
-		key = KeyEnum::Left;
-	}
-
-	// control left
-	if (key==443&&(mod & KeyModifier::Ctrl)){
-		key = KeyEnum::Left;
-	}
-
-	// alt left
-	if (key==493&&(mod & KeyModifier::Alt)){
-		key = KeyEnum::Left;
-	}
-
-	return key;
-}
-
-inline s32 NormalizeRightKey(s32 key,s32 mod){
-	//shift right
-	if (key==400&&(mod & KeyModifier::Shift)){
-		key = KeyEnum::Right;
-	}
-
-	// control right
-	if (key==444&&(mod & KeyModifier::Ctrl)){
-		key = KeyEnum::Right;
-	}
-
-	// alt right
-	if (key==492&&(mod & KeyModifier::Alt)){
-		key = KeyEnum::Right;
-	}
-
-	return key;
-}
-
-inline void NormalizeDirectionKeys(s32& key,s32& mod){
-	key = NormalizeUpKey(key,mod);
-	key = NormalizeDownKey(key,mod);
-	key = NormalizeLeftKey(key,mod);
-	key = NormalizeRightKey(key,mod);
-}
-
-inline void NormalizeKeys(s32& key,s32& mod){
-	NormalizeAlphabetKeys(key,mod);
-	NormalizeFKeys(key,mod);
-	NormalizeNavPad(key,mod);
-	NormalizeBackspaceKey(key,mod);
-	NormalizeDirectionKeys(key,mod);
-	if (key==353){
-		key = KeyEnum::Tab;
-		mod = KeyModifier::Shift;
-	}
 }
 
 #endif
