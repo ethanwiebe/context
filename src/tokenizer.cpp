@@ -56,7 +56,7 @@ inline void TokenizeNumber(TokenizerBase& t){
 }
 
 inline void TokenizeName(TokenizerBase& t){
-	while (IsAlphabet(*t.pos)||(*t.pos>='0'&&*t.pos<='9')||*t.pos=='_'||*t.pos=='.'||*t.pos=='/'||*t.pos=='-') ++t.pos;
+	while (IsAlphabet(*t.pos)||(*t.pos>='0'&&*t.pos<='9')||*t.pos=='_'||*t.pos=='.'||*t.pos=='/'||*t.pos=='\\'||*t.pos=='-'||*t.pos==':') ++t.pos;
 }
 
 inline void TokenizeSingleQuoteString(TokenizerBase& t){

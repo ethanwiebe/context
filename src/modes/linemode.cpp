@@ -1,5 +1,9 @@
 #include "linemode.h"
 
+#ifdef _WIN32
+#define wcwidth(x) 1
+#endif
+
 s32 tenPow(s32 i){
 	s32 p = 1;
 	while (i--)
@@ -110,6 +114,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		textScreen.SetSize(w,h);
 
 		CalculateScreenData();
+		cursors.front().cachedX = std::min(lineWidth-1,cursors.front().cachedX);
 	}
 	
 	if (highlighterNeedsUpdate)

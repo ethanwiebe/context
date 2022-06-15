@@ -1,3 +1,5 @@
+#ifdef __linux__
+
 #include "interface_curses.h"
 
 void DefineAltKeys(){
@@ -442,4 +444,4 @@ inline void NormalizeKeys(s32& key,s32& mod){
 	}
 }
 
-
+#endif

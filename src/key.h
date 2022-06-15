@@ -3,7 +3,8 @@
 #include "core.h"
 
 //key codes
-enum KeyEnum {
+enum class KeyEnum : s32 {
+	None = 0,
 	Backspace = 263,
 	Tab = 9,
 	Enter = 10,

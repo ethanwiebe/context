@@ -20,7 +20,7 @@ template <>
 struct std::hash<KeyBind>
 {
 	size_t operator()(const KeyBind& k) const {
-		return k.key ^ (k.mod<<3);
+		return (size_t)k.key ^ ((size_t)k.mod<<3);
 	}
 };			  
 

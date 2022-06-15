@@ -1,3 +1,5 @@
+#ifdef __linux__
+
 #include "os_linux.h"
 
 #include <dirent.h>
@@ -140,3 +142,5 @@ bool LinuxOSImpl::WriteTextBufferIntoFile(std::string_view path,Ref<TextBuffer> 
 
 	return true;
 }
+
+#endif

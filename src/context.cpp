@@ -15,8 +15,8 @@ ContextEditor::ContextEditor(const std::string& file){
 	
 	errorMessage = {};
 
-	interface = Handle<TextInterfaceBase>(new CursesInterface());
-	osInterface = Handle<OSInterface>(new LinuxOSImpl());
+	interface = Handle<TextInterfaceBase>(new CONTEXT_USER_INTERFACE());
+	osInterface = Handle<OSInterface>(new CONTEXT_OS_INTERFACE());
 
 	if (!file.empty()){
 		if (osInterface->PathExists(file)){
@@ -209,7 +209,7 @@ std::string ContextEditor::ConstructModeString(size_t index){
 		modeStr += " (readonly)";
 
 	modeStr += " (";
-	modeStr += std::to_string(index+1) + "/" + std::to_string(modes.size()) + ")";
+	modeStr += std::to_string(index+1) + '/' + std::to_string(modes.size()) + ")";
 	
 	return modeStr;
 }
@@ -344,16 +344,22 @@ void ContextEditor::NewMode(){
 }
 
 void ContextEditor::OpenMode(std::string_view path){
-	if (!ReadFileChecks(path))
+	std::string copiedPath = std::string(path);
+	
+#ifdef _WIN32
+	FixWindowsPath(copiedPath);
+#endif
+
+	if (!ReadFileChecks(copiedPath))
 		return;
 
 	Handle<ModeBase> openedMode = Handle<ModeBase>(new EditMode(this));
-	if (openedMode->OpenAction(*osInterface,path)){
+	if (openedMode->OpenAction(*osInterface,copiedPath)){
 		modes.push_back(std::move(openedMode));
 		currentMode = modes.size()-1;
 	} else {
 		errorMessage = "Could not open ";
-		errorMessage += path;
+		errorMessage += copiedPath;
 		errorMessage += "!";
 	}
 }
@@ -380,7 +386,13 @@ void ContextEditor::SetPathAndSaveMode(std::string_view path,size_t index){
 }
 
 void ContextEditor::SetPathMode(std::string_view path,size_t index){
-	modes[index]->SetPath(*osInterface,path);
+	std::string copiedPath = std::string(path);
+	
+#ifdef _WIN32
+	FixWindowsPath(copiedPath);
+#endif
+	
+	modes[index]->SetPath(*osInterface,copiedPath);
 }
 
 OSInterface* ContextEditor::GetOSInterface() const {

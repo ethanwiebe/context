@@ -105,7 +105,7 @@ void SetKeybinds(){
 
 
 Action FindActionFromKey(KeyEnum key,KeyModifier mod){
-	KeyBind kb = {(KeyEnum)CharLower(key),mod};
+	KeyBind kb = {(KeyEnum)CharLower((s32)key),mod};
 	if (!gBoundKeys.contains(kb))
 		return Action::None;
 
@@ -115,9 +115,12 @@ Action FindActionFromKey(KeyEnum key,KeyModifier mod){
 TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
 	TextAction textAction;
 
-	if (IsPrintable(key,mod)){
+	if (IsPrintable((s32)key,mod)){
 		textAction.action = Action::InsertChar;
-		textAction.character = key;
+		if (!(mod & KeyModifier::Shift) && (char)key>='A' && (char)key<='Z')
+			textAction.character = (char)key+0x20;
+		else
+			textAction.character = (char)key;
 	} else {
 		textAction.action = FindActionFromKey(key,mod);
 		switch (textAction.action){

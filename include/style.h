@@ -42,6 +42,10 @@ struct TextStyle {
 	TextStyle operator|(u8 f){
 		return {fg,bg,(u8)(flags|f)};
 	}
+	
+	bool operator==(const TextStyle& t){
+		return fg==t.fg && bg==t.bg && flags==t.flags;
+	}
 };
 
 extern TextStyle defaultStyle;

@@ -12,7 +12,7 @@ public:
 	virtual bool FileIsReadable(std::string_view) const = 0;
 	virtual bool FileIsWritable(std::string_view) const = 0; // note: this creates the file 
 															 // if it does not exist
-	virtual s64 GetModifyTime(std::string_view) const = 0;
+	virtual s64 GetModifyTime(std::string_view) const {return 0;};
 	
 	virtual void AutocompletePath(std::string&) const {};
 

@@ -8,7 +8,6 @@ class TextInterfaceBase {
 public:
 	virtual void RenderScreen(const TextScreen&) = 0;
 	virtual KeyboardEvent* GetKeyboardEvent() = 0;
-	virtual void WindowResized(s32,s32) = 0;
 
 	// height in lines
 	virtual s32 GetHeight() = 0;
@@ -18,4 +17,3 @@ public:
 
 	virtual ~TextInterfaceBase() = default;
 };
-

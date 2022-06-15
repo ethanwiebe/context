@@ -29,8 +29,6 @@ public:
 	void RenderScreen(const TextScreen&) override;
 	KeyboardEvent* GetKeyboardEvent() override;
 
-	void WindowResized(s32,s32) override;
-
 	s32 GetHeight() override;
 	s32 GetWidth() override;
 
@@ -38,6 +36,8 @@ private:
 	void InitColorPairs();
 	void ListColorPairs();
 	inline s32 ColorsToPair(s32,s32) const;
+	
+	void WindowResized(s32,s32);
 
 	s32 DefinePair(Color,Color);
 	s32 DefineColor(Color);
