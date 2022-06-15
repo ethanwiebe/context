@@ -216,6 +216,7 @@ void EditMode::ProcessTextAction(TextAction a){
 				copiedText = ctx->GetClipboard();
 				InsertStringAt(cursor.cursor,copiedText);
 				MoveCursorRight(cursor.cursor,copiedText.size());
+				SetCachedX(cursor);
 				break;
 			case Action::PasteLines:
 				copiedText = ctx->GetClipboard();

@@ -114,7 +114,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		textScreen.SetSize(w,h);
 
 		CalculateScreenData();
-		cursors.front().cachedX = std::min(lineWidth-1,cursors.front().cachedX);
+		SetCachedX(cursors.front());
 	}
 	
 	if (highlighterNeedsUpdate)
