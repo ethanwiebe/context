@@ -12,6 +12,7 @@ void DefineAltKeys(){
 	define_key(s.c_str(),443);
 	s = "\033\133\066\073\065\176"; //ctrl page down
 	define_key(s.c_str(),444);
+	
 
 	s = "\033\073"; //alt semicolon
 	define_key(s.c_str(),445);
@@ -34,6 +35,36 @@ void DefineAltKeys(){
 		s += '0'+i;
 		define_key(s.c_str(),473+i);
 	}
+	#define KEYPREFIX "\033[1;"
+	
+	s = KEYPREFIX "5D"; //ctrl left
+	define_key(s.c_str(),483);
+	s = KEYPREFIX "5C"; //ctrl right
+	define_key(s.c_str(),484);
+	s = KEYPREFIX "5A"; //ctrl up
+	define_key(s.c_str(),485);
+	s = KEYPREFIX "5B"; //ctrl down
+	define_key(s.c_str(),486);
+	
+	s = KEYPREFIX "3D"; //alt left
+	define_key(s.c_str(),487);
+	s = KEYPREFIX "3C"; //alt right
+	define_key(s.c_str(),488);
+	s = KEYPREFIX "3A"; //alt up
+	define_key(s.c_str(),489);
+	s = KEYPREFIX "3B"; //alt down
+	define_key(s.c_str(),490);
+	
+	s = KEYPREFIX "7D"; //ctrl-alt left
+	define_key(s.c_str(),491);
+	s = KEYPREFIX "7C"; //ctrl-alt right
+	define_key(s.c_str(),492);
+	s = KEYPREFIX "7A"; //ctrl-alt up
+	define_key(s.c_str(),493);
+	s = KEYPREFIX "7B"; //ctrl-alt down
+	define_key(s.c_str(),494);
+	
+	#undef KEYPREFIX
 }
 
 std::string GetModName(s32 mod){
@@ -120,11 +151,12 @@ void CursesInterface::WindowResized(s32 w,s32 h){
 }
 
 void CursesInterface::SetMappings(){
+	constexpr auto ctrlalt = (KeyModifier)((s32)KeyModifier::Ctrl | 
+								(s32)KeyModifier::Alt);
 	for (s32 i=0;i<=25;++i){
 		keyMapping['A'+i] = {(KeyEnum)(i+'A'),KeyModifier::Shift};
 		keyMapping[417+i] = {(KeyEnum)(i+'A'),KeyModifier::Alt};
-		keyMapping[447+i] = {(KeyEnum)(i+'A'),(KeyModifier)((s32)KeyModifier::Ctrl | 
-								(s32)KeyModifier::Alt)};
+		keyMapping[447+i] = {(KeyEnum)(i+'A'),ctrlalt};
 		
 		keyMapping[i+1] = {(KeyEnum)(i+'A'),KeyModifier::Ctrl};
 	}
@@ -157,6 +189,21 @@ void CursesInterface::SetMappings(){
 	
 	keyMapping[445] = {(KeyEnum)';',KeyModifier::Alt};
 	keyMapping[446] = {(KeyEnum)'\'',KeyModifier::Alt};
+	
+	keyMapping[483] = {KeyEnum::Left,KeyModifier::Ctrl};
+	keyMapping[484] = {KeyEnum::Right,KeyModifier::Ctrl};
+	keyMapping[485] = {KeyEnum::Up,KeyModifier::Ctrl};
+	keyMapping[486] = {KeyEnum::Down,KeyModifier::Ctrl};
+	
+	keyMapping[487] = {KeyEnum::Left,KeyModifier::Alt};
+	keyMapping[488] = {KeyEnum::Right,KeyModifier::Alt};
+	keyMapping[489] = {KeyEnum::Up,KeyModifier::Alt};
+	keyMapping[490] = {KeyEnum::Down,KeyModifier::Alt};
+	
+	keyMapping[491] = {KeyEnum::Left,ctrlalt};
+	keyMapping[492] = {KeyEnum::Right,ctrlalt};
+	keyMapping[493] = {KeyEnum::Up,ctrlalt};
+	keyMapping[494] = {KeyEnum::Down,ctrlalt};
 }
 
 KeyboardEvent* CursesInterface::GetKeyboardEvent(){
