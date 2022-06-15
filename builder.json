@@ -3,15 +3,7 @@
 	"headerExt":"h",
 	"sourceExt":"cpp",
 	"outputName":"context",
-	"testVar":[
-		"this",
-		"is",
-		"a",
-		"%platform",
-		"test at",
-		"time:",
-		"#%utime"
-	],
+	"defaultMode":"debug",
 	"outputDir":[
 		"bin",
 		"%mode"
@@ -38,10 +30,26 @@
 	"linkFlags":[
 		"-o",
 		"%out",
-		"-lncursesw",
-		"%in"
+		"%in",
+		"%libStyle",
+		"%libs"
 	],
+	"libs":[
+		"-lncursesw"
+	],
+	"libStyle":"",
+	"libStyleSetVar":"",
 	"modes": {
+		"windows":{
+			"compileCmd":"",
+			"linkCmd":"",
+			"set":{
+				"libs":[
+					"-lshwapi"
+				],
+				"libStyleSetVar":"libStyle"
+			}
+		},
 		"debug":{
 			"compileFlags":[
 				"-ggdb3",
@@ -49,6 +57,9 @@
 			]
 		},
 		"release":{
+			"set":{
+				"%libStyleSetVar":"-static"
+			},
 			"outputDir":"bin",
 			"compileFlags":[
 				"-O3",
