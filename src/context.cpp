@@ -69,6 +69,12 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 		case Action::SaveMode:
 			SaveMode(currentMode);
 			return true;
+		case Action::RenameMode: {
+			std::string copy = std::string(modes[currentMode]->GetPath(*osInterface));
+			BeginCommand();
+			entryString = "setpath "+copy;
+			return true;
+		}
 		case Action::NextMode:
 			SwitchMode(currentMode+1);
 			return true;

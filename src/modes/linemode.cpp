@@ -379,6 +379,10 @@ bool LineModeBase::HasPath(){
 	return !bufferPath.empty();
 }
 
+std::string_view LineModeBase::GetPath(const OSInterface& os){
+	return bufferPath;
+}
+
 void LineModeBase::SetPath(const OSInterface& os,std::string_view path){
 	bufferPath.clear();
 	bufferPath += path;

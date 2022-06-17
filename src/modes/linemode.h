@@ -112,6 +112,8 @@ public:
 
 	bool OpenAction(const OSInterface& os,std::string_view path) override;
 	bool SaveAction(const OSInterface& os) override;
+	
+	std::string_view GetPath(const OSInterface&) override;
 	void SetPath(const OSInterface&,std::string_view) override;
 	
 	void GetSyntaxHighlighter(std::string_view);
