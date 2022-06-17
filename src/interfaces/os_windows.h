@@ -2,7 +2,7 @@
 
 #include "core.h"
 
-#include "../os.h"
+#include "os.h"
 
 inline void FixWindowsPath(std::string& path){
 	size_t pos = path.find('\\');

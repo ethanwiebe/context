@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../mode.h"
+#include "mode.h"
 #include "../keybind.h"
 #include "../textbuffer.h"
 #include "../tui.h"

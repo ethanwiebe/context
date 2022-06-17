@@ -12,17 +12,13 @@
 
 bool WindowsOSImpl::PathExists(std::string_view path) const {
 	std::string copied = std::string(path);
-	//std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	//std::wstring convpath = converter.from_bytes(copied.c_str());
-	
+
 	return PathFileExists(copied.c_str());
 }
 
 bool WindowsOSImpl::PathIsFile(std::string_view path) const {
 	std::string copied = std::string(path);
-	//std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-	//std::wstring convpath = converter.from_bytes(copied.c_str());
-	
+
 	return !PathIsDirectory(copied.c_str());
 }
 

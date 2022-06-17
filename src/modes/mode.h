@@ -2,10 +2,10 @@
 
 #include "core.h"
 
-#include "key.h"
-#include "textscreen.h"
-#include "tokenizer.h"
-#include "os.h"
+#include "../key.h"
+#include "../textscreen.h"
+#include "../tokenizer.h"
+#include "../interfaces/os.h"
 
 class ContextEditor;
 

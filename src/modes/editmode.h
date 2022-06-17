@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core.h"
-#include "../os.h"
 #include "linemode.h"
 
 class EditMode : public LineModeBase {
