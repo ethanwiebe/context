@@ -36,13 +36,18 @@ class ContextEditor {
 	std::string entryString;
 	std::string yesNoMessage;
 	std::string errorMessage;
+	
+	ssize_t entryPos;
 
 	std::function<void()> yesAction,noAction;
 
 	bool WriteFileChecks(std::string_view);
 	bool ReadFileChecks(std::string_view);
+	
+	void MoveEntryPosLeft(size_t);
+	void MoveEntryPosRight(size_t);
 
-	void BeginCommand();
+	void BeginCommand(const std::string&);
 	void CancelCommand();
 	void SubmitCommand();
 	void AutocompleteCommand();

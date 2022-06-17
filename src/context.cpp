@@ -12,6 +12,7 @@ ContextEditor::ContextEditor(const std::string& file){
 
 	quit = false;
 	entryMode = EntryMode::None;
+	entryPos = 0;
 	
 	errorMessage = {};
 
@@ -61,6 +62,16 @@ void ContextEditor::Loop(){
 	}
 }
 
+void ContextEditor::MoveEntryPosLeft(size_t count){
+	entryPos -= count;
+	entryPos = std::max(entryPos,(ssize_t)0);
+}
+
+void ContextEditor::MoveEntryPosRight(size_t count){
+	entryPos += count;
+	entryPos = std::min(entryPos,(ssize_t)entryString.size());
+}
+
 bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 	switch (action.action){
 		case Action::CloseMode:
@@ -70,9 +81,9 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 			SaveMode(currentMode);
 			return true;
 		case Action::RenameMode: {
-			std::string copy = std::string(modes[currentMode]->GetPath(*osInterface));
-			BeginCommand();
-			entryString = "setpath "+copy;
+			std::string copy = "setpath " + std::string(modes[currentMode]->GetPath(*osInterface));
+			BeginCommand(copy);
+			//entryString = "setpath "+copy;
 			return true;
 		}
 		case Action::NextMode:
@@ -86,11 +97,11 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 			SwitchMode(modes.size()-1);
 			return true;
 		case Action::Entry:
-			BeginCommand();
+			BeginCommand("");
 			return true;
 		case Action::OpenMode:
-			BeginCommand();
-			entryString = "open ";
+			BeginCommand("open ");
+			
 			return true;
 
 		default:
@@ -102,10 +113,19 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 void ContextEditor::ProcessCommandEntry(TextAction textAction){
 	switch (textAction.action){
 		case Action::InsertChar:
-			entryString.push_back(textAction.character);
+			entryString.insert(entryPos,1,textAction.character);
+			MoveEntryPosRight(1);
 			break;
 		case Action::DeletePreviousChar:
-			if (!entryString.empty()) entryString.pop_back();
+			if (!entryString.empty()&&entryPos!=0){
+				MoveEntryPosLeft(1);
+				entryString.erase(entryPos,1);
+			}
+			break;
+		case Action::DeleteCurrentChar:
+			if (!entryString.empty()&&entryPos!=(ssize_t)entryString.size()){
+				entryString.erase(entryPos,1);
+			}
 			break;
 		case Action::InsertLine:
 			SubmitCommand();
@@ -117,7 +137,21 @@ void ContextEditor::ProcessCommandEntry(TextAction textAction){
 		case Action::Tab:
 			AutocompleteCommand();
 			break;
-
+		case Action::MoveLeftMulti:
+		case Action::MoveLeftChar:
+			MoveEntryPosLeft(textAction.num);
+			break;
+		case Action::MoveRightMulti:
+		case Action::MoveRightChar:
+			MoveEntryPosRight(textAction.num);
+			break;
+		case Action::MoveToLineStart:
+			entryPos = 0;
+			break;
+		case Action::MoveToLineEnd:
+			entryPos = entryString.size();
+			break;
+			
 		default:
 			break;
 	}
@@ -156,8 +190,10 @@ void ContextEditor::AutocompleteCommand(){
 	}
 }
 
-void ContextEditor::BeginCommand(){
+void ContextEditor::BeginCommand(const std::string& s){
 	entryString.clear();
+	entryString = s;
+	entryPos = entryString.size();
 	entryMode = EntryMode::Command;
 }
 
@@ -236,7 +272,7 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	std::string& modeError = modes[currentMode]->GetErrorMessage();
 	if (entryMode==EntryMode::Command){
 		ts.RenderString(0,h-1,entryPrefix + entryString,barStyle);
-		auto x = entryPrefix.size()+entryString.size();
+		auto x = entryPrefix.size()+entryPos;
 		auto cell = ts.GetAt(x,h-1);
 		cell.style = cursorStyle;
 		ts.SetAt(x,h-1,cell);
