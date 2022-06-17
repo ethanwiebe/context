@@ -9,6 +9,7 @@
 #include <string_view>
 #include <fstream>
 #include <cstdio>
+#include <filesystem>
 
 bool WindowsOSImpl::PathExists(std::string_view path) const {
 	std::string copied = std::string(path);
@@ -46,7 +47,13 @@ bool WindowsOSImpl::FileIsWritable(std::string_view path) const {
 	
 //}
 
-//void WindowsOSImpl::AutocompletePath(std::string&) const override;
+void WindowsOSImpl::ListDir(const std::string& path,std::vector<std::string>& entries) const {
+	const std::filesystem::path fspath{path};
+	
+	for (auto const& dirEntry : std::filesystem::directory_iterator{fspath}){
+		entries.push_back(dirEntry.path().filename().string());
+    }
+}
 
 bool WindowsOSImpl::ReadFileIntoTextBuffer(std::string_view path,Ref<TextBuffer> textBuffer) const {
 	textBuffer->clear();

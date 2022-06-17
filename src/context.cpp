@@ -187,6 +187,7 @@ void ContextEditor::AutocompleteCommand(){
 		osInterface->AutocompletePath(sub);
 		entryString = entryString.substr(0,tokens[1].col) + sub +
 				entryString.substr(tokens[1].col+tokens[1].token.size());
+		entryPos = tokens[1].col+sub.size();
 	}
 }
 
