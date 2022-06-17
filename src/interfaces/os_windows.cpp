@@ -55,6 +55,14 @@ void WindowsOSImpl::ListDir(const std::string& path,std::vector<std::string>& en
     }
 }
 
+bool WindowsOSImpl::PathsAreSame(std::string_view p1,std::string_view p2) const {
+	const std::filesystem::path path1{p1};
+	const std::filesystem::path path2{p2};
+	
+	std::error_code dummy;
+	return std::filesystem::equivalent(path1,path2,dummy);
+}
+
 bool WindowsOSImpl::ReadFileIntoTextBuffer(std::string_view path,Ref<TextBuffer> textBuffer) const {
 	textBuffer->clear();
 
@@ -64,9 +72,18 @@ bool WindowsOSImpl::ReadFileIntoTextBuffer(std::string_view path,Ref<TextBuffer>
 
 	std::string line;
 	auto it = textBuffer->begin();
-	while (std::getline(file,line)){
-		textBuffer->InsertLine(it,line);
+	
+	char r;
+	while (file.get(r)){
+		if (r=='\n'){
+			textBuffer->InsertLine(it,line);
+			line.clear();
+		} else {
+			line += r;
+		}
 	}
+	
+	textBuffer->InsertLine(it,line);
 	
 	return true;
 }
@@ -76,9 +93,12 @@ bool WindowsOSImpl::WriteTextBufferIntoFile(std::string_view path,Ref<TextBuffer
 	std::fstream file(temp.c_str(),std::ios::out);
 	if (!file.good()) return false;
 
-	for (const auto& line : *textBuffer){
-		file << line << "\n";
+	auto end = --textBuffer->end();
+	for (auto it=textBuffer->begin();it!=end;++it){
+		file << *it << "\n";
 	}
+	
+	file << *end;
 
 	return true;
 }

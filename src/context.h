@@ -46,8 +46,7 @@ class ContextEditor {
 	
 	void MoveEntryPosLeft(size_t);
 	void MoveEntryPosRight(size_t);
-
-	void BeginCommand(const std::string&);
+	
 	void CancelCommand();
 	void SubmitCommand();
 	void AutocompleteCommand();
@@ -62,6 +61,8 @@ class ContextEditor {
 	void Loop();
 public:
 	ContextEditor(const std::string& file);
+	
+	void BeginCommand(const std::string&);
 
 	void CloseMode(size_t);
 	void ForceCloseMode(size_t);
@@ -70,8 +71,6 @@ public:
 	void SetPathMode(std::string_view,size_t);
 	void SetPathAndSaveMode(std::string_view,size_t);
 	void SwitchMode(size_t);
-	
-	void BeginEntryWithCommand(const std::string&);
 
 	void NewMode();
 	void OpenMode(std::string_view);

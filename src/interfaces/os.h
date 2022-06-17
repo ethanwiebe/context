@@ -19,6 +19,8 @@ public:
 	
 	virtual void ListDir(const std::string&,std::vector<std::string>&) const = 0;
 	virtual void AutocompletePath(std::string&) const;
+	
+	virtual bool PathsAreSame(std::string_view,std::string_view) const = 0;
 
 	virtual bool ReadFileIntoTextBuffer(std::string_view,Ref<TextBuffer>) const = 0;
 	virtual bool WriteTextBufferIntoFile(std::string_view,Ref<TextBuffer>) const = 0;

@@ -21,6 +21,8 @@ public:
 //	s64 GetModifyTime(std::string_view) const override;
 	
 	void ListDir(const std::string&,std::vector<std::string>&) const override;
+	
+	bool PathsAreSame(std::string_view,std::string_view) const override;
 
 	bool ReadFileIntoTextBuffer(std::string_view,Ref<TextBuffer>) const override;
 	bool WriteTextBufferIntoFile(std::string_view,Ref<TextBuffer>) const override;

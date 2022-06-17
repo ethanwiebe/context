@@ -223,10 +223,10 @@ void EditMode::ProcessTextAction(TextAction a){
 				InsertLinesAt(cursor.cursor,copiedText);
 				break;
 			case Action::Goto:
-				ctx->BeginEntryWithCommand("goto ");
+				ctx->BeginCommand("goto ");
 				break;
 			case Action::Find:
-				ctx->BeginEntryWithCommand("find ");
+				ctx->BeginCommand("find ");
 				break;
 			case Action::Escape:
 				matches.clear();

@@ -83,7 +83,6 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 		case Action::RenameMode: {
 			std::string copy = "setpath " + std::string(modes[currentMode]->GetPath(*osInterface));
 			BeginCommand(copy);
-			//entryString = "setpath "+copy;
 			return true;
 		}
 		case Action::NextMode:
@@ -330,8 +329,7 @@ void ContextEditor::ForceCloseMode(size_t index){
 
 void ContextEditor::SaveMode(size_t index){
 	if (!modes[index]->HasPath()||modes[index]->Readonly()){
-		entryMode = EntryMode::Command;
-		entryString = "saveas ";
+		BeginCommand("saveas ");
 		return;
 	}
 
@@ -393,6 +391,13 @@ void ContextEditor::OpenMode(std::string_view path){
 	FixWindowsPath(copiedPath);
 #endif
 
+	for (size_t i=0;i<modes.size();++i){
+		if (osInterface->PathsAreSame(modes[i]->GetPath(*osInterface),copiedPath)){
+			SwitchMode(i);
+			return;
+		}
+	}
+
 	if (!ReadFileChecks(copiedPath))
 		return;
 
@@ -444,9 +449,4 @@ OSInterface* ContextEditor::GetOSInterface() const {
 
 std::string& ContextEditor::GetClipboard(){
 	return clipboardText;
-}
-
-void ContextEditor::BeginEntryWithCommand(const std::string& s){
-	entryMode = EntryMode::Command;
-	entryString = s;
 }
