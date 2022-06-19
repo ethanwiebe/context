@@ -40,7 +40,7 @@ bool LinuxOSImpl::FileIsWritable(std::string_view path) const {
 	return good;
 }
 
-void LinuxOSImpl::ListDir(const std::string& path,std::vector<std::string>& entries){
+void LinuxOSImpl::ListDir(const std::string& path,std::vector<std::string>& entries) const {
 	DIR* dir;
 	struct dirent* ent;
 	if ((dir = opendir(path.c_str()))!=NULL){
@@ -60,6 +60,20 @@ s64 LinuxOSImpl::GetModifyTime(std::string_view path) const {
 	return buf.st_mtim.tv_sec;
 }
 
+bool LinuxOSImpl::PathsAreSame(std::string_view p1,std::string_view p2) const {
+	struct stat s1,s2;
+	
+	std::string temp1 = std::string(p1);
+	std::string temp2 = std::string(p2);
+	
+	if (stat(temp1.c_str(),&s1)!=0)
+		return false;
+	
+	if (stat(temp2.c_str(),&s2)!=0)
+		return false;
+		
+	return s1.st_dev==s2.st_dev && s1.st_ino==s2.st_ino;
+}
 
 bool LinuxOSImpl::ReadFileIntoTextBuffer(std::string_view path,Ref<TextBuffer> textBuffer) const {
 	textBuffer->clear();
