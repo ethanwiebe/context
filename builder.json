@@ -1,5 +1,6 @@
 {
 	"sourceDir":"src",
+	"includeDir":"include",
 	"headerExt":"h",
 	"sourceExt":"cpp",
 	"outputName":"context",
