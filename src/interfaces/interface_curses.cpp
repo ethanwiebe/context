@@ -115,15 +115,13 @@ CursesInterface::CursesInterface(){
 
 	WindowResized(COLS,LINES);
 
-	logger << "Has colors: " << 
-			(has_colors() ? "TRUE" : "FALSE") << '\n';
-			
-	logger << "Can change colors: " << 
-			(can_change_color() ? "TRUE" : "FALSE") << '\n';
-			
-	logger << "Max color pairs: " << COLOR_PAIRS << "\n";
-	logger << "Max colors: " << COLORS << "\n";
-	logger << "Escape delay: " << ESCDELAY << "\n";
+	LOG("Has colors: " << (has_colors() ? "TRUE" : "FALSE"));
+	
+	LOG("Can change colors: " << (can_change_color() ? "TRUE" : "FALSE"));		
+	
+	LOG("Max color pairs: " << COLOR_PAIRS);
+	LOG("Max colors: " << COLORS);
+	LOG("Escape delay: " << ESCDELAY);
 }
 
 CursesInterface::~CursesInterface(){
@@ -139,7 +137,7 @@ void CursesInterface::ListColorPairs(){
 	s16 fg,bg;
 	for (s16 i=0;i<definedPairs;i++){
 		pair_content(i,&fg,&bg);
-		logger << "FG: " << fg << " BG: " << bg << "\n";
+		LOG("FG: " << fg << " BG: " << bg);
 	}
 }
 
@@ -215,15 +213,13 @@ KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 		return nullptr;
 	}
 
-	s32 mod = (s32)KeyModifier::None;
-
-	logger << "Pre:" << (char)key << " " << key << " " << GetModName(mod) << "\n";
+	LOG("Pre: " << (char)key << ' ' << key << ' ');
 
 	CursesKeyBind k = {(KeyEnum)key,(KeyModifier)0};
 	if (keyMapping.contains(key))
 		k = keyMapping[key];
 	
-	logger << "Post:" << (char)k.key << " " << (s32)k.key << " " << GetModName(k.mod) << "\n";
+	LOG("Post: " << (char)k.key << ' ' << (s32)k.key << ' ' << GetModName(k.mod));
 
 	lastEvent = KeyboardEvent((s32)k.key,k.mod);
 

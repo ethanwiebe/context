@@ -234,9 +234,8 @@ void ContextEditor::SubmitCommand(){
 
 inline void LogTokens(TokenVector tokens){
 	for (const auto& token : tokens){
-		logger << (s32)token.type << ":'" << token.token << "' @" << token.col << ",";
+		LOG((s32)token.type << ":'" << token.token << "' @" << token.col << ",");
 	}
-	logger << "\n";
 }
 
 bool ContextEditor::ProcessCommand(const TokenVector& tokens){

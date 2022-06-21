@@ -60,7 +60,7 @@ WinConInterface::WinConInterface(){
 	
 	trueColor = EnableVTMode(outHandle);
 	
-	logger << "True color: " << trueColor << '\n';
+	LOG("True color: " << trueColor);
 	
 	ResizeScreen(GetWidth(),GetHeight());
 	
@@ -223,7 +223,7 @@ KeyboardEvent* WinConInterface::GetKeyboardEvent(){
 			lastEvent.mod |= KeyModifier::Alt;
 	}
 
-	logger << "After: " << lastEvent.key << ", " << lastEvent.mod << '\n';
+	LOG("After :" << lastEvent.key << ", ", << lastEvent.mod);
 	
 	return &lastEvent;
 }
