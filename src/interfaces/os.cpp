@@ -1,5 +1,7 @@
 #include "os.h"
 
+#include <fstream>
+
 void ChooseBestPrefix(
 		const std::vector<std::string>& choices,
 		std::string& best){
@@ -53,3 +55,4 @@ void OSInterface::AutocompletePath(std::string& path) const {
 	if (!closest.empty())
 		path = closest;
 }
+

@@ -74,14 +74,14 @@ s32 TrueLineDistance(LineIndexedIterator start,s32 sublineStart,
 }
 
 void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
-	if (Config::cursorLock){
+	if (gConfig.cursorLock){
 		LineModeBase::LockScreenToVisualCursor(cursor);
 		return;
 	}
 
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
-	if (cursor.visualLine > Config::cursorMoveHeight && 
-			cursor.visualLine < innerHeight-1-Config::cursorMoveHeight) return;
+	if (cursor.visualLine > gConfig.cursorMoveHeight && 
+			cursor.visualLine < innerHeight-1-gConfig.cursorMoveHeight) return;
 
 	s32 lineDiff = TrueLineDistance(cursor.cursor.line,cursor.subline,viewLine,screenSubline,lineWidth);
 		
@@ -89,9 +89,9 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	screenSubline = cursor.subline;
 
 	if (lineDiff>innerHeight/2)
-		MoveScreenUp(innerHeight-1-Config::cursorMoveHeight,true);
+		MoveScreenUp(innerHeight-1-gConfig.cursorMoveHeight,true);
 	else
-		MoveScreenUp(Config::cursorMoveHeight,true);
+		MoveScreenUp(gConfig.cursorMoveHeight,true);
 	
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
 	CalculateScreenData();
@@ -118,7 +118,7 @@ void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column-num;
 	
-	if (Config::cursorWraps){	
+	if (gConfig.cursorWrap){	
 		while (newCol<0){ //move cursor up lines until only horiz adjust is left
 			if (cursor.cursor.line.index==0){
 				SetVisualCursorColumn(cursor,0);
@@ -140,7 +140,7 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column+num;
 
-	if (Config::cursorWraps){
+	if (gConfig.cursorWrap){
 		while (newCol>cursor.CurrentLineLen()){
 			if (cursor.cursor.line.index==(s32)textBuffer->size()-1){
 				SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
@@ -194,7 +194,7 @@ void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
 void LineModeBase::MoveVisualCursorToLineStart(VisualCursor& cursor){
 	s32 col = cursor.cursor.column;
 	SetVisualCursorColumn(cursor,0);
-	if (Config::smartHome){
+	if (gConfig.smartHome){
 		while (GetCharAt(cursor.cursor)==' '||GetCharAt(cursor.cursor)=='\t')
 			MoveVisualCursorRight(cursor,1);
 		

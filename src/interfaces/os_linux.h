@@ -6,6 +6,7 @@
 #include "../logger.h"
 
 #include <sys/stat.h>
+#include <pwd.h>
 #include <string_view>
 #include <fstream>
 #include <cstdio>
@@ -25,4 +26,6 @@ public:
 
 	bool ReadFileIntoTextBuffer(std::string_view,Ref<TextBuffer>) const override;
 	bool WriteTextBufferIntoFile(std::string_view,Ref<TextBuffer>) const override;
+	
+	virtual std::string GetConfigFilePath() const override;
 };

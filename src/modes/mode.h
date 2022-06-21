@@ -18,7 +18,6 @@ protected:
 	s32 screenWidth,screenHeight;
 	std::string modeErrorMessage;
 
-	bool readonly,modified;
 public:
 	ModeBase(ContextEditor* c) : ctx(c){}
 	ModeBase(const ModeBase&) = delete;
@@ -31,7 +30,7 @@ public:
 	virtual void ProcessTextAction(TextAction) = 0;
 	virtual TextScreen& GetTextScreen(s32,s32) = 0;
 
-	virtual void ProcessCommand(const TokenVector&){}
+	virtual bool ProcessCommand(const TokenVector&){return false;}
 
 	virtual bool SaveAction(const OSInterface&){return true;}
 	virtual bool OpenAction(const OSInterface&,std::string_view){return true;}
@@ -39,11 +38,11 @@ public:
 	virtual void SetPath(const OSInterface&,std::string_view){}
 	
 	virtual bool Readonly(){
-		return readonly;
+		return false;
 	}
 
 	virtual bool Modified(){
-		return modified;
+		return false;
 	}
 
 	virtual bool HasPath(){return false;}

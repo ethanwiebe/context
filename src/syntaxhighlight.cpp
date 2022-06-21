@@ -105,16 +105,16 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 
 	AddKeywords({"void","bool","int","float","double","ptrdiff_t",
 			"long","char","auto","size_t","ssize_t","const","inline",
-			"noexcept","constexpr","extern","static","int8_t","virtual",
+			"noexcept","constexpr","extern","static","int8_t","virtual","operator",
 			"int16_t","int32_t","int64_t","uint8_t","uint16_t",
 			"uint32_t","uint64_t","u8","u16","u32","u64","s8",
-			"s16","s32","s64","f32","f64","unsigned","friend",
+			"s16","s32","s64","f32","f64","unsigned","friend","final",
 			"nullptr_t","short","override"},typeStyle);
 	AddKeywords({"nullptr","NULL","true","false"},numberStyle);
 }
 
 static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",
-	"True","False","import","from","in","del","def","class","with","as","and","or","not","None",
+	"True","False","import","from","in","del","def","class","with","as","is","and","or","not","None",
 	"try","except","finally","global","continue","break"};
 static std::vector<std::string> pythonFuncs = {"range","len","print","repr","ord","chr","isinstance",
 	"hex","round","pow","dir","open","quit","help","hash","next"};

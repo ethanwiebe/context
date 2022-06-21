@@ -139,7 +139,7 @@ TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
 			case Action::MoveDownMulti:
 			case Action::DeletePreviousMulti:
 			case Action::DeleteCurrentMulti:
-				textAction.num = Config::multiAmount;
+				textAction.num = gConfig.multiAmount;
 				break;
 			
 			default:

@@ -3,6 +3,7 @@
 #include "platform.h"
 
 #include "modes/editmode.h"
+#include "command.h"
 
 ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();
@@ -18,7 +19,7 @@ ContextEditor::ContextEditor(const std::string& file){
 
 	interface = Handle<TextInterfaceBase>(new CONTEXT_USER_INTERFACE());
 	osInterface = Handle<OSInterface>(new CONTEXT_OS_INTERFACE());
-
+	
 	if (!file.empty()){
 		if (osInterface->PathExists(file)){
 			OpenMode(file);
@@ -34,6 +35,20 @@ ContextEditor::ContextEditor(const std::string& file){
 
 	currentMode = 0;
 
+	std::string configPath = osInterface->GetConfigFilePath();
+	if (osInterface->FileIsReadable(configPath)){
+		auto settings = MakeRef<TextBuffer>();
+		if (osInterface->ReadFileIntoTextBuffer(configPath,settings)){
+			for (const auto& line : *settings){
+				if (line.empty())
+					continue;
+					
+				entryString = line;
+				SubmitCommand();
+			}
+		}
+	}
+	
 	Loop();
 }
 
@@ -41,7 +56,9 @@ void ContextEditor::Loop(){
 	KeyboardEvent* event;
 	TextAction textAction;
 	while (!quit){
-		TextScreen& textScreen = modes[currentMode]->GetTextScreen(interface->GetWidth(),interface->GetHeight());
+		TextScreen& textScreen = modes[currentMode]->GetTextScreen(
+			interface->GetWidth(),interface->GetHeight()
+		);
 		DrawStatusBar(textScreen);
 
 		interface->RenderScreen(textScreen);
@@ -57,7 +74,6 @@ void ContextEditor::Loop(){
 				if (!ProcessKeyboardEvent(textAction))
 					modes[currentMode]->ProcessTextAction(textAction);
 			}
-
 		}
 	}
 }
@@ -207,8 +223,13 @@ void ContextEditor::SubmitCommand(){
 	CommandTokenizer ct(entryString);
 	TokenVector tokens = ct.GetTokens();
 	
-	if (!ProcessCommand(tokens))
-		modes[currentMode]->ProcessCommand(tokens);
+	if (!ProcessCommand(tokens)){
+		if (!modes[currentMode]->ProcessCommand(tokens)){
+			errorMessage = "Unrecognized command '";
+			errorMessage += tokens[0].token;
+			errorMessage += "'";
+		}
+	}
 }
 
 inline void LogTokens(TokenVector tokens){
@@ -219,22 +240,40 @@ inline void LogTokens(TokenVector tokens){
 }
 
 bool ContextEditor::ProcessCommand(const TokenVector& tokens){
-	LogTokens(tokens);	
+	if (!tokens.size()) return true;
+	LogTokens(tokens);
 	
-	if (tokens.size()>=2){
-		if (tokens[0].type==TokenType::Name&&tokens[0].token=="open"){
-			std::string_view path = tokens[1].token;
-			OpenMode(path);
-			return true;
-		} else if (tokens[0].type==TokenType::Name&&tokens[0].token=="saveas"){
-			std::string_view path = tokens[1].token;
-			SaveAsMode(path,currentMode);
-			return true;
-		} else if (tokens[0].type==TokenType::Name&&tokens[0].token=="setpath"){
-			std::string_view path = tokens[1].token;
-			SetPathMode(path,currentMode);
-			return true;
-		}
+	const Command* cmd;
+	if (!GetCommandFromName(tokens[0].token,&cmd)){
+		return false;
+	}
+	
+	auto count = GetReqArgCount(*cmd);
+	if (count>tokens.size()-1){
+		errorMessage = "Expected ";
+		errorMessage += std::to_string(count);
+		errorMessage += " args, got ";
+		errorMessage += std::to_string(tokens.size()-1);
+		return true;
+	}
+	
+	if (tokens[0].token=="open"){
+		std::string_view path = tokens[1].token;
+		OpenMode(path);
+		return true;
+	} else if (tokens[0].token=="saveas"){
+		std::string_view path = tokens[1].token;
+		SaveAsMode(path,currentMode);
+		return true;
+	} else if (tokens[0].token=="setpath"){
+		std::string_view path = tokens[1].token;
+		SetPathMode(path,currentMode);
+		return true;
+	} else if (tokens[0].token=="set"){
+		std::string_view varName = tokens[1].token;
+		std::string_view val = tokens[2].token;
+		SetConfigVar(varName,val);
+		return true;
 	}
 	
 	return false;
@@ -441,6 +480,96 @@ void ContextEditor::SetPathMode(std::string_view path,size_t index){
 #endif
 	
 	modes[index]->SetPath(*osInterface,copiedPath);
+}
+
+inline bool SetBool(bool& var,std::string_view val){
+	if (val=="true"||val=="1"){
+		var = true;
+		return true;
+	} else if (val=="false"||val=="0"){
+		var = false;
+		return true;
+	}
+	
+	return false;
+}
+
+void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
+	if (!NameIsConfigVar(name)){
+		errorMessage = {};
+		errorMessage += "'";
+		errorMessage += name;
+		errorMessage += "' is not a config var!";
+		return;
+	}
+	
+	if (name=="tabSize"){
+		ssize_t n = strtol(val.data(),NULL,10);
+		if (n>0){
+			gConfig.tabSize = n;
+		} else {
+			errorMessage = "tabSize must be a positive integer";
+		}
+	} else if (name=="cursorMoveHeight"){
+		ssize_t n = strtol(val.data(),NULL,10);
+		if (n>=0){
+			gConfig.cursorMoveHeight = n;
+		} else {
+			errorMessage = "cursorMoveHeight must be a non-negative integer";
+		}
+	} else if (name=="multiAmount"){
+		ssize_t n = strtol(val.data(),NULL,10);
+		if (n>0){
+			gConfig.multiAmount = n;
+		} else {
+			errorMessage = "multiAmount must be a positive integer";
+		}
+	} else if (name=="displayLineNumbers"){
+		if (!SetBool(gConfig.displayLineNumbers,val)){
+			errorMessage = "displayLineNumbers must be a boolean value";
+		}
+	} else if (name=="autoIndent"){
+		if (!SetBool(gConfig.autoIndent,val)){
+			errorMessage = "autoIndent must be a boolean value";
+		}
+	} else if (name=="cursorLock"){
+		if (!SetBool(gConfig.cursorLock,val)){
+			errorMessage = "cursorLock must be a boolean value";
+		}
+	} else if (name=="cursorWrap"){
+		if (!SetBool(gConfig.cursorWrap,val)){
+			errorMessage = "cursorWrap must be a boolean value";
+		}
+	} else if (name=="smartHome"){
+		if (!SetBool(gConfig.smartHome,val)){
+			errorMessage = "smartHome must be a boolean value";
+		}
+	} else if (name=="tabMode"){
+		if (val=="tabs")
+			gConfig.tabMode = TabMode::Tabs;
+		else if (val=="spaces")
+			gConfig.tabMode = TabMode::Spaces;
+		else
+			errorMessage = "tabMode must be either 'tabs' or 'spaces'";
+	} else if (name=="moveMode"){
+		if (val=="multi")
+			gConfig.moveMode = MultiMode::Multi;
+		else if (val=="word")
+			gConfig.moveMode = MultiMode::Word;
+		else if (val=="pascal")
+			gConfig.moveMode = MultiMode::PascalWord;
+		else
+			errorMessage = "moveMode must be one of 'multi', 'word', or 'pascal'";
+	} else if (name=="deleteMode"){
+		if (val=="multi")
+			gConfig.deleteMode = MultiMode::Multi;
+		else if (val=="word")
+			gConfig.deleteMode = MultiMode::Word;
+		else if (val=="pascal")
+			gConfig.deleteMode = MultiMode::PascalWord;
+		else
+			errorMessage = "deleteMode must be one of 'multi', 'word', or 'pascal'";
+	}
 }
 
 OSInterface* ContextEditor::GetOSInterface() const {

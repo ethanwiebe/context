@@ -101,13 +101,12 @@ void LineModeBase::IndentSelection(){
 	
 	end.column = 0;
 	
-	
 	while (end.line.index>=start.line.index){
 		bool tab = textBuffer->IsTabIndented(end.line.it);
 		if (tab)
 			InsertCharAt(end,'\t');
 		else {
-			for (size_t i=0;i<Config::tabSize;++i)
+			for (ssize_t i=0;i<gConfig.tabSize;++i)
 				InsertCharAt(end,' ');
 		}
 		--end.line;
@@ -128,7 +127,7 @@ void LineModeBase::DedentSelection(){
 			if (GetCharAt(end)=='\t')
 				DeleteCharAt(end);
 		} else {
-			for (size_t i=0;i<Config::tabSize;++i){
+			for (ssize_t i=0;i<gConfig.tabSize;++i){
 				if (GetCharAt(end)!=' ') break;
 				DeleteCharAt(end);
 			}

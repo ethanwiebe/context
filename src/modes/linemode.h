@@ -95,6 +95,7 @@ protected:
 
 	Handle<SyntaxHighlighter> syntaxHighlighter;
 
+	bool readonly,modified;
 public:
 	LineModeBase(ContextEditor* ctx);
 	void InitIterators();
@@ -108,10 +109,13 @@ public:
 	std::string_view GetBufferName() override;
 	std::string_view GetStatusBarText() override;
 	
-	void ProcessCommand(const TokenVector&) override;
+	bool ProcessCommand(const TokenVector&) override;
 
 	bool OpenAction(const OSInterface& os,std::string_view path) override;
 	bool SaveAction(const OSInterface& os) override;
+	
+	bool Modified() override;
+	bool Readonly() override {return readonly;}
 	
 	std::string_view GetPath(const OSInterface&) override;
 	void SetPath(const OSInterface&,std::string_view) override;

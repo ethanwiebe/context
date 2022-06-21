@@ -58,7 +58,7 @@ bool TextBuffer::IsTabIndented(LineIterator it){
 	char first = (*it)[0];
 	if (first=='\t') return true;
 	if (first==' ') return false;
-	return Config::tabMode==TabMode::Tabs;
+	return gConfig.tabMode==TabMode::Tabs;
 }
 
 s32 ToNextMultiple(s32 x,s32 d,s32 w){
@@ -69,7 +69,7 @@ s32 ToNextMultiple(s32 x,s32 d,s32 w){
 void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
 	u8 c = str[i];
 	if (c=='\t'){
-		x = std::min(ToNextMultiple(x,Config::tabSize,width),ToNextMultiple(x,width,width));
+		x = std::min(ToNextMultiple(x,gConfig.tabSize,width),ToNextMultiple(x,width,width));
 		++i;
 	} else if (c&128){ //utf8 handling
 		if ((c>>5)==6){

@@ -71,6 +71,7 @@ public:
 	void SetPathMode(std::string_view,size_t);
 	void SetPathAndSaveMode(std::string_view,size_t);
 	void SwitchMode(size_t);
+	void SetConfigVar(std::string_view,std::string_view);
 
 	void NewMode();
 	void OpenMode(std::string_view);

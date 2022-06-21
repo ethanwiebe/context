@@ -2,17 +2,17 @@
 
 void LineModeBase::VisualCursorInsertLine(VisualCursor& cursor){
 	InsertCharAt(cursor.cursor,'\n');
-	s32 indentLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,Config::tabSize);
+	s32 indentLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,gConfig.tabSize);
 	bool tabs = textBuffer->IsTabIndented(cursor.cursor.line.it);
 	MoveCursorRight(cursor.cursor,1);
-	if (Config::autoIndent){
+	if (gConfig.autoIndent){
 		if (tabs){
 			while (--indentLevel>=0){
 				InsertCharAt(cursor.cursor,'\t');
 				MoveVisualCursorRight(cursor,1);
 			}
 		} else {
-			s32 spaceCount = Config::tabSize*indentLevel;
+			s32 spaceCount = gConfig.tabSize*indentLevel;
 			while (--spaceCount>=0){
 				InsertCharAt(cursor.cursor,' ');
 				MoveVisualCursorRight(cursor,1);
@@ -118,7 +118,7 @@ void LineModeBase::InsertTab(VisualCursor& cursor){
 		InsertCharAt(cursor.cursor,'\t');
 		MoveVisualCursorRight(cursor,1);
 	} else {
-		for (size_t i=0;i<Config::tabSize;++i){
+		for (ssize_t i=0;i<gConfig.tabSize;++i){
 			InsertCharAt(cursor.cursor,' ');
 			MoveVisualCursorRight(cursor,1);
 		}

@@ -155,11 +155,15 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	for (s32 y=0;y<innerHeight;y++){
 		if (it.index<0||it.it==textBuffer->end()){
-			for (s32 n=0;n<lineNumberWidth;++n){
-				textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
+			if (gConfig.displayLineNumbers){
+				for (s32 n=0;n<lineNumberWidth;++n){
+					textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
+				}
+	
+				textScreen[y*w+lineNumberWidth] = TextCell('~',blankLineStyle);
+			} else {
+				textScreen[y*w] = TextCell('~',blankLineStyle);
 			}
-
-			textScreen[y*w+lineNumberWidth] = TextCell('~',blankLineStyle);
 			if (it.index<0){
 				++it;
 			}
@@ -169,7 +173,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		lineStart = 0;
 		lineLen = it.it->size();
 
-		if (Config::displayLineNumbers){ //line numbers
+		if (gConfig.displayLineNumbers){ //line numbers
 			for (s32 n=0;n<lineNumberWidth;++n){ //fill in style
 				textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 			}
@@ -253,8 +257,10 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 				x = 0;
 				if (y>=innerHeight) break;
 
-				for (s32 n=0;n<lineNumberWidth;++n){
-					textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
+				if (gConfig.displayLineNumbers){
+					for (s32 n=0;n<lineNumberWidth;++n){
+						textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
+					}
 				}
 			}
 		}
@@ -321,25 +327,28 @@ std::string_view LineModeBase::GetStatusBarText(){
 	return cursorPosText;
 }
 
-void LineModeBase::ProcessCommand(const TokenVector& tokens){
-	if (tokens.size()>=2){
-		if (tokens[0].token=="goto"){
-			s32 l = strtol(tokens[1].token.data(),NULL,10);
-			s32 c = 0;
-			if (tokens.size()>=3) c = strtol(tokens[2].token.data(),NULL,10);
-			l = std::min(std::max(l-1,0),(s32)textBuffer->size()-1);
-			c = std::max(c-1,0);
-			cursors.front().cursor = MakeCursor(l,c);
-		} else if (tokens[0].token=="find"&&!tokens[1].token.empty()){
-			FindTextInBuffer(tokens[1].token);
-			if (!matches.size()){
-				modeErrorMessage = "No matches for '"+findText+"'";
-			} else {
-				finding = true;
-				CursorToNextMatch();
-			}
+bool LineModeBase::ProcessCommand(const TokenVector& tokens){
+	if (tokens[0].token=="goto"){
+		if (tokens.size()<2) return true;
+		s32 l = strtol(tokens[1].token.data(),NULL,10);
+		s32 c = 0;
+		if (tokens.size()>=3) c = strtol(tokens[2].token.data(),NULL,10);
+		l = std::min(std::max(l-1,0),(s32)textBuffer->size()-1);
+		c = std::max(c-1,0);
+		cursors.front().cursor = MakeCursor(l,c);
+		return true;
+	} else if (tokens[0].token=="find"&&!tokens[1].token.empty()){
+		if (tokens.size()<2) return true;
+		FindTextInBuffer(tokens[1].token);
+		if (!matches.size()){
+			modeErrorMessage = "No matches for '"+findText+"'";
+		} else {
+			finding = true;
+			CursorToNextMatch();
 		}
-	}	
+		return true;
+	}
+	return false;
 }
 
 bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
@@ -379,7 +388,7 @@ bool LineModeBase::HasPath(){
 	return !bufferPath.empty();
 }
 
-std::string_view LineModeBase::GetPath(const OSInterface& os){
+std::string_view LineModeBase::GetPath(const OSInterface&){
 	return bufferPath;
 }
 
@@ -421,7 +430,9 @@ inline void LineModeBase::SetColorLine(){
 
 void LineModeBase::CalculateScreenData(){
 	lineNumberWidth = std::max(numWidth(std::max(viewLine.index+screenHeight,0))+2,5);
-	lineWidth = screenWidth-lineNumberWidth;
+	lineWidth = screenWidth;
+	if (gConfig.displayLineNumbers)
+		lineWidth -= lineNumberWidth;
 
 	SetColorLine();
 }
@@ -446,6 +457,16 @@ void LineModeBase::SetModified(){
 	modified = true;
 	highlighterNeedsUpdate = true;
 	matches.clear();
+}
+
+bool LineModeBase::Modified(){
+	if (textBuffer->size()==1&&textBuffer->begin()->empty()&&bufferPath.empty())
+		return false;
+	
+	if (undoStack.UndoHeight()==0&&currentAction.Empty())
+		return false;
+	
+	return modified;
 }
 
 void LineModeBase::FindTextInBuffer(std::string_view text){

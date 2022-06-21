@@ -4,6 +4,10 @@ inline bool IsAlphabet(char c){
 	return (c>='a'&&c<='z')||(c>='A'&&c<='Z');
 }
 
+inline void TokenizeSingleLineComment(TokenizerBase& t){
+	while (t.pos!=t.str.end()&&*t.pos!='\n') ++t.pos;
+}
+
 inline bool TokenizerBase::TokensLeft() const {
 	return pos!=str.end();
 }
@@ -102,6 +106,9 @@ Token CommandTokenizer::EmitToken(){
 	if (t.type==TokenType::String&&pos!=str.end()) ++pos; //skip second quote
 
 	SkipWhitespace(str,pos);
+	if (pos==str.end()||*pos=='#'){ //comment in command
+		pos = str.end();
+	}
 
 	return t;
 }
@@ -123,10 +130,6 @@ inline bool TokenizeUntilDelimiter(TokenizerBase& t,std::string_view delim,char 
 	while (t.pos!=t.str.end()&&count--) ++t.pos;
 
 	return true;
-}
-
-inline void TokenizeSingleLineComment(TokenizerBase& t){
-	while (t.pos!=t.str.end()&&*t.pos!='\n') ++t.pos;
 }
 
 void SyntaxTokenizer::SetUnfinishedToken(TokenType type,u8 str){
