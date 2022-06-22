@@ -1,5 +1,7 @@
 #include "keybind.h"
 
+#include "util.h"
+
 #define ADD_BIND(action,key,mod) { \
 	if (!gKeyBindings.contains((action))){ \
 		gKeyBindings[(action)] = {}; \

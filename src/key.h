@@ -136,5 +136,4 @@ struct TextAction {
 	};
 };
 
-s32 CharLower(s32);
-s32 IsPrintable(s32,s32);
+
