@@ -85,9 +85,9 @@ def CPPDeps(path,includeDir=''):
             if line.startswith('#include') and '"' in line:
                 dep = CPPExtractIncludeFile(line)
                 depprefix = os.path.join(prefix,dep)
-                if not os.path.exists(depprefix):
+                if not os.path.exists(depprefix) and includeDir!='':
                     depprefix = os.path.join(includeDir,dep)
-                deps.add(depprefix)
+                deps.add(os.path.normpath(depprefix))
 
     return deps
 
@@ -118,6 +118,20 @@ class Builder:
     def ThreadedPrint(self,msg):
         with self.printLock:
             self.InfoPrint(msg)
+    
+    def GetSourceExts(self,mode):
+        exts = GetModeVar(self.options,mode,'sourceExt')
+        if type(exts)==str:
+            exts = [exts]
+        
+        return exts
+    
+    def GetHeaderExts(self,mode):
+        exts = GetModeVar(self.options,mode,'headerExt')
+        if type(exts)==str:
+            exts = [exts]
+        
+        return exts
 
     def DirContainsObjects(self,mode):
         d = self.ResolvePath(mode,GetModeVar(self.options,mode,'objectDir'))
@@ -139,7 +153,7 @@ class Builder:
         self.depdict[path] = deps
         for d in deps:
             if d not in self.depdict: #if dependency not tracked, add it and recursively search for more deps
-                self.FindFileDependencies(d)
+                self.FindFileDependencies(d,includeDir)
     
     def InvertDependencies(self):
         self.invdict = {}
@@ -156,33 +170,33 @@ class Builder:
             checkedHeadersSet = set()
 
         children = self.invdict[headerFile]
-        sourceExt = GetModeVar(self.options,mode,'sourceExt')
-        headerExt = GetModeVar(self.options,mode,'headerExt')
+        sourceExts = self.GetSourceExts(mode)
+        headerExts = self.GetHeaderExts(mode)
 
         for child in children:
-            if GetExtension(child)==sourceExt:
+            if GetExtension(child) in sourceExts:
                 cascadeSet.add(child)
-            elif GetExtension(child)==headerExt:
+            elif GetExtension(child) in headerExts:
                 if child not in checkedHeadersSet:
                     checkedHeadersSet.add(child)
                     cascadeSet = self.HeaderFileCascade(mode,child,cascadeSet,checkedHeadersSet)
 
         return cascadeSet
         
-    def CollectCompilables(self,srcDir,srcExt,includeDir=''):
+    def CollectCompilables(self,srcDir,srcExts,includeDir=''):
         files = os.listdir(srcDir)
         for file in files:
             path = os.path.join(srcDir,file)
             if os.path.isdir(path):
-                self.CollectCompilables(path,srcExt)
-            elif GetExtension(file)==srcExt:
+                self.CollectCompilables(path,srcExts,includeDir)
+            elif GetExtension(file) in srcExts:
                 self.compileFiles.add(path)
                 self.FindFileDependencies(path,includeDir)
     
-    def CollectAllCompilables(self,mode,srcDir,srcExt):
+    def CollectAllCompilables(self,mode,srcDir,srcExts):
         self.compileFiles = set()
         includeDir = self.ResolvePath(mode,GetModeVar(self.options,mode,'includeDir'))
-        self.CollectCompilables(srcDir,srcExt,includeDir)
+        self.CollectCompilables(srcDir,srcExts,includeDir)
         self.DebugPrint(f"Found {len(self.compileFiles)} source files.")
         self.DebugPrint(f"Tracked {len(self.depdict)} total dependencies.")
 
@@ -371,7 +385,7 @@ class Builder:
         if GetModeVar(self.options,mode,'compileCmd') or GetModeVar(self.options,mode,'linkCmd'):
             self.GetDepExtractFunc(mode)
             srcDir = self.ResolvePath(mode,GetModeVar(self.options,mode,'sourceDir'))
-            self.CollectAllCompilables(mode,srcDir,GetModeVar(self.options,mode,'sourceExt'))
+            self.CollectAllCompilables(mode,srcDir,self.GetSourceExts(mode))
             self.InvertDependencies()
             self.GetRebuildSet(mode)
 	
@@ -485,10 +499,7 @@ class Builder:
         self.InfoPrint(f'{TextColor(WHITE,1)}Done!{ResetTextColor()}')
 
     def GetDepExtractFunc(self,mode):
-        if GetModeVar(self.options,mode,'headerExt') in ['h','hh','hpp','h++']:
-            self.depExtractFunc = CPPDeps
-        else:
-            self.depExtractFunc = None
+        self.depExtractFunc = CPPDeps
 
     def IsBlankMode(self,mode):
         cc = GetModeVar(self.options,mode,'compileCmd')
@@ -713,7 +724,7 @@ def VerifyModesTypes(modes):
             ErrorExit()
 
 def FixDirs(options):
-    dirs = ['sourceDir','objectDir','outputDir','includeDir']
+    dirs = ['sourceDir','objectDir','outputDir']
 
     for d in dirs:
         modes = options['modes']
@@ -763,8 +774,8 @@ def GetOptionsFromFile(file):
     VerifyModesTypes(modes)
 
     defaults = [('compileCmd',''),('linkCmd',''),('outputName','a'),
-            ('defaultMode',list(op['modes'].keys())[0]),('sourceExt','cpp'),
-            ('headerExt','h'),('objectExt','o'),('sourceDir','.'),
+            ('defaultMode',list(op['modes'].keys())[0]),('sourceExt',['c','cpp','c++']),
+            ('headerExt',['h','hpp','h++']),('objectExt','o'),('sourceDir','.'),('includeDir',''),
             ('objectDir','.'),('outputDir','.'),('preCmds',[]),('postCmds',[])]
 
     SetDefaults(op,defaults)
