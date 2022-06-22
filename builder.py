@@ -98,6 +98,7 @@ class Builder:
         
         self.depExtractFunc = None
         self.depdict = {}
+        self.invdict = {}
         self.compileFiles = set()
         self.rebuildList = []
         self.debug = False
@@ -195,6 +196,9 @@ class Builder:
     
     def CollectAllCompilables(self,mode,srcDir,srcExts):
         self.compileFiles = set()
+        self.depdict = {}
+        self.invdict = {}
+        self.rebuildList = []
         includeDir = self.ResolvePath(mode,GetModeVar(self.options,mode,'includeDir'))
         self.CollectCompilables(srcDir,srcExts,includeDir)
         self.DebugPrint(f"Found {len(self.compileFiles)} source files.")
@@ -500,6 +504,38 @@ class Builder:
 
     def GetDepExtractFunc(self,mode):
         self.depExtractFunc = CPPDeps
+        
+    def PruneObjects(self,mode):
+        pruned = False
+        objDir = self.ResolvePath(mode,GetModeVar(self.options,mode,'objectDir'))
+        objFiles = os.listdir(objDir)
+        objExt = GetModeVar(self.options,mode,'objectExt')
+        
+        for file in objFiles:
+            prune = False
+            if GetExtension(file)==objExt:
+                if os.path.getsize(os.path.join(objDir,file))==0:
+                    prune = True
+                    self.DebugPrint(f"Pruned zero-size object: {file}")
+                else:
+                    src = os.path.splitext(os.path.basename(file))[0]
+                    found = False
+                    for srcFile in self.compileFiles:
+                        if os.path.basename(srcFile)==src:
+                            found = True
+                            break
+                    if not found:
+                        prune = True
+                        self.DebugPrint(f"Pruned object with no corresponding source: {file}")
+            
+            if prune:
+                p = os.path.join(objDir,file)
+                os.remove(p)
+                pruned = True
+                self.DebugPrint(f"Removing {p}")
+                
+        if pruned:
+            self.Scan(mode) #rescan
 
     def IsBlankMode(self,mode):
         cc = GetModeVar(self.options,mode,'compileCmd')
@@ -551,7 +587,10 @@ class Builder:
 
         errored = False
         cmd = ''
-
+        
+        if self.DirContainsObjects(mode):
+            self.PruneObjects(mode)
+            
         compileCount = len(self.rebuildList)
         # compilation
         if compileCount!=0 and GetModeVar(self.options,mode,'compileCmd')!='':
@@ -602,23 +641,18 @@ class Builder:
         self.InfoPrint(f"{TextColor(WHITE,1)}Using mode {TextColor(CYAN,1)}{mode}{ResetTextColor()}")
         self.InfoPrint(f"{TextColor(WHITE,1)}Cleaning up...{TextColor(YELLOW)}")
         if self.DirContainsObjects(mode):
-            path = self.GetObjectsPath(mode)
-            cmd = f"rm {path}"
-            if self.debug:
-                self.InfoPrint(cmd)
-            else:
-                self.InfoPrint(f"{TextColor(YELLOW)}Removing {path}")
-            self.RunCommand(cmd)
+            path = self.ResolvePath(mode,GetModeVar(self.options,mode,'objectDir'))
+            self.InfoPrint(f"{TextColor(YELLOW)}Removing {os.path.join(path,'*.o')}")
+            ext = GetModeVar(self.options,mode,'objectExt')
+            files = os.listdir(path)
+            for file in files:
+                if GetExtension(file)==ext:
+                    os.remove(os.path.join(path,file))
         
         path = self.GetOutputPath(mode)
         if os.path.exists(path):
-            cmd = f"rm {path}"
-            if self.debug:
-                self.InfoPrint(cmd)
-            else:
-                self.InfoPrint(f"{TextColor(YELLOW)}Removing {path}")
-
-            self.RunCommand(cmd)
+            self.InfoPrint(f"{TextColor(YELLOW)}Removing {path}")
+            os.remove(path)
 
         self.Done()
 
