@@ -98,19 +98,22 @@ TextStyle CPPSyntaxHighlighter::GetStyleFromTokenType(TokenType type) const {
 
 void CPPSyntaxHighlighter::BuildKeywords(){
 	AddKeywords({"if","else","while","for","do","namespace",
-			"switch","case","default","break","return",
-			"using","template","typedef","typename","new",
-			"delete","struct","class","enum","union","sizeof",
-			"alignof","public","private","protected","continue"},statementStyle);
+			"switch","case","default","break","return","volatile",
+			"using","template","typedef","typename","new","catch","concept",
+			"delete","struct","class","enum","union","sizeof","try","catch",
+			"alignof","alignas","public","private","protected","continue",
+			"static_cast","static_assert","const_cast","dynamic_cast",
+			"goto","requires","export","import","module","reinterpret_cast"},statementStyle);
 
 	AddKeywords({"void","bool","int","float","double","ptrdiff_t",
 			"long","char","auto","size_t","ssize_t","const","inline",
 			"noexcept","constexpr","extern","static","int8_t","virtual","operator",
 			"int16_t","int32_t","int64_t","uint8_t","uint16_t",
 			"uint32_t","uint64_t","u8","u16","u32","u64","s8",
-			"s16","s32","s64","f32","f64","unsigned","friend","final",
-			"nullptr_t","short","override"},typeStyle);
-	AddKeywords({"nullptr","NULL","true","false"},numberStyle);
+			"s16","s32","s64","f32","f64","unsigned","signed","friend","final",
+			"nullptr_t","short","override","register","char8_t","char16_t",
+			"char32_t","wchar_t","consteval","constinit","mutable"},typeStyle);
+	AddKeywords({"nullptr","NULL","true","false","this"},numberStyle);
 }
 
 static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",

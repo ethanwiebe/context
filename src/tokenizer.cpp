@@ -1,8 +1,6 @@
 #include "tokenizer.h"
 
-inline bool IsAlphabet(char c){
-	return (c>='a'&&c<='z')||(c>='A'&&c<='Z');
-}
+#include "util.h"
 
 inline void TokenizeSingleLineComment(TokenizerBase& t){
 	while (t.pos!=t.str.end()&&*t.pos!='\n') ++t.pos;
@@ -57,6 +55,16 @@ bool SVPosStartsWith(std::string_view str,std::string_view::iterator pos,std::st
 
 inline void TokenizeNumber(TokenizerBase& t){
 	while ((*t.pos>='0'&&*t.pos<='9')||*t.pos=='.') ++t.pos;
+}
+
+inline void TokenizeCPPNumber(TokenizerBase& t){
+	TokenizeNumber(t);
+	while (1){
+		auto c = CharLower(*t.pos);
+		
+		if (c<'a'||c>'z') break;
+		++t.pos;
+	}
 }
 
 inline void TokenizeName(TokenizerBase& t){
@@ -224,7 +232,7 @@ void CPPTokenizer::ChooseToken(Token& t,char initialC,char nextC){
 			TokenizeHexNumber(*this);
 		} else {
 			if (initialC=='0'&&(nextC=='b'||nextC=='o')) {++pos;++pos;}
-			TokenizeNumber(*this);
+			TokenizeCPPNumber(*this);
 		}
 	} else if (IsAlphabet(initialC)||initialC=='_'){
 		t.type = TokenType::Name;
@@ -254,7 +262,6 @@ void CPPTokenizer::ChooseToken(Token& t,char initialC,char nextC){
 		if (TokenizeUntilDelimiter(*this,"\\")){
 			SetUnfinishedToken(TokenType::Directive);
 		}
-//		TokenizeDirective(*this);
 	} else {
 		t.type = TokenType::SpecialChar;
 		++pos; //tokenize one char
