@@ -17,6 +17,7 @@ struct Config {
 	s64 tabSize;
 	s64 cursorMoveHeight;
 	s64 multiAmount;
+	u64 style;
 
 	bool displayLineNumbers;
 	bool autoIndent;
@@ -43,12 +44,13 @@ struct ConfigProp {
 
 extern Config gConfig;
 
-const s64 gConfigPropCount = 11;
+const s64 gConfigPropCount = 12;
 
 const ConfigProp gConfigProps[gConfigPropCount] = {
 	{"tabSize",                ConfigPropType::Number},
 	{"cursorMoveHeight",       ConfigPropType::Number},
 	{"multiAmount",            ConfigPropType::Number},
+	{"style",                  ConfigPropType::Number},
 	{"displayLineNumbers",     ConfigPropType::Bool},
 	{"autoIndent",             ConfigPropType::Bool},
 	{"cursorLock",             ConfigPropType::Bool},

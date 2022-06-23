@@ -3,7 +3,6 @@
 #include "mode.h"
 #include "../keybind.h"
 #include "../textbuffer.h"
-#include "../tui.h"
 #include "../logger.h"
 #include "../undo.h"
 #include "../syntaxhighlight.h"
@@ -116,6 +115,8 @@ public:
 	
 	bool Modified() override;
 	bool Readonly() override {return readonly;}
+	
+	void UpdateStyle() override;
 	
 	std::string_view GetPath(const OSInterface&) override;
 	void SetPath(const OSInterface&,std::string_view) override;

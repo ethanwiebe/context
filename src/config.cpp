@@ -4,6 +4,7 @@ Config gConfig = {
 	.tabSize = 4,
 	.cursorMoveHeight = 3,
 	.multiAmount = 4,
+	.style = 0,
 	
 	.displayLineNumbers = true,
 	.autoIndent = true,

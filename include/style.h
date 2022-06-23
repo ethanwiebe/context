@@ -2,6 +2,8 @@
 
 #include "core.h"
 
+#include <map>
+
 struct Color {
 	u8 r,g,b;
 
@@ -9,23 +11,6 @@ struct Color {
 		return r==other.r && g==other.g && b==other.b;
 	}
 };
-
-extern Color ColorBlack;
-extern Color ColorWhite;
-extern Color ColorRed;
-extern Color ColorGreen;
-extern Color ColorYellow;
-extern Color ColorBlue;
-extern Color ColorCyan;
-extern Color ColorMagenta;
-extern Color ColorOrange;
-
-extern Color ColorBackgroundDark;
-extern Color ColorBackgroundLight;
-extern Color ColorForegroundDark;
-extern Color ColorForegroundLight;
-
-void SetColors();
 
 enum StyleFlag : u8 {
 	NoFlag = 0,
@@ -48,16 +33,21 @@ struct TextStyle {
 	}
 };
 
-extern TextStyle defaultStyle;
-extern TextStyle cursorStyle;
-extern TextStyle lineNumberStyle;
-extern TextStyle blankLineStyle;
-extern TextStyle lineDrawingStyle;
-extern TextStyle errorStyle;
-extern TextStyle statementStyle;
-extern TextStyle typeStyle;
-extern TextStyle funcStyle;
-extern TextStyle commentStyle;
-extern TextStyle barStyle;
-extern TextStyle highlightStyle;
-extern TextStyle highlightStyle2;
+struct StyleSet {
+	TextStyle textStyle,cursorStyle,emptyLineStyle,barStyle,
+			lineNumberStyle,errorStyle,highlightStyle,highlightSelectStyle,
+			statementStyle,typeStyle,funcStyle,stringStyle,numberStyle,
+			directiveStyle,commentStyle;
+};
+
+extern std::map<u64,StyleSet> gStyleMap;
+
+extern const StyleSet defaultStyleSet;
+
+#define STYLE(x) extern TextStyle x ## Style;
+#include "stylenames.h"
+#undef STYLE
+
+void LoadStyle();
+void SaveStyle();
+

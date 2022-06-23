@@ -241,15 +241,15 @@ inline s32 CursesInterface::ColorsToPair(s32 fg, s32 bg) const {
 }
 
 s32 GetFallbackColor8(Color c){
-	if (c==ColorBackgroundDark) return COLOR_BLACK;
-	if (c==ColorForegroundDark) return COLOR_WHITE;
-	if (c==ColorRed) return COLOR_RED;
-	if (c==ColorYellow) return COLOR_YELLOW;
-	if (c==ColorGreen) return COLOR_GREEN;
-	if (c==ColorOrange) return COLOR_RED;
-	if (c==ColorMagenta) return COLOR_MAGENTA;
-	if (c==ColorBlue) return COLOR_BLUE;
-	if (c==ColorCyan) return COLOR_CYAN;
+	if (c==textStyle.bg) return COLOR_BLACK;
+	if (c==textStyle.fg) return COLOR_WHITE;
+	if (c==numberStyle.fg) return COLOR_RED;
+	if (c==statementStyle.fg) return COLOR_YELLOW;
+	if (c==stringStyle.fg) return COLOR_GREEN;
+	if (c==highlightSelectStyle.bg) return COLOR_RED;
+	if (c==funcStyle.fg) return COLOR_MAGENTA;
+	if (c==commentStyle.fg) return COLOR_BLUE;
+	if (c==emptyLineStyle.fg) return COLOR_CYAN;
 	
 	
 	if (c.r>=110&&c.g>=110&&c.b>=110) return COLOR_WHITE;

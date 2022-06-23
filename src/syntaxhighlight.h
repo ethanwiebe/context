@@ -23,7 +23,7 @@ typedef std::vector<ColorLine> ColorLineList;
 
 typedef ColorLineList::iterator ColorIterator;
 
-typedef std::map<std::string_view,TextStyle> KeywordStyleMap;
+typedef std::map<std::string_view,TextStyle*> KeywordStyleMap;
 
 class ColorBuffer {
 	ColorLineList colors;
@@ -69,12 +69,9 @@ class ConfigurableSyntaxHighlighter : public SyntaxHighlighter {
 protected:
 	std::list<std::string> keywords;
 	KeywordStyleMap styleMap;
-	TextStyle stringStyle,numberStyle;
 	std::string comment,multiLineCommentStart,multiLineCommentEnd;
 public:
 	ConfigurableSyntaxHighlighter(TextBuffer& b) : SyntaxHighlighter(b){
-		stringStyle = TextStyle(ColorGreen,ColorBackgroundDark,StyleFlag::NoFlag);
-		numberStyle = TextStyle(ColorRed,ColorBackgroundDark,StyleFlag::NoFlag);
 		keywords = {};
 		styleMap = {};
 		
@@ -83,7 +80,7 @@ public:
 		multiLineCommentEnd = "*/";
 	}
 
-	void AddKeywords(const std::vector<std::string>&,TextStyle);
+	void AddKeywords(const std::vector<std::string>&,TextStyle*);
 
 	void FillColorBuffer(ColorBuffer& c) override;
 
@@ -107,16 +104,12 @@ private:
 
 class CPPSyntaxHighlighter : public ConfigurableSyntaxHighlighter {
 	void BuildKeywords();
-	TextStyle directiveStyle;
 public:
 	CPPSyntaxHighlighter(TextBuffer& b) : ConfigurableSyntaxHighlighter(b){
 		BuildKeywords();
-		directiveStyle = {ColorMagenta,ColorBackgroundDark,StyleFlag::NoFlag};
 	}
 
 	SyntaxTokenizer* GetTokenizer() const override;
-	TextStyle GetStyleFromTokenType(TokenType) const override;
-
 };
 
 SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer&,std::string_view extension);

@@ -22,7 +22,7 @@ struct Command {
 	const std::vector<CArg> args;
 };
 
-const size_t gCommandCount = 6;
+const size_t gCommandCount = 7;
 
 const Command gCommands[gCommandCount] = {
 	{
@@ -56,6 +56,15 @@ const Command gCommands[gCommandCount] = {
 		{
 			{ArgType::String, "actionName"},
 			{ArgType::Any, "binds..."}
+		}
+	},
+	{
+		"style",
+		{
+			{ArgType::String, "styleName"},
+			{ArgType::String, "fgColor"},
+			{ArgType::String, "bgColor"},
+			{ArgType::String, "opts", " "}
 		}
 	},
 	{

@@ -37,6 +37,8 @@ public:
 	virtual std::string_view GetPath(const OSInterface&){return {};}
 	virtual void SetPath(const OSInterface&,std::string_view){}
 	
+	virtual void UpdateStyle(){}
+	
 	virtual bool Readonly(){
 		return false;
 	}

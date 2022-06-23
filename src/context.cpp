@@ -8,6 +8,7 @@
 
 ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();
+	LoadStyle();
 
 	yesAction = [](){};
 	noAction = [](){};
@@ -278,6 +279,16 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		std::string_view actionName = tokens[1].token;
 		SetConfigBind(actionName,tokens);
 		return true;
+	} else if (tokens[0].token=="style"){
+		std::string_view styleName = tokens[1].token;
+		std::string_view fg = tokens[2].token;
+		std::string_view bg = tokens[3].token;
+		std::string_view opts = {};
+		if (tokens.size()>4)
+			opts = tokens[4].token;
+		SetStyleOpts(styleName,fg,bg,opts);
+		modes[currentMode]->UpdateStyle();
+		return true;
 	}
 	
 	return false;
@@ -288,6 +299,12 @@ const std::map<std::string,Action> actionNameMap = {
 	#include "actions.h"
 };
 #undef ACTION
+
+#define STYLE(x) {#x, x##Style},
+const std::map<std::string,TextStyle&> styleNameMap = {
+	#include "stylenames.h"
+};
+#undef STYLE
 
 const std::map<std::string,KeyEnum> keyNameMap = {
 	{"Esc",KeyEnum::Escape},
@@ -424,6 +441,71 @@ void ContextEditor::SetConfigBind(std::string_view actionName,const TokenVector&
 		++bindIt;
 	}
 	UpdateBinds();
+}
+
+bool ParseColor(std::string_view c,Color& color){
+	if (c.size()!=6)
+		return false;
+	
+	size_t n = strtol(c.data(),NULL,16);
+	
+	if (n==0&&c!="000000")
+		return false;
+	
+	color.r = n>>16;
+	color.g = (n>>8)&255;
+	color.b = n&255;
+		
+	return true;
+}
+
+void ContextEditor::SetStyleOpts(std::string_view styleName,
+		std::string_view fgStr,
+		std::string_view bgStr,
+		std::string_view opts){
+	std::string copied = std::string(styleName);
+	if (!styleNameMap.contains(copied)){
+		errorMessage = "Unrecognized style name '";
+		errorMessage += copied;
+		errorMessage += "'!";
+		return;
+	}
+	
+	TextStyle& styleVar = styleNameMap.at(copied);
+	
+	Color fg,bg;
+	if (!ParseColor(fgStr,fg)){
+		errorMessage = "Cannot convert '";
+		errorMessage += fgStr;
+		errorMessage += "' into a color!";
+		return;
+	}
+	
+	if (!ParseColor(bgStr,bg)){
+		errorMessage = "Cannot convert '";
+		errorMessage += bgStr;
+		errorMessage += "' into a color!";
+		return;
+	}
+	
+	u8 sf = StyleFlag::NoFlag;
+	
+	if (!opts.empty()){
+		for (auto c : opts){
+			if (c=='b'||c=='B')
+				sf |= StyleFlag::Bold;
+			else if (c=='u'||c=='U')
+				sf |= StyleFlag::Underline;
+			else {
+				errorMessage = "Unrecognized style option '";
+				errorMessage += c;
+				errorMessage += "'!";
+				return;
+			}
+		}
+	}
+	
+	styleVar = {fg,bg,sf};
 }
 
 std::string ContextEditor::ConstructModeString(size_t index){
@@ -683,6 +765,12 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 		} else {
 			errorMessage = "multiAmount must be a positive integer";
 		}
+	} else if (name=="style"){
+		size_t n = strtol(val.data(),NULL,10);
+		SaveStyle();
+		gConfig.style = n;
+		LoadStyle();
+		modes[currentMode]->UpdateStyle();
 	} else if (name=="displayLineNumbers"){
 		if (!SetBool(gConfig.displayLineNumbers,val)){
 			errorMessage = "displayLineNumbers must be a boolean value";

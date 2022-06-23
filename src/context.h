@@ -52,6 +52,10 @@ class ContextEditor {
 	void AutocompleteCommand();
 	bool ProcessCommand(const TokenVector&);
 
+	void SetStyleOpts(std::string_view,std::string_view,std::string_view,std::string_view);
+	void SetConfigVar(std::string_view,std::string_view);
+	void SetConfigBind(std::string_view,const TokenVector&);
+	
 	std::string ConstructModeString(size_t);
 	void DrawStatusBar(TextScreen&);
 
@@ -71,8 +75,6 @@ public:
 	void SetPathMode(std::string_view,size_t);
 	void SetPathAndSaveMode(std::string_view,size_t);
 	void SwitchMode(size_t);
-	void SetConfigVar(std::string_view,std::string_view);
-	void SetConfigBind(std::string_view,const TokenVector&);
 
 	void NewMode();
 	void OpenMode(std::string_view);

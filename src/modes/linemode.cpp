@@ -59,7 +59,7 @@ void LineModeBase::UpdateHighlighter(){
 
 TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
 	if (!syntaxHighlighter||!it->size())
-		return defaultStyle;
+		return textStyle;
 
 	for (const ColorData& cd : *it){
 		if (cd.start>index) break;
@@ -68,7 +68,7 @@ TextStyle LineModeBase::GetTextStyleAt(ColorIterator it,s32 index){
 			return cd.style;
 	}
 
-	return defaultStyle;
+	return textStyle;
 }
 
 inline void HandleUTF8(LineIndexedIterator it,u32& c,s32 i){
@@ -123,7 +123,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	SetVisualCursorColumn(cursors.front(),cursors.front().cursor.column);
 	MoveScreenToVisualCursor(cursors.front());
 
-	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',defaultStyle));
+	std::fill(textScreen.begin(),textScreen.end(),TextCell(' ',textStyle));
 
 	auto it = viewLine;
 	auto colorLineIt = colorLine;
@@ -160,9 +160,9 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 					textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 				}
 	
-				textScreen[y*w+lineNumberWidth] = TextCell('~',blankLineStyle);
+				textScreen[y*w+lineNumberWidth] = TextCell('~',emptyLineStyle);
 			} else {
-				textScreen[y*w] = TextCell('~',blankLineStyle);
+				textScreen[y*w] = TextCell('~',emptyLineStyle);
 			}
 			if (it.index<0){
 				++it;
@@ -235,7 +235,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);
 			if (inSelection) std::swap(usedStyle.bg,usedStyle.fg);
 			if (findCount){
-				if (cursorFind) usedStyle = highlightStyle2;
+				if (cursorFind) usedStyle = highlightSelectStyle;
 				else usedStyle = highlightStyle;
 			}
 			textScreen[y*w+x+lineStart] = TextCell(c,usedStyle);
@@ -467,6 +467,10 @@ bool LineModeBase::Modified(){
 		return false;
 	
 	return modified;
+}
+
+void LineModeBase::UpdateStyle(){
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::FindTextInBuffer(std::string_view text){

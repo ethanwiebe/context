@@ -2,7 +2,7 @@
 
 typedef IndexedIterator<std::string> CharIndexedIterator;
 
-void ConfigurableSyntaxHighlighter::AddKeywords(const std::vector<std::string>& kws,TextStyle style){
+void ConfigurableSyntaxHighlighter::AddKeywords(const std::vector<std::string>& kws,TextStyle* style){
 	for (auto keyword : kws){
 		keywords.push_back(keyword);
 		styleMap[keywords.back()] = style;
@@ -22,10 +22,12 @@ TextStyle ConfigurableSyntaxHighlighter::GetStyleFromTokenType(TokenType type) c
 			return commentStyle;
 		case TokenType::Number:
 			return numberStyle;
+		case TokenType::Directive:
+			return directiveStyle;
 		default:
 			break;
 	}
-	return defaultStyle;
+	return textStyle;
 }
 
 SyntaxTokenizer* ConfigurableSyntaxHighlighter::GetTokenizer() const {
@@ -65,7 +67,7 @@ void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c){
 
 bool ConfigurableSyntaxHighlighter::TokenInKeywords(std::string_view token,TextStyle& style) const {
 	if (styleMap.contains(token)){
-		style = styleMap.at(token);
+		style = *styleMap.at(token);
 		return true;
 	}
 
@@ -80,22 +82,6 @@ SyntaxTokenizer* CPPSyntaxHighlighter::GetTokenizer() const {
 	return new CPPTokenizer("");
 }
 
-TextStyle CPPSyntaxHighlighter::GetStyleFromTokenType(TokenType type) const {
-	switch (type){
-		case TokenType::String:
-			return stringStyle;
-		case TokenType::Comment:
-			return commentStyle;
-		case TokenType::Number:
-			return numberStyle;
-		case TokenType::Directive:
-			return directiveStyle;
-		default:
-			break;
-	}
-	return defaultStyle;
-}
-
 void CPPSyntaxHighlighter::BuildKeywords(){
 	AddKeywords({"if","else","while","for","do","namespace",
 			"switch","case","default","break","return","volatile",
@@ -103,7 +89,7 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 			"delete","struct","class","enum","union","sizeof","try","catch",
 			"alignof","alignas","public","private","protected","continue",
 			"static_cast","static_assert","const_cast","dynamic_cast",
-			"goto","requires","export","import","module","reinterpret_cast"},statementStyle);
+			"goto","requires","export","import","module","reinterpret_cast"},&statementStyle);
 
 	AddKeywords({"void","bool","int","float","double","ptrdiff_t",
 			"long","char","auto","size_t","ssize_t","const","inline",
@@ -112,8 +98,8 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 			"uint32_t","uint64_t","u8","u16","u32","u64","s8",
 			"s16","s32","s64","f32","f64","unsigned","signed","friend","final",
 			"nullptr_t","short","override","register","char8_t","char16_t",
-			"char32_t","wchar_t","consteval","constinit","mutable"},typeStyle);
-	AddKeywords({"nullptr","NULL","true","false","this"},numberStyle);
+			"char32_t","wchar_t","consteval","constinit","mutable"},&typeStyle);
+	AddKeywords({"nullptr","NULL","true","false","this"},&numberStyle);
 }
 
 static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",
@@ -132,9 +118,9 @@ SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::str
 		return new CPPSyntaxHighlighter(buffer);
 	} else if (ext=="pyc"||ext=="pyw"||ext=="py"){
 		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);
-		sh->AddKeywords(pythonKeywords,statementStyle);
-		sh->AddKeywords(pythonFuncs,funcStyle);
-		sh->AddKeywords(pythonTypes,typeStyle);
+		sh->AddKeywords(pythonKeywords,&statementStyle);
+		sh->AddKeywords(pythonFuncs,&funcStyle);
+		sh->AddKeywords(pythonTypes,&typeStyle);
 		sh->SetComment("#");
 		sh->SetMultiLineComment("","");
 		return sh;

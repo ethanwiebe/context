@@ -1,5 +1,33 @@
 #include "style.h"
 
+#include "config.h"
+
+std::map<u64,StyleSet> gStyleMap = {};
+
+void LoadStyle(){
+	if (!gStyleMap.contains(gConfig.style))
+		gStyleMap[gConfig.style] = defaultStyleSet;
+	
+	StyleSet set = gStyleMap.at(gConfig.style);
+	
+#define STYLE(x) x ## Style = set.x ## Style;
+	#include "stylenames.h"
+#undef STYLE
+
+}
+
+void SaveStyle(){
+	if (!gStyleMap.contains(gConfig.style))
+		gStyleMap[gConfig.style] = defaultStyleSet;
+		
+	StyleSet& set = gStyleMap[gConfig.style];	
+	
+#define STYLE(x) set.x ## Style = x ## Style;
+	#include "stylenames.h"
+#undef STYLE
+
+}
+
 //#define SOLARIZED
 #define GRUVBOX
 
@@ -70,24 +98,30 @@ Color ColorComment = {0x83,0xa5,0x98};
 Color ColorGray = {0x92,0x83,0x74};
 
 
-Color ColorBackgroundDark = ColorBackground1;
-Color ColorForegroundDark = ColorForeground1;
-Color ColorBackgroundLight = ColorForeground1;
-Color ColorForegroundLight = ColorBackground1;
+Color ColorBackground = ColorBackground1;
+Color ColorForeground = ColorForeground1;
 
 #endif
 
+const StyleSet defaultStyleSet = {
+	.textStyle = {ColorForeground,ColorBackground,StyleFlag::NoFlag},
+	.cursorStyle = {ColorBackground,ColorForeground,StyleFlag::NoFlag},
+	.emptyLineStyle = {ColorForeground3,ColorBackground,StyleFlag::NoFlag},
+	.barStyle = {ColorWhite,ColorBackground3,StyleFlag::NoFlag},
+	.lineNumberStyle = {ColorGray,ColorBackground2,StyleFlag::NoFlag},
+	.errorStyle = {ColorRed,ColorBlack,StyleFlag::NoFlag},
+	.highlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag},
+	.highlightSelectStyle = {ColorBlack,ColorOrange,StyleFlag::NoFlag},
+	.statementStyle = {ColorYellow,ColorBackground,StyleFlag::NoFlag},
+	.typeStyle = {ColorGreen,ColorBackground,StyleFlag::NoFlag},
+	.funcStyle = {ColorMagenta,ColorBackground,StyleFlag::NoFlag},
+	.stringStyle = {ColorGreen,ColorBackground,StyleFlag::NoFlag},
+	.numberStyle = {ColorRed,ColorBackground,StyleFlag::NoFlag},
+	.directiveStyle = {ColorMagenta,ColorBackground,StyleFlag::NoFlag},
+	.commentStyle = {ColorComment,ColorBackground,StyleFlag::NoFlag}
+};
 
-TextStyle defaultStyle = {ColorForegroundDark,ColorBackgroundDark,StyleFlag::NoFlag};
-TextStyle cursorStyle = {ColorBackgroundDark,ColorForegroundDark,StyleFlag::NoFlag};
-TextStyle lineDrawingStyle = {ColorForegroundDark,ColorBackgroundDark,StyleFlag::AlternateCharacterSet};
-TextStyle lineNumberStyle = {ColorGray,ColorBackground2,StyleFlag::NoFlag};
-TextStyle errorStyle = {ColorRed,ColorBlack,StyleFlag::NoFlag};
-TextStyle blankLineStyle = {ColorForeground3,ColorBackgroundDark,StyleFlag::NoFlag};
-TextStyle statementStyle = {ColorYellow,ColorBackgroundDark,StyleFlag::NoFlag};
-TextStyle typeStyle = {ColorGreen,ColorBackgroundDark,StyleFlag::NoFlag};
-TextStyle funcStyle = {ColorMagenta,ColorBackgroundDark,StyleFlag::NoFlag};
-TextStyle commentStyle = {ColorComment,ColorBackgroundDark,StyleFlag::NoFlag};
-TextStyle barStyle = {ColorWhite,ColorBackground3,StyleFlag::NoFlag};
-TextStyle highlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag};
-TextStyle highlightStyle2 = {ColorBlack,ColorOrange,StyleFlag::NoFlag};
+#define STYLE(x) TextStyle x ## Style;
+#include "stylenames.h"
+#undef STYLE
+
