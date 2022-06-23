@@ -176,6 +176,10 @@ void ContextEditor::ProcessCommandEntry(TextAction textAction){
 		case Action::MoveToLineEnd:
 			entryPos = entryString.size();
 			break;
+		case Action::DeleteLine:
+			entryString.clear();
+			entryPos = 0;
+			break;
 			
 		default:
 			break;
