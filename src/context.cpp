@@ -39,19 +39,8 @@ ContextEditor::ContextEditor(const std::string& file){
 
 	currentMode = 0;
 
-	std::string configPath = osInterface->GetConfigFilePath();
-	if (osInterface->FileIsReadable(configPath)){
-		auto settings = MakeRef<TextBuffer>();
-		if (osInterface->ReadFileIntoTextBuffer(configPath,settings)){
-			for (const auto& line : *settings){
-				if (line.empty())
-					continue;
-					
-				entryString = line;
-				SubmitCommand();
-			}
-		}
-	}
+	std::string configPath = osInterface->GetHomePath() + "/.ctxcfg";
+	RunFile(configPath);
 	
 	Loop();
 }
@@ -77,6 +66,21 @@ void ContextEditor::Loop(){
 			} else {
 				if (!ProcessKeyboardEvent(textAction))
 					modes[currentMode]->ProcessTextAction(textAction);
+			}
+		}
+	}
+}
+
+void ContextEditor::RunFile(std::string_view path){
+	if (ReadFileChecks(path)){
+		auto settings = MakeRef<TextBuffer>();
+		if (osInterface->ReadFileIntoTextBuffer(path,settings)){
+			for (const auto& line : *settings){
+				if (line.empty())
+					continue;
+					
+				entryString = line;
+				SubmitCommand();
 			}
 		}
 	}
@@ -244,6 +248,17 @@ inline void LogTokens(TokenVector tokens){
 	}
 }
 
+std::string ParsePath(std::string_view path,const OSInterface& os){
+	std::string parsed = {};
+	
+	if (path[0]=='~'){
+		parsed += os.GetHomePath();
+		path = {path.begin()+1,path.end()};
+	}
+	parsed += path;
+	return parsed;
+}
+
 bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	if (!tokens.size()) return true;
 	LogTokens(tokens);
@@ -264,15 +279,18 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	
 	if (tokens[0].token=="open"){
 		std::string_view path = tokens[1].token;
-		OpenMode(path);
+		std::string parsedPath = ParsePath(path,*osInterface);
+		OpenMode(parsedPath);
 		return true;
 	} else if (tokens[0].token=="saveas"){
 		std::string_view path = tokens[1].token;
-		SaveAsMode(path,currentMode);
+		std::string parsedPath = ParsePath(path,*osInterface);
+		SaveAsMode(parsedPath,currentMode);
 		return true;
 	} else if (tokens[0].token=="setpath"){
 		std::string_view path = tokens[1].token;
-		SetPathMode(path,currentMode);
+		std::string parsedPath = ParsePath(path,*osInterface);
+		SetPathMode(parsedPath,currentMode);
 		return true;
 	} else if (tokens[0].token=="set"){
 		std::string_view varName = tokens[1].token;
@@ -292,6 +310,11 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 			opts = tokens[4].token;
 		SetStyleOpts(styleName,fg,bg,opts);
 		modes[currentMode]->UpdateStyle();
+		return true;
+	} else if (tokens[0].token=="source"){
+		std::string_view path = tokens[1].token;
+		std::string parsedPath = ParsePath(path,*osInterface);
+		RunFile(parsedPath);
 		return true;
 	}
 	

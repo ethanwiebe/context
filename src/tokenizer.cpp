@@ -68,7 +68,7 @@ inline void TokenizeCPPNumber(TokenizerBase& t){
 }
 
 inline void TokenizeName(TokenizerBase& t){
-	while (IsAlphabet(*t.pos)||(*t.pos>='0'&&*t.pos<='9')||*t.pos=='_'||*t.pos=='.'||*t.pos=='/'||*t.pos=='\\'||*t.pos=='-'||*t.pos==':') ++t.pos;
+	while (IsAlphabet(*t.pos)||(*t.pos>='0'&&*t.pos<='9')||*t.pos=='_'||*t.pos=='.'||*t.pos=='/'||*t.pos=='\\'||*t.pos=='-'||*t.pos==':'||*t.pos=='~') ++t.pos;
 }
 
 inline void TokenizeSingleQuoteString(TokenizerBase& t){
@@ -86,7 +86,7 @@ Token CommandTokenizer::EmitToken(){
 	if (initialC>='0'&&initialC<='9'){
 		t.type = TokenType::Number;
 		TokenizeNumber(*this);
-	} else if (IsAlphabet(initialC)||initialC=='_'||initialC=='.'||initialC=='/'){
+	} else if (IsAlphabet(initialC)||initialC=='_'||initialC=='.'||initialC=='/'||initialC=='~'){
 		t.type = TokenType::Name;
 		TokenizeName(*this);
 	} else if (initialC=='\''){
@@ -114,8 +114,9 @@ Token CommandTokenizer::EmitToken(){
 	if (t.type==TokenType::String&&pos!=str.end()) ++pos; //skip second quote
 
 	SkipWhitespace(str,pos);
-	if (pos==str.end()||*pos=='#'){ //comment in command
+	if (*pos=='#'){
 		pos = str.end();
+		str = {pos,str.end()};
 	}
 
 	return t;

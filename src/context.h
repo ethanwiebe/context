@@ -46,6 +46,8 @@ class ContextEditor {
 	bool WriteFileChecks(std::string_view);
 	bool ReadFileChecks(std::string_view);
 	
+	void RunFile(std::string_view);
+	
 	void MoveEntryPosLeft(size_t);
 	void MoveEntryPosRight(size_t);
 	

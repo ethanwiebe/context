@@ -25,5 +25,5 @@ public:
 	virtual bool ReadFileIntoTextBuffer(std::string_view,Ref<TextBuffer>) const = 0;
 	virtual bool WriteTextBufferIntoFile(std::string_view,Ref<TextBuffer>) const = 0;
 	
-	virtual std::string GetConfigFilePath() const = 0;
+	virtual std::string GetHomePath() const = 0;
 };

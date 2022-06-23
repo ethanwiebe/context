@@ -103,15 +103,13 @@ bool LinuxOSImpl::WriteTextBufferIntoFile(std::string_view path,Ref<TextBuffer> 
 	return true;
 }
 
-std::string LinuxOSImpl::GetConfigFilePath() const {
+std::string LinuxOSImpl::GetHomePath() const {
 	const char* home = getenv("HOME");
-	if (home!=NULL){
-		return std::string(home) + "/.ctxcfg";
-	}
+	if (home!=NULL)
+		return std::string(home);
 	
 	home = getpwuid(geteuid())->pw_dir;
-	
-	return std::string(home) + "/.ctxcfg";
+	return std::string(home);
 }
 
 #endif

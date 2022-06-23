@@ -50,6 +50,10 @@ class CommandTokenizer : public TokenizerBase {
 public:
 	CommandTokenizer(std::string_view sv) : TokenizerBase(sv){
 		SkipWhitespace(str,pos);
+		if (pos!=str.end()&&*pos=='#'){
+			pos = str.end();
+			str = {pos,pos};
+		}
 	}
 
 	Token EmitToken() override;
