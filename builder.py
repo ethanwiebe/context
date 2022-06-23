@@ -82,7 +82,11 @@ def CPPDeps(path,includeDir=''):
 
     with open(path,'r') as f:
         for line in f:
-            if line.startswith('#include') and '"' in line:
+            line = line.lstrip(' \t')
+            if line[0]!='#':
+                continue
+            line = line[1:].lstrip(' \t')
+            if line.startswith('include') and '"' in line:
                 dep = CPPExtractIncludeFile(line)
                 depprefix = os.path.join(prefix,dep)
                 if not os.path.exists(depprefix) and includeDir!='':
