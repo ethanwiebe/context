@@ -1,0 +1,161 @@
+R"---(---context help---
+
+Welcome to context!
+In context, common movement and modification 
+keys are accessible by holding Alt and 
+pressing keys on and near the home row.
+These will be listed below:
+
+Alt-h  Alt-j  Alt-k  Alt-l
+  <      v      ^      >
+
+Ctrl-Alt-h  Ctrl-Alt-j  Ctrl-Alt-k  Ctrl-Alt-l
+  <---          |            ^         --->
+                |            |
+                v            |
+
+
+Alt-y             Alt-o
+Home                End
+
+Ctrl-Alt-y        Ctrl-Alt-o
+Buffer begin      Buffer end
+
+Alt-u             Alt-i
+Backspace          Del
+
+Ctrl-Alt-u        Ctrl-Alt-i
+Backspace word     Del word
+
+Alt-p
+Insert line below cursor
+
+Ctrl-Alt-p
+Insert line above cursor
+
+Alt-s
+Toggle select
+
+Ctrl-d
+Delete line or delete lines in selection
+
+Ctrl-c
+Copy line or copy selection
+
+Ctrl-x
+Cut line or cut selection
+
+Ctrl-v
+Paste copied text
+
+Alt-c
+Copy lines in selection
+
+Alt-x
+Cut lines in selection
+
+Alt-v
+Paste copied text on a new line
+
+Ctrl-s
+Save
+
+Ctrl-o
+Open
+
+Ctrl-n
+New mode
+
+Ctrl-PageUp
+Next mode
+
+Ctrl-PageDown
+Previous mode
+
+Ctrl-e
+Command entry
+
+Ctrl-q
+Quit
+
+Ctrl-g
+Goto
+
+Ctrl-f
+Find
+
+Ctrl-z
+Undo
+
+Ctrl-y
+Redo
+
+Tab
+Indent or next search hit
+
+Shift-Tab
+Dedent or previous search hit
+
+F1
+Open help
+
+F2
+Rename file
+
+
+Commands:
+Pressing Ctrl-e will enter Entry mode which
+enables the configuration of context using
+commands.
+
+	open path
+Opens file at 'path'.
+
+	saveas path
+Renames file to 'path'.
+
+	set configVar value
+Sets 'configVar' to be 'value'.
+'configVar' can be one of:
+	tabSize        - tab size in spaces
+	multiAmount    - amount of chars to move in Ctrl-Alt-movement key
+	style          - style index
+which take in a number or one of:
+	displayLineNumbers
+	autoIndent
+	cursorLock
+	cursorWrap
+	smartHome
+which take in a boolean value.
+The use of spaces or tabs can be
+set with:
+	tabMode
+which takes in either 'tabs' or 'spaces'.
+The movement and deletion modes when pressing
+Ctrl and Alt can also be set with:
+	moveMode
+	deleteMode
+which take in one of 'multi', 'word', or 'pascal'.
+'pascal' is like 'word' but is delimited by word casing 
+rather than spaces/special chars.
+
+	bind actionName keybinds...
+Binds the action of 'actionName' to all of the
+space-delimited keybinds in the 'keybinds...' arg.
+For a full list of action names, go to:
+	github.com/ethanwiebe/context/blob/master/include/actions.h
+
+	style styleName fg bg [opts]
+Sets the style of 'styleName' at the current style
+index to {'fg', 'bg', 'opts'}. 'fg' and 'bg' should
+be six character hex colors (ex. fabd2f) and opts
+is 0-2 characters consisting of 'b' for bold and
+'u' for underline (ex. bu = bold and underline).
+A full list of style names can be viewed at:
+	github.com/ethanwiebe/context/blob/master/include/stylename.h
+
+The effects of these commands do not persist across
+sessions. At start-up a file ~/.ctxcfg is checked
+and if it exists all lines in the file will be executed 
+as commands.
+)---"

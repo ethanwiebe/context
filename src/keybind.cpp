@@ -89,6 +89,8 @@ void SetKeybinds(){
 	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::RenameMode,          KeyEnum::F2,         KeyModifier::None);
 	
+	ADD_BIND(Action::Help,                KeyEnum::F1,         KeyModifier::None);
+	
 	ADD_BIND(Action::Goto,                'g',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::Find,                'f',                 KeyModifier::Ctrl);
 

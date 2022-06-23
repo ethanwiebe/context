@@ -11,5 +11,6 @@ public:
 	void ProcessMoveAction(VisualCursor&,TextAction);
 
 	std::string_view GetModeName() override {return "edit";}
-
+	
+	void SetHelp(Ref<TextBuffer>);
 };

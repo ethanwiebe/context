@@ -26,6 +26,8 @@ class ContextEditor {
 	std::vector<Handle<ModeBase>> modes;
 	Handle<TextInterfaceBase> interface;
 	Handle<OSInterface> osInterface;
+	
+	Ref<TextBuffer> helpBuffer;
 
 	size_t currentMode;
 	
@@ -78,6 +80,8 @@ public:
 
 	void NewMode();
 	void OpenMode(std::string_view);
+	
+	void OpenHelpMode();
 	
 	std::string& GetClipboard();
 

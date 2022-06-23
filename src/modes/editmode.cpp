@@ -242,3 +242,13 @@ void EditMode::ProcessTextAction(TextAction a){
 	if (selecting) UpdateSelection(cursor);
 }
 
+
+void EditMode::SetHelp(Ref<TextBuffer> buf){
+	readonly = true;
+	bufferPath = "ctxhelp";
+	modified = false;
+	
+	textBuffer->clear();
+	*textBuffer = *buf;
+}
+

@@ -64,6 +64,8 @@ ACTION(SaveMode)
 ACTION(SaveAsMode)
 ACTION(RenameMode)
 
+ACTION(Help)
+
 ACTION(Goto)
 ACTION(Find)
 

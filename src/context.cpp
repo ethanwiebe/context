@@ -18,6 +18,8 @@ ContextEditor::ContextEditor(const std::string& file){
 	entryPos = 0;
 	
 	errorMessage = {};
+	
+	helpBuffer = MakeRef<TextBuffer>();
 
 	interface = Handle<TextInterfaceBase>(new CONTEXT_USER_INTERFACE());
 	osInterface = Handle<OSInterface>(new CONTEXT_OS_INTERFACE());
@@ -117,8 +119,10 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 			BeginCommand("");
 			return true;
 		case Action::OpenMode:
-			BeginCommand("open ");
-			
+			BeginCommand("open ");			
+			return true;
+		case Action::Help:
+			OpenHelpMode();
 			return true;
 
 		default:
@@ -360,21 +364,22 @@ inline KeyEnum ParseKey(std::string_view& bindstr){
 			return (KeyEnum)CharLower(bindstr[0]);
 		if (IsPrintable(bindstr[0],KeyModifier::None))
 			return (KeyEnum)bindstr[0];
-	} else if (bindstr[0]=='F'){
-		if (bindstr.size()>2){
-			if (bindstr.starts_with("F10")) return KeyEnum::F10;
-			if (bindstr.starts_with("F11")) return KeyEnum::F11;
-			if (bindstr.starts_with("F12")) return KeyEnum::F12;
+	} else if (bindstr[0]=='F'||bindstr[0]=='f'){
+		bindstr = {bindstr.begin()+1,bindstr.end()};
+		if (bindstr.size()==2){
+			if (bindstr == "10") return KeyEnum::F10;
+			if (bindstr == "11") return KeyEnum::F11;
+			if (bindstr == "12") return KeyEnum::F12;
 		}
-		if (bindstr.starts_with("F1")) return KeyEnum::F1;
-		if (bindstr.starts_with("F2")) return KeyEnum::F2;
-		if (bindstr.starts_with("F3")) return KeyEnum::F3;
-		if (bindstr.starts_with("F4")) return KeyEnum::F4;
-		if (bindstr.starts_with("F5")) return KeyEnum::F5;
-		if (bindstr.starts_with("F6")) return KeyEnum::F6;
-		if (bindstr.starts_with("F7")) return KeyEnum::F7;
-		if (bindstr.starts_with("F8")) return KeyEnum::F8;
-		if (bindstr.starts_with("F9")) return KeyEnum::F9;
+		if (bindstr == "1") return KeyEnum::F1;
+		if (bindstr == "2") return KeyEnum::F2;
+		if (bindstr == "3") return KeyEnum::F3;
+		if (bindstr == "4") return KeyEnum::F4;
+		if (bindstr == "5") return KeyEnum::F5;
+		if (bindstr == "6") return KeyEnum::F6;
+		if (bindstr == "7") return KeyEnum::F7;
+		if (bindstr == "8") return KeyEnum::F8;
+		if (bindstr == "9") return KeyEnum::F9;
 	}
 	
 	for (const auto& k : keyNameMap){
@@ -627,21 +632,21 @@ bool ContextEditor::WriteFileChecks(std::string_view path){
 
 bool ContextEditor::ReadFileChecks(std::string_view path){
 	if (!osInterface->PathExists(path)){
-		errorMessage = "File ";
+		errorMessage = "File '";
 		errorMessage += path;
-		errorMessage += " does not exist!";
+		errorMessage += "' does not exist!";
 		return false;
 	}
 	if (!osInterface->PathIsFile(path)){
-		errorMessage = "Path ";
+		errorMessage = "Path '";
 		errorMessage += path;
-		errorMessage += " is not a file!";
+		errorMessage += "' is not a file!";
 		return false;
 	}
 	if (!osInterface->FileIsReadable(path)){
-		errorMessage = "File ";
+		errorMessage = "File '";
 		errorMessage += path;
-		errorMessage += " is not readable!";
+		errorMessage += "' is not readable!";
 		return false;
 	}
 	
@@ -674,10 +679,23 @@ void ContextEditor::OpenMode(std::string_view path){
 		modes.push_back(std::move(openedMode));
 		currentMode = modes.size()-1;
 	} else {
-		errorMessage = "Could not open ";
+		errorMessage = "Could not open '";
 		errorMessage += copiedPath;
-		errorMessage += "!";
+		errorMessage += "'!";
 	}
+}
+
+#include "help.h"
+
+void ContextEditor::OpenHelpMode(){
+	EditMode* helpMode = new EditMode(this);
+	
+	helpMode->SetHelp(MakeRef<TextBuffer>(gHelpBuffer));
+	
+	Handle<ModeBase> m = Handle<ModeBase>(helpMode);
+	
+	modes.push_back(std::move(m));
+	currentMode = modes.size()-1;
 }
 
 void ContextEditor::SaveAsMode(std::string_view path,size_t index){

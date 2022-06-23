@@ -87,7 +87,16 @@ typedef IndexedIterator<LineList> LineIndexedIterator;
 
 class TextBuffer {
 	LineList lines;
+	
 public:
+	TextBuffer(){}
+	TextBuffer(const char*);
+	
+	TextBuffer(const TextBuffer&);
+	TextBuffer& operator=(const TextBuffer&);
+	
+	TextBuffer(TextBuffer&&) = delete;
+	TextBuffer& operator=(TextBuffer&&) = delete;
 	
 	void SetLine(LineIterator,const std::string&);
 	void InsertLine(LineIterator,const std::string&); //increases length of line list by one
