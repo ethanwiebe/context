@@ -45,7 +45,11 @@ void LinuxOSImpl::ListDir(const std::string& path,std::vector<std::string>& entr
 	struct dirent* ent;
 	if ((dir = opendir(path.c_str()))!=NULL){
 		while ((ent = readdir(dir))!=NULL){
-			entries.emplace_back(ent->d_name);
+			if (ent->d_type==DT_DIR){
+				entries.emplace_back(ent->d_name);
+				entries.back() += '/';
+			} else
+				entries.emplace_back(ent->d_name);
 		}
 		closedir(dir);
 	}
