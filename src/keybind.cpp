@@ -2,13 +2,6 @@
 
 #include "util.h"
 
-#define ADD_BIND(action,key,mod) { \
-	if (!gKeyBindings.contains((action))){ \
-		gKeyBindings[(action)] = {}; \
-	} \
-	gKeyBindings[(action)].emplace_back((KeyEnum)(key), (KeyModifier)(mod)); \
-}
-
 KeyMap gKeyBindings;
 InvKeyMap gBoundKeys;
 
@@ -101,11 +94,15 @@ void SetKeybinds(){
 
 	ADD_BIND(Action::DebugAction,         KeyEnum::F11,        KeyModifier::Ctrl);
 
+	UpdateBinds();
+}
+
+void UpdateBinds(){
+	gBoundKeys.clear();
 	for (const auto& [action, keybindlist] : gKeyBindings)
 		for (const auto& keybind : keybindlist)
 			gBoundKeys[keybind] = action;
 }
-
 
 Action FindActionFromKey(KeyEnum key,KeyModifier mod){
 	KeyBind kb = {(KeyEnum)CharLower((s32)key),mod};

@@ -179,6 +179,8 @@ void CursesInterface::SetMappings(){
 	keyMapping[444] = {KeyEnum::PageDown,KeyModifier::Ctrl};
 	
 	keyMapping[8] = {KeyEnum::Backspace,KeyModifier::Ctrl};
+	keyMapping[9] = {KeyEnum::Tab,KeyModifier::None};
+	keyMapping[10] = {KeyEnum::Enter,KeyModifier::None};
 	
 	keyMapping[391] = {KeyEnum::Home,KeyModifier::Shift};
 	keyMapping[386] = {KeyEnum::End,KeyModifier::Shift};

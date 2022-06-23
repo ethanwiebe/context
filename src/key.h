@@ -50,81 +50,15 @@ struct KeyboardEvent {
 	s32 mod;
 };
 
+#define ACTION(x) x,
+
 enum class Action : u16 {
 	None,
-
-	MoveLeftChar,
-	MoveRightChar,
-	MoveUpLine,
-	MoveDownLine,
-
-	MoveLeftMulti,
-	MoveRightMulti,
-	MoveUpMulti,
-	MoveDownMulti,
-
-	MoveUpPage,
-	MoveDownPage,
-
-	MoveScreenUpLine,
-	MoveScreenDownLine,
-
-	MoveLeftWord,
-	MoveRightWord,
-
-	MoveToLineStart,
-	MoveToLineEnd,
 	
-	MoveToBufferStart,
-	MoveToBufferEnd,
-
-	InsertChar,
-	InsertLine,
-	InsertLineBelow,
-	InsertLineAbove,
-	
-	Tab,
-	Untab,
-
-	DeletePreviousChar,
-	DeleteCurrentChar,
-
-	DeletePreviousMulti,
-	DeleteCurrentMulti,
-
-	DeleteLine,
-
-	UndoAction,
-	RedoAction,
-
-	ToggleSelect,
-	SelectAll,
-
-	Cut,
-	CutLines,
-	Copy,
-	CopyLines,
-	Paste,
-	PasteLines,
-
-	Escape,
-
-	Entry,
-
-	NewMode,
-	OpenMode,
-	CloseMode,
-	NextMode,
-	PreviousMode,
-	SaveMode,
-	SaveAsMode,
-	RenameMode,
-	
-	Goto,
-	Find,
-	
-	DebugAction
+	#include "actions.h"
 };
+
+#undef ACTION
 
 struct TextAction {
 	Action action;

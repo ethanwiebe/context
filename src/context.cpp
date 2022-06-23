@@ -4,6 +4,7 @@
 
 #include "modes/editmode.h"
 #include "command.h"
+#include "util.h"
 
 ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();
@@ -273,9 +274,156 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		std::string_view val = tokens[2].token;
 		SetConfigVar(varName,val);
 		return true;
+	} else if (tokens[0].token=="bind"){
+		std::string_view actionName = tokens[1].token;
+		SetConfigBind(actionName,tokens);
+		return true;
 	}
 	
 	return false;
+}
+
+#define ACTION(x) {#x, Action::x},
+const std::map<std::string,Action> actionNameMap = {
+	#include "actions.h"
+};
+#undef ACTION
+
+const std::map<std::string,KeyEnum> keyNameMap = {
+	{"Esc",KeyEnum::Escape},
+	{"Tab",KeyEnum::Tab},
+	{"Up",KeyEnum::Up},
+	{"Left",KeyEnum::Left},
+	{"Right",KeyEnum::Right},
+	{"Down",KeyEnum::Down},
+	{"Backspace",KeyEnum::Backspace},
+	{"Del",KeyEnum::Delete},
+	{"Enter",KeyEnum::Enter},
+	{"Return",KeyEnum::Enter},
+	{"Space",KeyEnum::Space},
+	{"PageUp",KeyEnum::PageUp},
+	{"PageDown",KeyEnum::PageDown},
+	{"PgUp",KeyEnum::PageUp},
+	{"PgDn",KeyEnum::PageDown},
+	{"Home",KeyEnum::Home},
+	{"End",KeyEnum::End},
+	{"Ins",KeyEnum::Insert},
+};
+
+inline Action GetActionFromName(std::string_view name){
+	std::string copied = std::string(name);
+	if (actionNameMap.contains(copied))
+		return actionNameMap.at(copied);
+		
+	return Action::None;
+}
+
+inline KeyModifier ParseMod(std::string_view& bindstr){
+	if (bindstr.starts_with("ctrl")||bindstr.starts_with("CTRL")||bindstr.starts_with("Ctrl")){
+		bindstr = {bindstr.begin()+4,bindstr.end()};
+		return KeyModifier::Ctrl;
+	}
+	
+	if (bindstr.starts_with("shift")||bindstr.starts_with("SHIFT")||bindstr.starts_with("Shift")){
+		bindstr = {bindstr.begin()+5,bindstr.end()};
+		return KeyModifier::Shift;
+	}
+	
+	if (bindstr.starts_with("alt")||bindstr.starts_with("ALT")||bindstr.starts_with("Alt")){
+		bindstr = {bindstr.begin()+3,bindstr.end()};
+		return KeyModifier::Alt;
+	}
+	
+	return KeyModifier::None;
+}
+
+inline KeyEnum ParseKey(std::string_view& bindstr){
+	if (bindstr.size()==1){
+		if (bindstr[0]>='A'&&bindstr[0]<='Z')
+			return (KeyEnum)CharLower(bindstr[0]);
+		if (IsPrintable(bindstr[0],KeyModifier::None))
+			return (KeyEnum)bindstr[0];
+	} else if (bindstr[0]=='F'){
+		if (bindstr.size()>2){
+			if (bindstr.starts_with("F10")) return KeyEnum::F10;
+			if (bindstr.starts_with("F11")) return KeyEnum::F11;
+			if (bindstr.starts_with("F12")) return KeyEnum::F12;
+		}
+		if (bindstr.starts_with("F1")) return KeyEnum::F1;
+		if (bindstr.starts_with("F2")) return KeyEnum::F2;
+		if (bindstr.starts_with("F3")) return KeyEnum::F3;
+		if (bindstr.starts_with("F4")) return KeyEnum::F4;
+		if (bindstr.starts_with("F5")) return KeyEnum::F5;
+		if (bindstr.starts_with("F6")) return KeyEnum::F6;
+		if (bindstr.starts_with("F7")) return KeyEnum::F7;
+		if (bindstr.starts_with("F8")) return KeyEnum::F8;
+		if (bindstr.starts_with("F9")) return KeyEnum::F9;
+	}
+	
+	for (const auto& k : keyNameMap){
+		if (bindstr.starts_with(k.first))
+			return k.second;
+	}
+	
+	return KeyEnum::None;
+}
+
+inline bool ParseKeybind(std::string_view bindstr,KeyEnum& key,KeyModifier& mod){
+	std::string_view::iterator pos;
+	mod = KeyModifier::None;
+	
+	KeyModifier t;
+	while (true){
+		if (bindstr.size()==0) return false;
+		pos = bindstr.begin();
+		SkipWhitespace(bindstr,pos);
+		t = ParseMod(bindstr);
+		if (t==KeyModifier::None) break;
+		if (bindstr[0]=='-') bindstr = {bindstr.begin()+1,bindstr.end()};
+		mod = (KeyModifier)((s32)mod | (s32)t);
+	}
+	
+	key = ParseKey(bindstr);
+	
+	if (key==KeyEnum::None) return false;
+	
+	LOG((char)key << ", " << (s32)key << ", " << (s32)mod);
+	
+	return true;
+}
+
+void ContextEditor::SetConfigBind(std::string_view actionName,const TokenVector& tokens){
+	Action action = GetActionFromName(actionName);
+	if (action==Action::None){
+		errorMessage = "Unrecognized action: '";
+		errorMessage += actionName;
+		errorMessage += "'";
+		return;
+	}
+	
+	bool cleared = false;
+	
+	auto bindIt = tokens.begin();
+	++bindIt; ++bindIt; //start after first arg
+	KeyEnum key;
+	KeyModifier mod;
+	while (bindIt!=tokens.end()){
+		if (ParseKeybind(bindIt->token,key,mod)){
+			if (!cleared){
+				cleared = true;
+				gKeyBindings[action].clear();
+			}
+			ADD_BIND(action,key,mod);
+		} else {
+			errorMessage = "Could not parse keybind '";
+			errorMessage += bindIt->token;
+			errorMessage += "'";
+			break;
+		}
+		
+		++bindIt;
+	}
+	UpdateBinds();
 }
 
 std::string ContextEditor::ConstructModeString(size_t index){
@@ -482,15 +630,27 @@ void ContextEditor::SetPathMode(std::string_view path,size_t index){
 }
 
 inline bool SetBool(bool& var,std::string_view val){
-	if (val=="true"||val=="1"){
+	if (val=="true"||val=="1")
 		var = true;
-		return true;
-	} else if (val=="false"||val=="0"){
+	else if (val=="false"||val=="0")
 		var = false;
-		return true;
-	}
+	else
+		return false;
 	
-	return false;
+	return true;
+}
+
+inline bool SetMultiMode(MultiMode& var,std::string_view val){
+	if (val=="multi")
+		var = MultiMode::Multi;
+	else if (val=="word")
+		var = MultiMode::Word;
+	else if (val=="pascal")
+		var = MultiMode::PascalWord;
+	else
+		return false;
+	
+	return true;
 }
 
 void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
@@ -551,22 +711,10 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 		else
 			errorMessage = "tabMode must be either 'tabs' or 'spaces'";
 	} else if (name=="moveMode"){
-		if (val=="multi")
-			gConfig.moveMode = MultiMode::Multi;
-		else if (val=="word")
-			gConfig.moveMode = MultiMode::Word;
-		else if (val=="pascal")
-			gConfig.moveMode = MultiMode::PascalWord;
-		else
+		if (!SetMultiMode(gConfig.moveMode,val))
 			errorMessage = "moveMode must be one of 'multi', 'word', or 'pascal'";
 	} else if (name=="deleteMode"){
-		if (val=="multi")
-			gConfig.deleteMode = MultiMode::Multi;
-		else if (val=="word")
-			gConfig.deleteMode = MultiMode::Word;
-		else if (val=="pascal")
-			gConfig.deleteMode = MultiMode::PascalWord;
-		else
+		if (!SetMultiMode(gConfig.deleteMode,val))
 			errorMessage = "deleteMode must be one of 'multi', 'word', or 'pascal'";
 	}
 }
