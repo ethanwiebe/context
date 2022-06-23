@@ -183,6 +183,9 @@ void EditMode::ProcessTextAction(TextAction a){
 			case Action::Tab:
 				InsertTab(cursor);
 				break;
+			case Action::Untab:
+				RemoveTab(cursor);
+				break;
 			case Action::DeleteLine:
 				VisualCursorDeleteLine(cursor);
 				break;

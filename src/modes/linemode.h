@@ -161,6 +161,7 @@ public:
 	void VisualCursorDeletePreviousChar(VisualCursor&,s32);
 
 	void InsertTab(VisualCursor&);
+	void RemoveTab(VisualCursor&);
 
 	void SetModified();
 

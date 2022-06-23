@@ -124,3 +124,23 @@ void LineModeBase::InsertTab(VisualCursor& cursor){
 		}
 	}
 }
+
+void LineModeBase::RemoveTab(VisualCursor& cursor){
+	if (cursor.cursor.column==0)
+		return;
+		
+	Cursor temp = cursor.cursor;
+	MoveCursorLeft(temp,1);
+	char c = GetCharAt(temp);
+	if (c=='\t'){
+		VisualCursorDeletePreviousChar(cursor,1);
+	} else if (c==' '){
+		s64 count = gConfig.tabSize;
+		while (--count>=0&&cursor.cursor.column!=0){
+			VisualCursorDeletePreviousChar(cursor,1);
+			temp = cursor.cursor;
+			MoveCursorLeft(temp,1);
+			if (GetCharAt(temp)!=' ') break;
+		}
+	}
+}
