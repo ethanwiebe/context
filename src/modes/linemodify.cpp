@@ -79,6 +79,128 @@ void LineModeBase::VisualCursorDeletePreviousChar(VisualCursor& cursor,s32 count
 	SetCachedX(cursor);
 }
 
+void LineModeBase::VisualCursorDeletePreviousWord(VisualCursor& cursor){
+	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
+	if (cursor.cursor.column==0) return VisualCursorDeletePreviousChar(cursor,1);
+	
+	MoveCursorLeft(cursor.cursor,1);
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		DeleteCharAt(cursor.cursor);
+		return SetCachedX(cursor);
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	MoveCursorRight(cursor.cursor,1);
+	
+	SetCachedX(cursor);
+}
+
+void LineModeBase::VisualCursorDeleteCurrentWord(VisualCursor& cursor){
+	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
+			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return DeleteCharAt(cursor.cursor);
+	
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		DeleteCharAt(cursor.cursor);
+		return;
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+		c = GetCharAt(cursor.cursor);
+	}
+}
+
+void LineModeBase::VisualCursorDeletePreviousPascalWord(VisualCursor& cursor){
+	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
+	if (cursor.cursor.column==0) return VisualCursorDeletePreviousChar(cursor,1);
+	
+	MoveCursorLeft(cursor.cursor,1);
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		DeleteCharAt(cursor.cursor);
+		return SetCachedX(cursor);
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while ((c>='a'&&c<='z')){
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (c>='A'&&c<='Z'){
+		DeleteCharAt(cursor.cursor);
+		return SetCachedX(cursor);
+	}
+	
+	MoveCursorRight(cursor.cursor,1);
+	
+	SetCachedX(cursor);
+}
+
+void LineModeBase::VisualCursorDeleteCurrentPascalWord(VisualCursor& cursor){
+	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
+			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return DeleteCharAt(cursor.cursor);
+	
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		DeleteCharAt(cursor.cursor);
+		return;
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (c>='A'&&c<='Z'){
+		DeleteCharAt(cursor.cursor);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while (c>='a'&&c<='z'){
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+		c = GetCharAt(cursor.cursor);
+	}
+}
+
 void LineModeBase::InsertCharAt(Cursor cursor,char c,bool undoable){
 	if (c=='\n'){
 		textBuffer->InsertLineAfter(cursor.line.it,cursor.line.it->substr(cursor.column));

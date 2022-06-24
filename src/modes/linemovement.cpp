@@ -159,6 +159,141 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 }
 
+void LineModeBase::MoveVisualCursorLeftWord(VisualCursor& cursor){
+	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
+	if (cursor.cursor.column==0){
+		if (gConfig.cursorWrap)
+			return MoveCursorLeft(cursor.cursor,1);
+		return;
+	}
+	
+	MoveCursorLeft(cursor.cursor,1);
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		return SetCachedX(cursor);
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	MoveCursorRight(cursor.cursor,1);
+	
+	SetCachedX(cursor);
+}
+
+void LineModeBase::MoveVisualCursorRightWord(VisualCursor& cursor){
+	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
+			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()){
+		if (gConfig.cursorWrap)
+			return MoveCursorRight(cursor.cursor,1);
+		return;
+	}
+	
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		MoveCursorRight(cursor.cursor,1);
+		return;
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		MoveCursorRight(cursor.cursor,1);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return SetCachedX(cursor);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+		MoveCursorRight(cursor.cursor,1);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return SetCachedX(cursor);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	SetCachedX(cursor);
+}
+
+void LineModeBase::MoveVisualCursorLeftPascalWord(VisualCursor& cursor){
+	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
+	if (cursor.cursor.column==0){
+		if (gConfig.cursorWrap)
+			return MoveCursorLeft(cursor.cursor,1);
+		return;
+	}
+	
+	MoveCursorLeft(cursor.cursor,1);
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		return SetCachedX(cursor);
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while ((c>='a'&&c<='z')){
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (c>='A'&&c<='Z'){
+		return SetCachedX(cursor);
+	}
+	
+	MoveCursorRight(cursor.cursor,1);
+	
+	SetCachedX(cursor);
+}
+
+void LineModeBase::MoveVisualCursorRightPascalWord(VisualCursor& cursor){
+	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
+			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()){
+		if (gConfig.cursorWrap)
+			return MoveCursorRight(cursor.cursor,1);
+		return;
+	}
+	
+	char c = GetCharAt(cursor.cursor);
+	
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+		MoveCursorRight(cursor.cursor,1);
+		return;
+	}
+	
+	while (c==' '||c=='\t'){ //delete leading whitespace
+		MoveCursorRight(cursor.cursor,1);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return SetCachedX(cursor);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (c>='A'&&c<='Z'){
+		MoveCursorRight(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	while (c>='a'&&c<='z'){
+		MoveCursorRight(cursor.cursor,1);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return SetCachedX(cursor);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	SetCachedX(cursor);
+}
+
 void LineModeBase::MoveCursorLeft(Cursor& cursor,s32 num) const {
 	s32 newCol = cursor.column-num;
 
@@ -267,5 +402,4 @@ void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screen
 	else
 		visualLine = count;	
 }
-
 

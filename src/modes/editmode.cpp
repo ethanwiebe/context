@@ -31,10 +31,22 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 			MoveVisualCursorRight(cursor,1);
 			break;
 		case Action::MoveLeftMulti:
-			MoveVisualCursorLeft(cursor,a.num);
+			if (gConfig.moveMode==MultiMode::Multi){
+				MoveVisualCursorLeft(cursor,a.num);
+			} else if (gConfig.moveMode==MultiMode::Word){
+				MoveVisualCursorLeftWord(cursor);
+			} else if (gConfig.moveMode==MultiMode::PascalWord){
+				MoveVisualCursorLeftPascalWord(cursor);
+			}
 			break;
 		case Action::MoveRightMulti:
-			MoveVisualCursorRight(cursor,a.num);
+			if (gConfig.moveMode==MultiMode::Multi){
+				MoveVisualCursorRight(cursor,a.num);
+			} else if (gConfig.moveMode==MultiMode::Word){
+				MoveVisualCursorRightWord(cursor);
+			} else if (gConfig.moveMode==MultiMode::PascalWord){
+				MoveVisualCursorRightPascalWord(cursor);
+			}
 			break;
 		case Action::MoveUpMulti:
 			MoveVisualCursorUp(cursor,a.num);
@@ -166,14 +178,26 @@ void EditMode::ProcessTextAction(TextAction a){
 				DeleteCharAt(cursor.cursor);
 				break;
 			case Action::DeletePreviousMulti:
-				VisualCursorDeletePreviousChar(cursor,a.num);
+				if (gConfig.deleteMode==MultiMode::Multi){
+					VisualCursorDeletePreviousChar(cursor,a.num);
+				} else if (gConfig.deleteMode==MultiMode::Word){
+					VisualCursorDeletePreviousWord(cursor);
+				} else if (gConfig.deleteMode==MultiMode::PascalWord){
+					VisualCursorDeletePreviousPascalWord(cursor);
+				}
 				break;
 			case Action::DeleteCurrentMulti:
-				while (--a.num>=0){
-					if (cursor.cursor.column==cursor.CurrentLineLen()&&
-							cursor.cursor.line.index==(s32)(textBuffer->size()-1))
-						break;
-					DeleteCharAt(cursor.cursor);
+				if (gConfig.deleteMode==MultiMode::Multi){
+					while (--a.num>=0){
+						if (cursor.cursor.column==cursor.CurrentLineLen()&&
+								cursor.cursor.line.index==(s32)(textBuffer->size()-1))
+							break;
+						DeleteCharAt(cursor.cursor);
+					}
+				} else if (gConfig.deleteMode==MultiMode::Word){
+					VisualCursorDeleteCurrentWord(cursor);
+				} else if (gConfig.deleteMode==MultiMode::PascalWord){
+					VisualCursorDeleteCurrentPascalWord(cursor);
 				}
 				break;
 			case Action::InsertChar:

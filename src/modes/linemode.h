@@ -147,6 +147,12 @@ public:
 	void MoveVisualCursorToBufferStart(VisualCursor&);
 	void MoveVisualCursorToBufferEnd(VisualCursor&);
 	
+	void MoveVisualCursorLeftWord(VisualCursor&);
+	void MoveVisualCursorRightWord(VisualCursor&);
+	
+	void MoveVisualCursorLeftPascalWord(VisualCursor&);
+	void MoveVisualCursorRightPascalWord(VisualCursor&);
+	
 	void DeleteLine(Cursor);
 	
 	void VisualCursorInsertLine(VisualCursor&);
@@ -159,6 +165,12 @@ public:
 	void DeleteCharCountAt(Cursor,s32);
 
 	void VisualCursorDeletePreviousChar(VisualCursor&,s32);
+	
+	void VisualCursorDeletePreviousWord(VisualCursor&);
+	void VisualCursorDeleteCurrentWord(VisualCursor&);
+	
+	void VisualCursorDeletePreviousPascalWord(VisualCursor&);
+	void VisualCursorDeleteCurrentPascalWord(VisualCursor&);
 
 	void InsertTab(VisualCursor&);
 	void RemoveTab(VisualCursor&);
