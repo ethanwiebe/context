@@ -68,6 +68,7 @@ ACTION(Help)
 
 ACTION(Goto)
 ACTION(Find)
+ACTION(Replace)
 
 ACTION(DebugAction)
 

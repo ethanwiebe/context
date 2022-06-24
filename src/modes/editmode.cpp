@@ -255,6 +255,9 @@ void EditMode::ProcessTextAction(TextAction a){
 			case Action::Find:
 				ctx->BeginCommand("find ");
 				break;
+			case Action::Replace:
+				ctx->BeginCommand("replace ");
+				break;
 			case Action::Escape:
 				matches.clear();
 				break;

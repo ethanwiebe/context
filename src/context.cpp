@@ -562,14 +562,15 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	h = ts.GetHeight();
 
 	std::string modeStr = ConstructModeString(currentMode);
-	std::string modeInfo = {};
-	modeInfo += modes[currentMode]->GetStatusBarText();
+	std::string modeStatusBar = {};
+	modeStatusBar += modes[currentMode]->GetStatusBarText();
 
 	for (s32 x=0;x<w;++x){
 		ts.SetAt(x,h-1,TextCell(' ',barStyle));
 	}
 
 	std::string& modeError = modes[currentMode]->GetErrorMessage();
+	std::string& modeInfo = modes[currentMode]->GetInfoMessage();
 	if (entryMode==EntryMode::Command){
 		ts.RenderString(0,h-1,entryPrefix + entryString,barStyle);
 		auto x = entryPrefix.size()+entryPos;
@@ -579,8 +580,8 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	} else if (entryMode==EntryMode::YesNo){
 		ts.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
-		if (!modeInfo.empty())
-			ts.RenderString(0,h-1,modeInfo,barStyle);
+		if (!modeStatusBar.empty())
+			ts.RenderString(0,h-1,modeStatusBar,barStyle);
 
 		if (!errorMessage.empty()){
 			ts.RenderString(0,h-1,errorMessage,errorStyle);
@@ -592,6 +593,13 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 			formattedError += modeError;
 			ts.RenderString(0,h-1,formattedError,errorStyle);
 			modeError.clear();
+		} else if (!modeInfo.empty()){
+			std::string formattedInfo = {};
+			formattedInfo += modes[currentMode]->GetModeName();
+			formattedInfo += ": ";
+			formattedInfo += modeInfo;
+			ts.RenderString(0,h-1,formattedInfo,barStyle);
+			modeInfo.clear();
 		}
 
 		ts.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);

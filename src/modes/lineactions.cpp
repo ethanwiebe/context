@@ -13,6 +13,8 @@ void LineModeBase::Undo(VisualCursor& cursor){
 		undoAction.type = BufferActionType::TextDeletion;
 	} else if (undoAction.type==BufferActionType::TextDeletion){
 		undoAction.type = BufferActionType::TextInsertion;
+	} else if (undoAction.type==BufferActionType::LineReplacement){
+		undoAction.redo = !undoAction.redo;
 	}
 
 	std::swap(undoAction.line,undoAction.extendLine);
@@ -52,7 +54,7 @@ void LineModeBase::PerformBufferAction(VisualCursor& cursor,
 				action.column,cursor.cursor.line);
 		InsertStringAt(c,action.text,false);
 		cursor.cursor = c;
-		MoveVisualCursorRight(cursor,action.text.size());
+		MoveCursorRight(cursor.cursor,action.text.size());
 	} else if (action.type==BufferActionType::TextDeletion){
 		c = MakeCursorFromLineIndexedIterator(action.extendLine,
 				action.extendColumn,cursor.cursor.line);
@@ -60,7 +62,17 @@ void LineModeBase::PerformBufferAction(VisualCursor& cursor,
 		for (s32 i=0;i<action.insertedLen;++i){
 			DeleteCharAt(c,false);
 		}
-		SetVisualCursorColumn(cursor,cursor.cursor.column);
+	} else if (action.type==BufferActionType::LineReplacement){
+		LineIndexedIterator it = {textBuffer->begin()};
+		Cursor c = {it,0};
+		for (const auto& diff : action.lineDiffs){
+			c = MakeCursorFromLineIndexedIterator(diff.location.index,0,c.line);
+			if (!action.redo)
+				*c.line.it = diff.after;
+			else
+				*c.line.it = diff.before;
+				
+		}
 	}
 }
 
@@ -116,9 +128,15 @@ void LineModeBase::PushDeletionAction(Cursor cursor,char c){
 	}
 }
 
-void LineModeBase::ForceFinishAction(){
+void LineModeBase::PushLineReplacementAction(LineDiffInfo&& diffs){
+	ForceFinishAction(BufferActionType::LineReplacement);
+	
+	currentAction.lineDiffs = diffs;
+}
+
+void LineModeBase::ForceFinishAction(BufferActionType type){
 	if (!currentAction.Empty())
 		undoStack.PushAction(currentAction);
 
-	MakeNewAction(BufferActionType::TextInsertion,0,0);
+	MakeNewAction(type,0,0);
 }

@@ -337,8 +337,17 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		c = std::max(c-1,0);
 		cursors.front().cursor = MakeCursor(l,c);
 		return true;
-	} else if (tokens[0].token=="find"&&!tokens[1].token.empty()){
-		if (tokens.size()<2) return true;
+	} else if (tokens[0].token=="find"){
+		if (tokens.size()<2){
+			modeErrorMessage = "Expected 2 arguments, got ";
+			modeErrorMessage += std::to_string(tokens.size());
+			return true;
+		}
+		if (tokens[1].token.empty()){
+			modeErrorMessage = "'' is not a valid search string!";
+			return true;
+		}
+		
 		FindTextInBuffer(tokens[1].token);
 		if (!matches.size()){
 			modeErrorMessage = "No matches for '"+findText+"'";
@@ -346,6 +355,45 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			finding = true;
 			CursorToNextMatch();
 		}
+		return true;
+	} else if (tokens[0].token=="replace"){
+		if (tokens.size()<2){
+			modeErrorMessage = "Expected at least 2 arguments, got ";
+			modeErrorMessage += std::to_string(tokens.size());
+			return true;
+		}
+		if (tokens[1].token.empty()){
+			modeErrorMessage = "'' is not a valid search string!";
+			return true;
+		}
+		std::string_view find = tokens[1].token;
+		
+		std::string_view replace;
+		if (tokens.size()<3)
+			replace = {};
+		else
+			replace = tokens[2].token;
+		
+		
+		LineDiffInfo diffs = {};
+		
+		size_t replaceCount = ReplaceAll(*textBuffer,find,replace,diffs);
+		if (replaceCount==0){
+			modeErrorMessage = "No matches for '";
+			modeErrorMessage += find;
+			modeErrorMessage += "'";
+		} else {
+			PushLineReplacementAction(std::move(diffs));
+			modeInfoMessage = "Replaced ";
+			modeInfoMessage += std::to_string(replaceCount);
+			modeInfoMessage += " occurences of '";
+			modeInfoMessage += find;
+			modeInfoMessage += "'";
+			SetModified();
+			highlighterNeedsUpdate = true;
+		}
+		
+		
 		return true;
 	}
 	return false;
@@ -380,6 +428,7 @@ bool LineModeBase::SaveAction(const OSInterface& os){
 	}
 
 	modified = false;
+	modeInfoMessage = "Saved successfully.";
 
 	return true;
 }

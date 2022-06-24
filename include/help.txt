@@ -36,6 +36,9 @@ Insert line above cursor
 Alt-s
 Toggle select
 
+Ctrl-a
+Select all
+
 Ctrl-d
 Delete line or delete lines in selection
 
@@ -83,6 +86,9 @@ Goto
 
 Ctrl-f
 Find
+
+Ctrl-r
+Replace
 
 Ctrl-z
 Undo

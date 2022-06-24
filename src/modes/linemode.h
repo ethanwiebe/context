@@ -30,24 +30,32 @@ struct VisualCursor {
 
 enum class BufferActionType {
 	TextInsertion,
-	TextDeletion
+	TextDeletion,
+	LineReplacement
 };
 
 struct BufferAction {
 	BufferActionType type;
 	s32 line,column;
 	s32 extendLine,extendColumn;
-
+	
 	s32 insertedLen;
 	std::string text;
+	
+	LineDiffInfo lineDiffs;
+	bool redo;
 
 	BufferAction(BufferActionType type,s32 l,s32 c) : type(type),line(l),column(c),extendLine(l),extendColumn(c){
 		insertedLen = 0;
 		text = {};
+		lineDiffs = {};
+		redo = false;
 	}
 
 	bool Empty() const {
-		return insertedLen==0 && text.empty();
+		if (type!=BufferActionType::LineReplacement)
+			return insertedLen==0 && text.empty();
+		return lineDiffs.empty();
 	}
 
 	void AddCharacter(char c){
@@ -189,8 +197,9 @@ public:
 	void FinishOldAction(Cursor,BufferActionType);
 	void PushInsertionAction(Cursor,char);
 	void PushDeletionAction(Cursor,char);
+	void PushLineReplacementAction(LineDiffInfo&&);
 	
-	void ForceFinishAction();
+	void ForceFinishAction(BufferActionType = BufferActionType::TextInsertion);
 
 	void StartSelecting(const VisualCursor&);
 	void StopSelecting();

@@ -16,7 +16,7 @@ protected:
 	ContextEditor* ctx;
 
 	s32 screenWidth,screenHeight;
-	std::string modeErrorMessage;
+	std::string modeErrorMessage,modeInfoMessage;
 
 public:
 	ModeBase(ContextEditor* c) : ctx(c){}
@@ -25,6 +25,10 @@ public:
 
 	std::string& GetErrorMessage(){
 		return modeErrorMessage;
+	}
+	
+	std::string& GetInfoMessage(){
+		return modeInfoMessage;
 	}
 
 	virtual void ProcessTextAction(TextAction) = 0;

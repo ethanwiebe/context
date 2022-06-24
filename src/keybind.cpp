@@ -93,6 +93,7 @@ void SetKeybinds(){
 	
 	ADD_BIND(Action::Goto,                'g',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::Find,                'f',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Replace,             'r',                 KeyModifier::Ctrl);
 
 	ADD_BIND(Action::DebugAction,         KeyEnum::F11,        KeyModifier::Ctrl);
 
