@@ -73,14 +73,23 @@ void ContextEditor::Loop(){
 
 void ContextEditor::RunFile(std::string_view path){
 	if (ReadFileChecks(path)){
+		size_t l = 0;
 		auto settings = MakeRef<TextBuffer>();
 		if (osInterface->ReadFileIntoTextBuffer(path,settings)){
 			for (const auto& line : *settings){
-				if (line.empty())
+				if (line.empty()){
+					++l;
 					continue;
+				}
 					
 				entryString = line;
 				SubmitCommand();
+				if (!errorMessage.empty()){
+					errorMessage = "Error at line "+std::to_string(l)
+							+": "+errorMessage;
+					break;
+				}
+				++l;
 			}
 		}
 	}
@@ -105,7 +114,7 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 			SaveMode(currentMode);
 			return true;
 		case Action::RenameMode: {
-			std::string copy = "setpath " + std::string(modes[currentMode]->GetPath(*osInterface));
+			std::string copy = "saveas " + std::string(modes[currentMode]->GetPath(*osInterface));
 			BeginCommand(copy);
 			return true;
 		}
@@ -290,11 +299,6 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		std::string_view path = tokens[1].token;
 		std::string parsedPath = ParsePath(path,*osInterface);
 		SaveAsMode(parsedPath,currentMode);
-		return true;
-	} else if (tokens[0].token=="setpath"){
-		std::string_view path = tokens[1].token;
-		std::string parsedPath = ParsePath(path,*osInterface);
-		SetPathMode(parsedPath,currentMode);
 		return true;
 	} else if (tokens[0].token=="set"){
 		std::string_view varName = tokens[1].token;
@@ -741,7 +745,8 @@ void ContextEditor::SaveAsMode(std::string_view path,size_t index){
 	if (exists){
 		entryMode = EntryMode::YesNo;
 		yesNoMessage = "Overwrite?";
-		yesAction = std::bind(&ContextEditor::SetPathAndSaveMode,this,path,index);
+		yesAction = std::bind(&ContextEditor::SetPathAndSaveMode,
+				this,std::string(path),index);
 		noAction = [](){};
 		return;
 	}

@@ -83,10 +83,8 @@ Token CommandTokenizer::EmitToken(){
 	Token t;
 	char initialC = *pos;
 
-	if (initialC>='0'&&initialC<='9'){
-		t.type = TokenType::Number;
-		TokenizeNumber(*this);
-	} else if (IsAlphabet(initialC)||initialC=='_'||initialC=='.'||initialC=='/'||initialC=='~'){
+	if (IsAlphabet(initialC)||(initialC>='0'&&initialC<='9')||
+			initialC=='_'||initialC=='.'||initialC=='/'||initialC=='~'){
 		t.type = TokenType::Name;
 		TokenizeName(*this);
 	} else if (initialC=='\''){

@@ -22,7 +22,7 @@ struct Command {
 	const std::vector<CArg> args;
 };
 
-const size_t gCommandCount = 7;
+const size_t gCommandCount = 6;
 
 const Command gCommands[gCommandCount] = {
 	{
@@ -34,12 +34,6 @@ const Command gCommands[gCommandCount] = {
 	},
 	{
 		"saveas",
-		{
-			{ArgType::String,"path"}
-		}
-	},
-	{
-		"setpath",
 		{
 			{ArgType::String,"path"}
 		}

@@ -106,7 +106,7 @@ F1
 Open help
 
 F2
-Rename file
+Save as
 
 
 Commands:
