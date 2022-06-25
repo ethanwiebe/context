@@ -40,7 +40,7 @@ ContextEditor::ContextEditor(const std::string& file){
 	currentMode = 0;
 
 	std::string configPath = osInterface->GetHomePath() + "/.ctxcfg";
-	RunFile(configPath);
+	RunFile(configPath,true);
 	
 	Loop();
 }
@@ -71,7 +71,7 @@ void ContextEditor::Loop(){
 	}
 }
 
-void ContextEditor::RunFile(std::string_view path){
+void ContextEditor::RunFile(std::string_view path,bool silent){
 	if (ReadFileChecks(path)){
 		size_t l = 0;
 		auto settings = MakeRef<TextBuffer>();
@@ -92,6 +92,8 @@ void ContextEditor::RunFile(std::string_view path){
 				++l;
 			}
 		}
+	} else {
+		if (silent) errorMessage.clear();
 	}
 }
 
