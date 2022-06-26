@@ -127,6 +127,20 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 		case Action::PreviousMode:
 			SwitchMode(currentMode-1);
 			return true;
+		case Action::Mode1:
+		case Action::Mode2:
+		case Action::Mode3:
+		case Action::Mode4:
+		case Action::Mode5:
+		case Action::Mode6:
+		case Action::Mode7:
+		case Action::Mode8:
+		case Action::Mode9:
+		case Action::Mode10:
+			if (modes.size()>(size_t)action.action-(size_t)Action::Mode1){
+				SwitchMode((size_t)action.action-(size_t)Action::Mode1);
+			}
+			return true;
 		case Action::NewMode:
 			NewMode();
 			return true;

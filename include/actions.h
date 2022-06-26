@@ -64,6 +64,17 @@ ACTION(SaveMode)
 ACTION(SaveAsMode)
 ACTION(RenameMode)
 
+ACTION(Mode1)
+ACTION(Mode2)
+ACTION(Mode3)
+ACTION(Mode4)
+ACTION(Mode5)
+ACTION(Mode6)
+ACTION(Mode7)
+ACTION(Mode8)
+ACTION(Mode9)
+ACTION(Mode10)
+
 ACTION(Help)
 
 ACTION(Goto)

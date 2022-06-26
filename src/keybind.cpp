@@ -46,6 +46,7 @@ void SetKeybinds(){
 
 	ADD_BIND(Action::DeletePreviousChar,  KeyEnum::Backspace,  KeyModifier::None);
 	ADD_BIND(Action::DeletePreviousChar,  KeyEnum::Backspace,  KeyModifier::Ctrl);
+	ADD_BIND(Action::DeletePreviousChar,  KeyEnum::Backspace,  KeyModifier::Shift);
 	ADD_BIND(Action::DeletePreviousChar,  'u',                 KeyModifier::Alt);
 	
 	ADD_BIND(Action::DeleteCurrentChar,   KeyEnum::Delete,     KeyModifier::None);
@@ -88,6 +89,17 @@ void SetKeybinds(){
 	ADD_BIND(Action::OpenMode,            'o',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::RenameMode,          KeyEnum::F2,         KeyModifier::None);
+	
+	ADD_BIND(Action::Mode1,               '1',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode2,               '2',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode3,               '3',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode4,               '4',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode5,               '5',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode6,               '6',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode7,               '7',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode8,               '8',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode9,               '9',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::Mode10,              '0',                 KeyModifier::Ctrl);
 	
 	ADD_BIND(Action::Help,                KeyEnum::F1,         KeyModifier::None);
 	
