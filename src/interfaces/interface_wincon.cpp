@@ -86,6 +86,10 @@ void WinConInterface::SetMappings(){
 		keyMapping[c] = (KeyEnum)c;
 	}
 	
+	for (u8 c='0';c<='9';++c){
+		keyMapping[c] = (KeyEnum)c;
+	}
+	
 	for (u8 c=0;c<12;++c){
 		keyMapping[c+VK_F1] = (KeyEnum)((s32)KeyEnum::F1+c);
 	}
