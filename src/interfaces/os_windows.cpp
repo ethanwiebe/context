@@ -4,6 +4,7 @@
 
 #include <windows.h>
 #include <shlwapi.h>
+#include <shlobj.h>
 #include <locale>
 #include <codecvt>
 #include <string_view>
@@ -101,6 +102,15 @@ bool WindowsOSImpl::WriteTextBufferIntoFile(std::string_view path,Ref<TextBuffer
 	file << *end;
 
 	return true;
+}
+
+std::string WindowsOSImpl::GetHomePath() const {
+	char lstr[MAX_PATH];
+	memset(lstr,0,MAX_PATH);
+	SHGetFolderPath(NULL,CSIDL_PROFILE,NULL,0,lstr);
+	std::string path = std::string(lstr);
+	FixWindowsPath(path);
+	return path;
 }
 
 #endif

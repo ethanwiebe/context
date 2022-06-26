@@ -26,4 +26,6 @@ public:
 
 	bool ReadFileIntoTextBuffer(std::string_view,Ref<TextBuffer>) const override;
 	bool WriteTextBufferIntoFile(std::string_view,Ref<TextBuffer>) const override;
+	
+	std::string GetHomePath() const override;
 };

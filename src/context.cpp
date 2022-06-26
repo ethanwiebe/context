@@ -39,6 +39,7 @@ ContextEditor::ContextEditor(const std::string& file){
 	}
 	
 	std::string configPath = osInterface->GetHomePath() + "/.ctxcfg";
+	LOG(configPath);
 	RunFile(configPath,true);
 	
 	Loop();
@@ -128,7 +129,6 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 			return true;
 		case Action::NewMode:
 			NewMode();
-			//SwitchMode(modes.size()-1);
 			return true;
 		case Action::Entry:
 			BeginCommand("");
@@ -775,8 +775,6 @@ void ContextEditor::OpenMode(std::string_view path){
 	Handle<ModeBase> openedMode = Handle<ModeBase>(new EditMode(this));
 	if (openedMode->OpenAction(*osInterface,copiedPath)){
 		modes.insert(modes.begin()+currentMode+1,std::move(openedMode));
-		//modes.push_back(std::move(openedMode));
-		//currentMode = modes.size()-1;
 		++currentMode;
 	} else {
 		errorMessage = "Could not open '";

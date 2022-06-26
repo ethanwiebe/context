@@ -223,7 +223,7 @@ KeyboardEvent* WinConInterface::GetKeyboardEvent(){
 			lastEvent.mod |= KeyModifier::Alt;
 	}
 
-	LOG("After :" << lastEvent.key << ", ", << lastEvent.mod);
+	LOG("After :" << lastEvent.key << ", " << lastEvent.mod);
 	
 	return &lastEvent;
 }
