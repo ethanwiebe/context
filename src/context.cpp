@@ -774,8 +774,13 @@ void ContextEditor::OpenMode(std::string_view path){
 
 	Handle<ModeBase> openedMode = Handle<ModeBase>(new EditMode(this));
 	if (openedMode->OpenAction(*osInterface,copiedPath)){
-		modes.insert(modes.begin()+currentMode+1,std::move(openedMode));
-		++currentMode;
+		if (!modes.size()){
+			modes.push_back(std::move(openedMode));
+			currentMode = 0;
+		} else {
+			modes.insert(modes.begin()+currentMode+1,std::move(openedMode));
+			++currentMode;
+		}
 	} else {
 		errorMessage = "Could not open '";
 		errorMessage += copiedPath;
