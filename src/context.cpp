@@ -53,6 +53,7 @@ void ContextEditor::Loop(){
 			interface->GetWidth(),interface->GetHeight()
 		);
 		DrawStatusBar(textScreen);
+		DrawTabsBar(textScreen);
 
 		interface->RenderScreen(textScreen);
 
@@ -609,6 +610,42 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 		}
 
 		ts.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);
+	}
+}
+
+const size_t tabBarWidth = 16;
+
+std::string ContextEditor::GetTabString(size_t index,size_t tabW){
+	std::string s = " ";
+	s += std::to_string(index+1);
+	s += " ";
+	std::string name = std::string(modes[index]->GetBufferName());
+	if (modes[index]->Modified()) name += "*";
+	s += StringPostEllipsis(name,tabW-s.size()-1);
+	while (s.size()<tabW)
+		s += " ";
+	
+	return s;
+}
+
+void ContextEditor::DrawTabsBar(TextScreen& ts){
+	// how many tabs per page
+	size_t tabCount = ts.GetWidth()/tabBarWidth;
+	// current page of tabs
+	size_t pageNum = currentMode/tabCount;
+	
+	for (size_t i=0;i<ts.GetWidth();++i){
+		ts.SetAt(i,0,{' ',tabBarStyle});
+	}
+	
+	for (size_t i=0;i<tabCount;++i){
+		size_t currTab = i+pageNum*tabCount;
+		if (currTab>=modes.size()) break;
+		
+		if (currTab==currentMode)
+			ts.RenderString(i*tabBarWidth,0,GetTabString(currTab,tabBarWidth),tabBarSelectStyle);
+		else
+			ts.RenderString(i*tabBarWidth,0,GetTabString(currTab,tabBarWidth),tabBarStyle);
 	}
 }
 

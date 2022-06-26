@@ -11,3 +11,8 @@ s32 IsPrintable(s32 key,s32 mod){
 	return (key>=' '&&key<='~'&&!(mod&(KeyModifier::Ctrl|KeyModifier::Alt)));
 }
 
+std::string StringPostEllipsis(const std::string& s,size_t max){
+	if (s.size()<=max) return s;
+	
+	return s.substr(0,max-3)+"...";
+}

@@ -83,8 +83,8 @@ void SetKeybinds(){
 	
 	ADD_BIND(Action::CloseMode,           'q',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::NewMode,             'n',                 KeyModifier::Ctrl);
-	ADD_BIND(Action::NextMode,            KeyEnum::PageUp,     KeyModifier::Ctrl);
-	ADD_BIND(Action::PreviousMode,        KeyEnum::PageDown,   KeyModifier::Ctrl);
+	ADD_BIND(Action::NextMode,            KeyEnum::PageDown,   KeyModifier::Ctrl);
+	ADD_BIND(Action::PreviousMode,        KeyEnum::PageUp,     KeyModifier::Ctrl);
 	ADD_BIND(Action::OpenMode,            'o',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::RenameMode,          KeyEnum::F2,         KeyModifier::None);

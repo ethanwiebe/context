@@ -106,19 +106,21 @@ Color ColorForeground = ColorForeground1;
 const StyleSet defaultStyleSet = {
 	.textStyle = {ColorForeground,ColorBackground,StyleFlag::NoFlag},
 	.cursorStyle = {ColorBackground,ColorForeground,StyleFlag::NoFlag},
-	.emptyLineStyle = {ColorForeground3,ColorBackground,StyleFlag::NoFlag},
-	.barStyle = {ColorWhite,ColorBackground3,StyleFlag::NoFlag},
 	.lineNumberStyle = {ColorGray,ColorBackground2,StyleFlag::NoFlag},
+	.emptyLineStyle = {ColorForeground3,ColorBackground,StyleFlag::NoFlag},
 	.errorStyle = {ColorRed,ColorBlack,StyleFlag::NoFlag},
-	.highlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag},
-	.highlightSelectStyle = {ColorBlack,ColorOrange,StyleFlag::NoFlag},
 	.statementStyle = {ColorYellow,ColorBackground,StyleFlag::NoFlag},
 	.typeStyle = {ColorGreen,ColorBackground,StyleFlag::NoFlag},
 	.funcStyle = {ColorMagenta,ColorBackground,StyleFlag::NoFlag},
-	.stringStyle = {ColorGreen,ColorBackground,StyleFlag::NoFlag},
 	.numberStyle = {ColorRed,ColorBackground,StyleFlag::NoFlag},
+	.stringStyle = {ColorGreen,ColorBackground,StyleFlag::NoFlag},
 	.directiveStyle = {ColorMagenta,ColorBackground,StyleFlag::NoFlag},
-	.commentStyle = {ColorComment,ColorBackground,StyleFlag::NoFlag}
+	.commentStyle = {ColorComment,ColorBackground,StyleFlag::NoFlag},
+	.barStyle = {ColorWhite,ColorBackground3,StyleFlag::NoFlag},
+	.tabBarStyle = {ColorForeground,ColorBackground3,StyleFlag::NoFlag},
+	.tabBarSelectStyle = {ColorWhite,ColorBackground,StyleFlag::NoFlag},
+	.highlightStyle = {ColorBlack,ColorYellow,StyleFlag::NoFlag},
+	.highlightSelectStyle = {ColorBlack,ColorOrange,StyleFlag::NoFlag}
 };
 
 #define STYLE(x) TextStyle x ## Style;

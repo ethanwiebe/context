@@ -9,3 +9,5 @@ inline bool IsAlphabet(char c){
 	return (c>='a'&&c<='z')||(c>='A'&&c<='Z');
 }
 
+std::string StringPostEllipsis(const std::string& str,size_t max);
+

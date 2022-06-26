@@ -69,10 +69,10 @@ Open
 Ctrl-n
 New mode
 
-Ctrl-PageUp
+Ctrl-PageDown
 Next mode
 
-Ctrl-PageDown
+Ctrl-PageUp
 Previous mode
 
 Ctrl-e

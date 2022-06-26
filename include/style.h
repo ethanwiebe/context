@@ -33,12 +33,11 @@ struct TextStyle {
 	}
 };
 
+#define STYLE(x) TextStyle x ## Style;
 struct StyleSet {
-	TextStyle textStyle,cursorStyle,emptyLineStyle,barStyle,
-			lineNumberStyle,errorStyle,highlightStyle,highlightSelectStyle,
-			statementStyle,typeStyle,funcStyle,stringStyle,numberStyle,
-			directiveStyle,commentStyle;
+	#include "stylenames.h"
 };
+#undef STYLE
 
 extern std::map<u64,StyleSet> gStyleMap;
 

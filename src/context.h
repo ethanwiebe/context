@@ -62,6 +62,9 @@ class ContextEditor {
 	
 	std::string ConstructModeString(size_t);
 	void DrawStatusBar(TextScreen&);
+	
+	std::string GetTabString(size_t,size_t);
+	void DrawTabsBar(TextScreen&);
 
 	bool ProcessKeyboardEvent(TextAction);
 	void ProcessCommandEntry(TextAction);

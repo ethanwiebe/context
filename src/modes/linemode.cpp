@@ -109,7 +109,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	if (w!=screenWidth||h!=screenHeight){
 		screenWidth = w;
 		screenHeight = h;
-		innerHeight = screenHeight - 1;
+		innerHeight = screenHeight - 2;
 	
 		textScreen.SetSize(w,h);
 
@@ -153,7 +153,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	if (it.index>=0&&it.it!=textBuffer->end())
 		i = GetIndexOfXPos(*it.it,screenSubline*lineWidth,lineWidth);
 
-	for (s32 y=0;y<innerHeight;y++){
+	for (s32 y=1;y<innerHeight+1;y++){
 		if (it.index<0||it.it==textBuffer->end()){
 			if (gConfig.displayLineNumbers){
 				for (s32 n=0;n<lineNumberWidth;++n){
@@ -271,7 +271,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	s32 loc;
 	for (const auto& cursor : cursors){
-		loc = cursor.visualLine*w + GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth + lineStart;
+		loc = (cursor.visualLine+1)*w + GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth + lineStart;
 		if (loc>=0&&loc<screenWidth*innerHeight)
 			textScreen[loc].style = cursorStyle;
 	}
