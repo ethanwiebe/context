@@ -112,7 +112,8 @@ void LineModeBase::IndentSelection(){
 		--end.line;
 	}
 	
-	highlighterNeedsUpdate = true;
+	selectAnchor.column = 0;
+	selectCursor.column = 0;
 }
 
 void LineModeBase::DedentSelection(){
@@ -135,6 +136,9 @@ void LineModeBase::DedentSelection(){
 		
 		--end.line;
 	}
+	
+	selectAnchor.column = 0;
+	selectCursor.column = 0;
 }
 
 void LineModeBase::DeleteLinesInSelection(VisualCursor& cursor){
