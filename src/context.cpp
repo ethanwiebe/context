@@ -24,6 +24,7 @@ ContextEditor::ContextEditor(const std::string& file){
 	interface = Handle<TextInterfaceBase>(new CONTEXT_USER_INTERFACE());
 	osInterface = Handle<OSInterface>(new CONTEXT_OS_INTERFACE());
 	
+	currentMode = 0;
 	if (!file.empty()){
 		if (osInterface->PathExists(file)){
 			OpenMode(file);
@@ -36,9 +37,7 @@ ContextEditor::ContextEditor(const std::string& file){
 	} else {
 		NewMode();
 	}
-
-	currentMode = 0;
-
+	
 	std::string configPath = osInterface->GetHomePath() + "/.ctxcfg";
 	RunFile(configPath,true);
 	
@@ -129,7 +128,7 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 			return true;
 		case Action::NewMode:
 			NewMode();
-			SwitchMode(modes.size()-1);
+			//SwitchMode(modes.size()-1);
 			return true;
 		case Action::Entry:
 			BeginCommand("");
@@ -618,12 +617,25 @@ const size_t tabBarWidth = 16;
 std::string ContextEditor::GetTabString(size_t index,size_t tabW){
 	std::string s = " ";
 	s += std::to_string(index+1);
-	s += " ";
+	s += ' ';
 	std::string name = std::string(modes[index]->GetBufferName());
-	if (modes[index]->Modified()) name += "*";
-	s += StringPostEllipsis(name,tabW-s.size()-1);
+	bool mod = modes[index]->Modified();
+	size_t max;
+	if (mod)
+		max = tabW-s.size()-2; //extra room for *
+	else
+		max = tabW-s.size()-1;
+		
+	if (name.size() > max){
+		s += StringPostEllipsis(name,max);
+		if (mod) s += '*';
+	} else {
+		s += name;
+		if (mod) s += '*';
+	}
+	
 	while (s.size()<tabW)
-		s += " ";
+		s += ' ';
 	
 	return s;
 }
@@ -684,11 +696,13 @@ void ContextEditor::SaveMode(size_t index){
 		return;
 	}
 
-	if (!modes[index]->SaveAction(*osInterface)){
-		if (modes[index]->Readonly()){
-			errorMessage = "File is readonly!";
-		} else {
-			errorMessage = "Could not save!";
+	if (modes[index]->Modified()){
+		if (!modes[index]->SaveAction(*osInterface)){
+			if (modes[index]->Readonly()){
+				errorMessage = "File is readonly!";
+			} else {
+				errorMessage = "Could not save!";
+			}
 		}
 	}
 }
@@ -732,7 +746,13 @@ bool ContextEditor::ReadFileChecks(std::string_view path){
 }
 
 void ContextEditor::NewMode(){
-	modes.push_back(Handle<ModeBase>(new EditMode(this)));
+	if (modes.size()!=0){
+		modes.insert(modes.begin()+currentMode+1,Handle<ModeBase>(new EditMode(this)));
+		++currentMode;
+	} else {
+		modes.push_back(Handle<ModeBase>(new EditMode(this)));
+		currentMode = 0;
+	}
 }
 
 void ContextEditor::OpenMode(std::string_view path){
@@ -754,8 +774,10 @@ void ContextEditor::OpenMode(std::string_view path){
 
 	Handle<ModeBase> openedMode = Handle<ModeBase>(new EditMode(this));
 	if (openedMode->OpenAction(*osInterface,copiedPath)){
-		modes.push_back(std::move(openedMode));
-		currentMode = modes.size()-1;
+		modes.insert(modes.begin()+currentMode+1,std::move(openedMode));
+		//modes.push_back(std::move(openedMode));
+		//currentMode = modes.size()-1;
+		++currentMode;
 	} else {
 		errorMessage = "Could not open '";
 		errorMessage += copiedPath;
