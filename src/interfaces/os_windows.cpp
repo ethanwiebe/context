@@ -50,9 +50,13 @@ bool WindowsOSImpl::FileIsWritable(std::string_view path) const {
 
 void WindowsOSImpl::ListDir(const std::string& path,std::vector<std::string>& entries) const {
 	const std::filesystem::path fspath{path};
+	if (!std::filesystem::exists(fspath)) return;
 	
 	for (auto const& dirEntry : std::filesystem::directory_iterator{fspath}){
-		entries.push_back(dirEntry.path().filename().string());
+		if (dirEntry.is_directory())
+			entries.push_back(dirEntry.path().filename().string()+'/');
+		else
+			entries.push_back(dirEntry.path().filename().string());
     }
 }
 
