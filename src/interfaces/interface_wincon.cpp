@@ -209,7 +209,9 @@ KeyboardEvent* WinConInterface::GetKeyboardEvent(){
 		} else if (keyEvent.wVirtualKeyCode==VK_MENU){
 			altDown = keyEvent.bKeyDown;
 		} else if (keyEvent.bKeyDown){
-			if (keyMapping.contains(keyEvent.wVirtualKeyCode))
+			if (keyEvent.wVirtualKeyCode>='0'&&keyEvent.wVirtualKeyCode<='9'&&shiftDown)
+				lastEvent.key = keyEvent.uChar.AsciiChar;
+			else if (keyMapping.contains(keyEvent.wVirtualKeyCode))
 				lastEvent.key = (s32)keyMapping[keyEvent.wVirtualKeyCode];
 			else
 				lastEvent.key = keyEvent.uChar.AsciiChar;

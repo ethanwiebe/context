@@ -75,6 +75,9 @@ Next mode
 Ctrl-PageUp
 Previous mode
 
+Ctrl-1 - Ctrl-0
+Switch to Nth mode
+
 Ctrl-e
 Command entry
 
