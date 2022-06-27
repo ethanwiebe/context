@@ -1,7 +1,13 @@
 #include "linemode.h"
 
 #ifdef _WIN32
-#define wcwidth(x) 1
+inline s32 wcwidth(u32 c){
+	if (c>127)
+		return 2;
+	if (c<32)
+		return 2;
+	return 1;
+}
 #endif
 
 s32 tenPow(s32 i){
@@ -80,7 +86,6 @@ inline void HandleUTF8(LineIndexedIterator it,u32& c,s32 i){
 		
 		c = (c&0x1F)<<6;
 		c |= (*it.it)[i+1]&0x3F;
-		if (wcwidth(c)!=1) c = '?';
 	} else if (c>>4==14){
 		if (it.it->size()-i < 3){
 			c = '?';
@@ -90,7 +95,6 @@ inline void HandleUTF8(LineIndexedIterator it,u32& c,s32 i){
 		c = (c&0x0F)<<12;
 		c |= ((*it.it)[i+1]&0x3F)<<6;
 		c |= (*it.it)[i+2]&0x3F;
-		if (wcwidth(c)!=1) c = '?';
 	} else if (c>>3==30){
 		if (it.it->size()-i < 4){
 			c = '?';
@@ -101,8 +105,8 @@ inline void HandleUTF8(LineIndexedIterator it,u32& c,s32 i){
 		c |= ((*it.it)[i+1]&0x3F)<<12;
 		c |= ((*it.it)[i+2]&0x3F)<<6;
 		c |= (*it.it)[i+3]&0x3F;
-		if (wcwidth(c)!=1) c = '?';
 	}
+	if (wcwidth(c)!=1) c = '?';
 }
 
 TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){

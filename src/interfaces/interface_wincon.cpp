@@ -9,10 +9,10 @@
 HANDLE outHandle;
 HANDLE inHandle;
 
-#define CSI "\x1b["
+#define CSI L"\x1b["
 
-char* charArray;
-char* currChar;
+wchar_t* charArray;
+wchar_t* currChar;
 
 bool shiftDown,ctrlDown,altDown;
 
@@ -64,8 +64,8 @@ WinConInterface::WinConInterface(){
 	
 	ResizeScreen(GetWidth(),GetHeight());
 	
-	printf(CSI "?1049h"); //switch to alt screen buffer
-	printf(CSI "?25l"); //hide cursor
+	wprintf(CSI "?1049h"); //switch to alt screen buffer
+	wprintf(CSI "?25l"); //hide cursor
 	
 	SetMappings();
 	shiftDown = false;
@@ -74,9 +74,9 @@ WinConInterface::WinConInterface(){
 }
 
 WinConInterface::~WinConInterface(){
-	printf(CSI "0m"); //reset color
-	printf(CSI "?1049l"); //switch back to normal
-	printf(CSI "?25h"); //show cursor
+	wprintf(CSI "0m"); //reset color
+	wprintf(CSI "?1049l"); //switch back to normal
+	wprintf(CSI "?25h"); //show cursor
 	
 	delete[] charArray;
 }
@@ -125,16 +125,16 @@ s32 WinConInterface::GetHeight(){
 }
 
 inline void SetColor(Color fg,Color bg){
-	currChar += sprintf(currChar,CSI "38;2;%d;%d;%dm",fg.r,fg.g,fg.b);
-	currChar += sprintf(currChar,CSI "48;2;%d;%d;%dm",bg.r,bg.g,bg.b);
+	currChar += swprintf(currChar,CSI L"38;2;%d;%d;%dm",fg.r,fg.g,fg.b);
+	currChar += swprintf(currChar,CSI L"48;2;%d;%d;%dm",bg.r,bg.g,bg.b);
 }
 
 inline void SetBold(){
-	currChar += sprintf(currChar,CSI "1m");
+	currChar += swprintf(currChar,CSI L"1m");
 }
 
 inline void SetUnbold(){
-	currChar += sprintf(currChar,CSI "22m");
+	currChar += swprintf(currChar,CSI L"22m");
 }
 
 inline void SetStyle(const TextStyle& style){
@@ -148,7 +148,7 @@ inline void SetStyle(const TextStyle& style){
 
 void WinConInterface::RenderScreen(const TextScreen& textScreen){
 	s32 w = textScreen.GetWidth(), h = textScreen.GetHeight();
-	char buf[] = {0,0,0,0};
+	wchar_t buf[2] = {0,0};
 	currChar = charArray;
 	
 	TextStyle currStyle = textScreen[0].style;
@@ -162,18 +162,15 @@ void WinConInterface::RenderScreen(const TextScreen& textScreen){
 				currStyle = cell.style;
 				SetStyle(currStyle);
 			}
-			
 
-//			buf[0] = (char)cell.c;
-
-			*currChar++ = (char)cell.c;
+			*currChar++ = (wchar_t)cell.c;
 		}
 	}
 	
 	*currChar = 0;
 	SetConsoleCursorPosition(outHandle,{0,0});
-	printf(CSI "?25l"); //hide cursor
-	WriteConsole(outHandle,charArray,strlen(charArray),NULL,NULL);
+	wprintf(CSI L"?25l"); //hide cursor
+	WriteConsoleW(outHandle,charArray,wcslen(charArray),NULL,NULL);
 }
 
 void WinConInterface::WaitingLoop(){
@@ -237,7 +234,7 @@ KeyboardEvent* WinConInterface::GetKeyboardEvent(){
 void WinConInterface::ResizeScreen(s32 w,s32 h){
 	if (charArray)
 		delete[] charArray;
-	charArray = new char[w*h*39+1]; //probably will be big enough
+	charArray = new wchar_t[w*h*39+1]; //probably will be big enough
 	totalSize = w*h*40+1;
 }
 
