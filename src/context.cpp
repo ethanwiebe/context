@@ -562,7 +562,12 @@ void ContextEditor::SetStyleOpts(std::string_view styleName,
 
 std::string ContextEditor::ConstructModeString(size_t index){
 	std::string modeStr = {};
-	modeStr += modes[index]->GetBufferName();
+	
+	std::string_view path = modes[index]->GetPath(*osInterface);
+	if (!path.empty())
+		modeStr += path;
+	else
+		modeStr += "(unnamed)";
 
 	if (modes[index]->Modified())
 		modeStr += '*';
@@ -570,9 +575,6 @@ std::string ContextEditor::ConstructModeString(size_t index){
 	if (modes[index]->Readonly())
 		modeStr += " (readonly)";
 
-	modeStr += " (";
-	modeStr += std::to_string(index+1) + '/' + std::to_string(modes.size()) + ")";
-	
 	return modeStr;
 }
 
@@ -628,11 +630,21 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 
 const size_t tabBarWidth = 16;
 
+inline std::string_view BaseName(std::string_view s){
+	auto index = s.find_last_of('/');
+	if (index!=std::string::npos)
+		s.remove_prefix(index+1);
+	return s;
+}
+
 std::string ContextEditor::GetTabString(size_t index,size_t tabW){
 	std::string s = " ";
 	s += std::to_string(index+1);
 	s += ' ';
-	std::string name = std::string(modes[index]->GetBufferName());
+	std::string path = std::string(BaseName(modes[index]->GetPath(*osInterface)));
+	if (path.empty())
+		path = "(unnamed)";
+		
 	bool mod = modes[index]->Modified();
 	size_t max;
 	if (mod)
@@ -640,11 +652,11 @@ std::string ContextEditor::GetTabString(size_t index,size_t tabW){
 	else
 		max = tabW-s.size()-1;
 		
-	if (name.size() > max){
-		s += StringPostEllipsis(name,max);
+	if (path.size() > max){
+		s += StringPostEllipsis(path,max);
 		if (mod) s += '*';
 	} else {
-		s += name;
+		s += path;
 		if (mod) s += '*';
 	}
 	
