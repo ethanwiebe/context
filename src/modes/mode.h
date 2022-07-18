@@ -53,7 +53,6 @@ public:
 
 	virtual bool HasPath(){return false;}
 
-	virtual std::string_view GetBufferName(){return {};}
 	virtual std::string_view GetModeName() = 0;
 	virtual std::string_view GetStatusBarText(){return {};}
 

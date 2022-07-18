@@ -113,7 +113,6 @@ public:
 
 	TextScreen& GetTextScreen(s32,s32) override;
 	TextStyle GetTextStyleAt(ColorIterator,s32);
-	std::string_view GetBufferName() override;
 	std::string_view GetStatusBarText() override;
 	
 	bool ProcessCommand(const TokenVector&) override;

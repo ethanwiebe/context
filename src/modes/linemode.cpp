@@ -305,15 +305,6 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	return textScreen;
 }
 
-std::string_view LineModeBase::GetBufferName(){
-	if (bufferPath.empty()) return "unnamed";
-	size_t index = bufferPath.find_last_of('/')+1;
-	std::string_view result = bufferPath;
-	result.remove_prefix(index);
-
-	return result;
-}
-
 std::string_view LineModeBase::GetStatusBarText(){
 	cursorPosText = {};
 	cursorPosText += ' ';
