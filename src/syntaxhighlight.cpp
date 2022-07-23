@@ -45,21 +45,22 @@ void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c){
 	tokenizer->SetMultiLineCommentEnd(multiLineCommentEnd);
 
 	auto colorIt = c.begin();
-	std::string_view token;
 	for (auto& line : buffer){
 		tokenInterface.Reset(line);
 		colorIt->clear();
 		colorIt->reserve(4);
+		std::string_view prevToken = {};
 
 		for (Token token : tokenInterface){
 			auto index = (token.token.data()-line.data());
 			if (token.type==TokenType::Name){
 				TextStyle style;
-				if (TokenInKeywords(token.token,style))
+				if (prevToken!="."&&TokenInKeywords(token.token,style))
 					AddColorData(colorIt,token.token,index,style);
 			} else {
 				AddColorData(colorIt,token.token,index,GetStyleFromTokenType(token.type));
 			}
+			prevToken = token.token;
 		}
 		++colorIt;
 	}
@@ -104,11 +105,19 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 
 static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",
 	"True","False","import","from","in","del","def","class","with","as","is","and","or","not","None",
-	"try","except","finally","global","continue","break"};
-static std::vector<std::string> pythonFuncs = {"range","len","print","repr","ord","chr","isinstance",
-	"hex","round","pow","dir","open","quit","help","hash","next"};
+	"try","except","finally","raise","global","continue","break"};
+static std::vector<std::string> pythonFuncs = {"range","len","print","repr","ord","chr","isinstance","staticmethod","classmethod"
+	"hex","round","pow","dir","open","quit","help","hash","next","__init__","__new__","__del__","__add__","__radd__",
+	"__iadd__","__mul__","__rmul__","__imul__","__div__","__rdiv__","__idiv__","__sub__","__rsub__","__isub__",
+	"__truediv__","__rtruediv__","__itruediv__","__floordiv__","__rfloordiv__","__ifloordiv__","__ge__","__le__",
+	"__gt__","__lt__","__eq__","__ne__","__str__","__repr__","__neg__","__round__","__floor__","__ceil__","__float__",
+	"__int__","__invert__","__sizeof__","__pow__","__divmod__","__rdivmod__","__idivmod__","__mod__","__rmod__","__imod__",
+	"__or__","__ror__","__ior__","__xor__","__rxor__","__ixor__","__and__","__rand__","__iand__","__trunc__","__lshift__",
+	"__rlshift__","__rshift__","__rrshift__","__ilshift__","irshift__","__setattr__","__delattr__","__hash__",
+	"__iter__","__getitem__","__setitem__","__reversed__","__format__","__doc__","__delitem__","__contains__",
+	"__class__","__len__"};
 static std::vector<std::string> pythonTypes = {"int","float","bool","object","str","tuple",
-	"list","map","set","dict","zip","enumerate","type"};
+	"list","map","set","dict","zip","enumerate","type","Exception","TypeError","ValueError","NotImplementedError"};
 
 SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::string_view ext){
 	if (ext.empty())
