@@ -322,6 +322,22 @@ std::string_view LineModeBase::GetStatusBarText(){
 	return cursorPosText;
 }
 
+std::string RemoveEscapes(std::string_view token){
+	std::string s = {};
+	
+	for (size_t i=0;i<token.size();++i){
+		if (token[i]=='\\'&&i!=token.size()-1){
+			++i;
+			s += token[i];
+			continue;
+		}
+		
+		s += token[i];
+	}
+	
+	return s;
+}
+
 bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 	if (tokens[0].token=="goto"){
 		if (tokens.size()<2) return true;
@@ -343,7 +359,9 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			return true;
 		}
 		
-		FindTextInBuffer(tokens[1].token);
+		std::string fixedToken = RemoveEscapes(tokens[1].token);
+		
+		FindTextInBuffer(fixedToken);
 		if (!matches.size()){
 			modeErrorMessage = "No matches for '"+findText+"'";
 		} else {
@@ -361,13 +379,13 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			modeErrorMessage = "'' is not a valid search string!";
 			return true;
 		}
-		std::string_view find = tokens[1].token;
+		std::string find = RemoveEscapes(tokens[1].token);
 		
-		std::string_view replace;
+		std::string replace;
 		if (tokens.size()<3)
 			replace = {};
 		else
-			replace = tokens[2].token;
+			replace = RemoveEscapes(tokens[2].token);
 		
 		
 		LineDiffInfo diffs = {};
