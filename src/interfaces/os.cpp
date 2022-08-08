@@ -14,7 +14,7 @@ void ChooseBestPrefix(
 			lowest = choice.size();
 		} else {
 			for (size_t i=0;i<best.size();++i){
-				if (i==lowest) break;
+				if (i-1==lowest) break;
 				if (choice[i]!=best[i]){
 					lowest = i-1;
 					best = choice.substr(0,i);
