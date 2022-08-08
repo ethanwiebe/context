@@ -105,7 +105,7 @@ void CPPSyntaxHighlighter::BuildKeywords(){
 
 static std::vector<std::string> pythonKeywords = {"for","while","if","elif","else","return","yield",
 	"True","False","import","from","in","del","def","class","with","as","is","and","or","not","None",
-	"try","except","finally","raise","global","continue","break"};
+	"try","except","finally","raise","global","continue","break","pass"};
 static std::vector<std::string> pythonFuncs = {"range","len","print","repr","ord","chr","isinstance","staticmethod","classmethod"
 	"hex","round","pow","dir","open","quit","help","hash","next","__init__","__new__","__del__","__add__","__radd__",
 	"__iadd__","__mul__","__rmul__","__imul__","__div__","__rdiv__","__idiv__","__sub__","__rsub__","__isub__",
