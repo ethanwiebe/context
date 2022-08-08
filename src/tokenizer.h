@@ -26,6 +26,16 @@ typedef std::vector<Token> TokenVector;
 void ClipString(std::string_view&,std::string_view::iterator&);
 void SkipWhitespace(std::string_view&,std::string_view::iterator&);
 
+template <typename Tokenizer>
+TokenVector GetTokens(Tokenizer& t){
+	TokenVector tv;
+	while (t.TokensLeft()){
+		tv.push_back(t.EmitToken());
+	}
+	
+	return tv;
+}
+
 class TokenizerBase {
 public:
 	std::string_view str;
@@ -37,13 +47,17 @@ public:
 		begin = str.begin();
 	}
 
-	virtual void Reset(std::string_view newStr);
+	inline void Reset(std::string_view newStr){
+		str = newStr;
+		begin = str.begin();
+		pos = str.begin();
+	}
 
-	virtual bool TokensLeft() const;
-	virtual TokenVector GetTokens();
-	virtual Token EmitToken() = 0;
+	inline bool TokensLeft(){
+		return pos != str.end();
+	}
 
-	virtual ~TokenizerBase() = default;
+	~TokenizerBase() = default;
 };
 
 class CommandTokenizer : public TokenizerBase {
@@ -56,7 +70,7 @@ public:
 		}
 	}
 
-	Token EmitToken() override;
+	Token EmitToken();
 };
 
 class SyntaxTokenizer : public TokenizerBase {
@@ -95,26 +109,27 @@ public:
 		multiLineCommentEnd = s;
 	}
 
-	Token EmitToken() override;
+	Token EmitToken();
 };
 
 class CPPTokenizer : public SyntaxTokenizer {
 
 protected:
-	void ChooseToken(Token&,char,char) override;
+	void ChooseToken(Token&,char,char);
 public:
 	CPPTokenizer(std::string_view sv) : SyntaxTokenizer(sv){}
 };
 
+template <typename Tokenizer>
 class TokenInterface {
-	TokenizerBase& tokenizer;
+	Tokenizer& tokenizer;
 	TokenVector tokens;
 public:
-	TokenInterface(TokenizerBase& t) : tokenizer(t){}
+	TokenInterface(Tokenizer& t) : tokenizer(t){}
 
 	void Reset(std::string_view sv){
 		tokenizer.Reset(sv);
-		tokens = tokenizer.GetTokens();
+		tokens = GetTokens<Tokenizer>(tokenizer);
 	}
 	
 	inline TokenVector::const_iterator begin() const noexcept {

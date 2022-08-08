@@ -6,25 +6,6 @@ inline void TokenizeSingleLineComment(TokenizerBase& t){
 	while (t.pos!=t.str.end()&&*t.pos!='\n') ++t.pos;
 }
 
-inline bool TokenizerBase::TokensLeft() const {
-	return pos!=str.end();
-}
-
-void TokenizerBase::Reset(std::string_view newStr){
-	str = newStr;
-	begin = str.begin();
-	pos = str.begin();
-}
-
-TokenVector TokenizerBase::GetTokens(){
-	TokenVector tv;
-	while (TokensLeft()){
-		tv.push_back(EmitToken());
-	}
-
-	return tv;
-}
-
 void ClipString(std::string_view& str,std::string_view::iterator& pos){
 	str = {pos,str.end()};
 }

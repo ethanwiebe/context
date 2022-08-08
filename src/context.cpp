@@ -234,7 +234,7 @@ void ContextEditor::ProcessYesNoEntry(TextAction textAction){
 
 void ContextEditor::AutocompleteCommand(){
 	CommandTokenizer ct(entryString);
-	TokenVector tokens = ct.GetTokens();
+	TokenVector tokens = GetTokens<CommandTokenizer>(ct);
 	
 	if (tokens[0].token=="open"&&tokens.size()>1){
 		std::string sub = entryString.substr(tokens[1].col,tokens[1].token.size());
@@ -260,7 +260,7 @@ void ContextEditor::SubmitCommand(){
 	entryMode = EntryMode::None;
 	
 	CommandTokenizer ct(entryString);
-	TokenVector tokens = ct.GetTokens();
+	TokenVector tokens = GetTokens<CommandTokenizer>(ct);
 	
 	if (!ProcessCommand(tokens)){
 		if (!modes[currentMode]->ProcessCommand(tokens)){
@@ -271,11 +271,13 @@ void ContextEditor::SubmitCommand(){
 	}
 }
 
+#ifndef NDEBUG
 inline void LogTokens(TokenVector tokens){
 	for (const auto& token : tokens){
 		LOG((s32)token.type << ":'" << token.token << "' @" << token.col << ",");
 	}
 }
+#endif
 
 std::string ParsePath(std::string_view path,const OSInterface& os){
 	std::string parsed = {};
@@ -290,7 +292,9 @@ std::string ParsePath(std::string_view path,const OSInterface& os){
 
 bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	if (!tokens.size()) return true;
+#ifndef NDEBUG
 	LogTokens(tokens);
+#endif
 	
 	const Command* cmd;
 	if (!GetCommandFromName(tokens[0].token,&cmd)){
