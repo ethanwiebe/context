@@ -52,6 +52,18 @@ inline void TokenizeName(TokenizerBase& t){
 	while (IsAlphabet(*t.pos)||(*t.pos>='0'&&*t.pos<='9')||*t.pos=='_'||*t.pos=='.'||*t.pos=='/'||*t.pos=='\\'||*t.pos=='-'||*t.pos==':'||*t.pos=='~') ++t.pos;
 }
 
+inline void TokenizeCommandName(CommandTokenizer& t){
+	while (t.pos!=t.str.end()&&*t.pos!=' '&&*t.pos!='\t'&&*t.pos!='\n'&&*t.pos!='\''&&*t.pos!='"'){
+		if (*t.pos=='\\'){
+			++t.pos;
+			if (t.pos==t.str.end()) break;
+			++t.pos;
+		} else {
+			++t.pos;
+		}
+	}
+}
+
 inline void TokenizeSingleQuoteString(TokenizerBase& t){
 	while (t.pos!=t.str.end()&&*t.pos!='\'') ++t.pos;
 }
@@ -64,11 +76,7 @@ Token CommandTokenizer::EmitToken(){
 	Token t;
 	char initialC = *pos;
 
-	if (IsAlphabet(initialC)||(initialC>='0'&&initialC<='9')||
-			initialC=='_'||initialC=='.'||initialC=='/'||initialC=='~'){
-		t.type = TokenType::Name;
-		TokenizeName(*this);
-	} else if (initialC=='\''){
+	if (initialC=='\''){
 		t.type = TokenType::String;
 		++pos;
 		if (pos!=str.end()){
@@ -83,8 +91,8 @@ Token CommandTokenizer::EmitToken(){
 			TokenizeDoubleQuoteString(*this);
 		}
 	} else {
-		t.type = TokenType::SpecialChar;
-		++pos; //tokenize one char
+		t.type = TokenType::Name;
+		TokenizeCommandName(*this);
 	}
 
 	t.token = {str.begin(),pos};
