@@ -69,13 +69,14 @@ class ConfigurableSyntaxHighlighter : public SyntaxHighlighter {
 protected:
 	std::list<std::string> keywords;
 	KeywordStyleMap styleMap;
-	std::string comment,multiLineCommentStart,multiLineCommentEnd;
+	std::string comment,altComment,multiLineCommentStart,multiLineCommentEnd;
 public:
 	ConfigurableSyntaxHighlighter(TextBuffer& b) : SyntaxHighlighter(b){
 		keywords = {};
 		styleMap = {};
 		
 		comment = "//";
+		altComment = "";
 		multiLineCommentStart = "/*";
 		multiLineCommentEnd = "*/";
 	}
@@ -86,6 +87,10 @@ public:
 
 	void SetComment(const std::string& s){
 		comment = s;
+	}
+	
+	void SetAltComment(const std::string& s){
+		altComment = s;
 	}
 
 	void SetMultiLineComment(const std::string& start,const std::string& end){

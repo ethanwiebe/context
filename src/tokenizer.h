@@ -80,7 +80,7 @@ protected:
 	TokenType unfinishedTokenType;
 
 	std::string strDelim1,strDelim2;
-	std::string comment,multiLineCommentStart,multiLineCommentEnd;
+	std::string comment,altComment,multiLineCommentStart,multiLineCommentEnd;
 	char strEscape;
 
 	virtual void ChooseToken(Token&,char,char);
@@ -92,6 +92,7 @@ public:
 		strDelim2 = "\"";
 		strEscape = '\\';
 		comment = "//";
+		altComment = "";
 		multiLineCommentStart = "/*";
 		multiLineCommentEnd = "*/";
 		unfinishedToken = false;
@@ -99,6 +100,10 @@ public:
 
 	inline void SetComment(const std::string& s){
 		comment = s;
+	}
+	
+	inline void SetAltComment(const std::string& s){
+		altComment = s;
 	}
 
 	inline void SetMultiLineCommentStart(const std::string& s){

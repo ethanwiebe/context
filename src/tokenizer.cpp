@@ -151,7 +151,7 @@ inline void SyntaxTokenizer::ChooseToken(Token& t,char initialC,char nextC){
 		++pos;
 		if (!TokenizeUntilDelimiter(*this,strDelim2,strEscape))
 			SetUnfinishedToken(TokenType::String,2);
-	} else if (SVPosStartsWith(str,pos,comment)){
+	} else if (SVPosStartsWith(str,pos,comment)||SVPosStartsWith(str,pos,altComment)){
 		t.type = TokenType::Comment;
 		TokenizeSingleLineComment(*this);
 	} else if (SVPosStartsWith(str,pos,multiLineCommentStart)){
