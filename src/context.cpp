@@ -337,7 +337,9 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		if (tokens.size()>4)
 			opts = tokens[4].token;
 		SetStyleOpts(styleName,fg,bg,opts);
-		modes[currentMode]->UpdateStyle();
+		for (size_t i=0;i<modes.size();++i){
+			modes[i]->UpdateStyle();
+		}
 		return true;
 	} else if (tokens[0].token=="source"){
 		std::string_view path = tokens[1].token;
@@ -676,7 +678,7 @@ void ContextEditor::DrawTabsBar(TextScreen& ts){
 	// current page of tabs
 	size_t pageNum = currentMode/tabCount;
 	
-	for (size_t i=0;i<ts.GetWidth();++i){
+	for (size_t i=0;i<(size_t)ts.GetWidth();++i){
 		ts.SetAt(i,0,{' ',tabBarStyle});
 	}
 	
@@ -922,7 +924,8 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 		SaveStyle();
 		gConfig.style = n;
 		LoadStyle();
-		modes[currentMode]->UpdateStyle();
+		for (size_t i=0;i<modes.size();++i)
+			modes[i]->UpdateStyle();
 	} else if (name=="displayLineNumbers"){
 		if (!SetBool(gConfig.displayLineNumbers,val)){
 			errorMessage = "displayLineNumbers must be a boolean value";
