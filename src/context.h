@@ -38,6 +38,7 @@ class ContextEditor {
 	std::string entryString;
 	std::string yesNoMessage;
 	std::string errorMessage;
+	std::string infoMessage;
 	
 	ssize_t entryPos;
 

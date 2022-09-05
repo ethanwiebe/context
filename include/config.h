@@ -13,11 +13,13 @@ enum class MultiMode : u8 {
 	PascalWord
 };
 
+#include <string>
+
 struct Config {
 	s64 tabSize;
 	s64 cursorMoveHeight;
 	s64 multiAmount;
-	u64 style;
+	std::string style;
 
 	bool displayLineNumbers;
 	bool autoIndent;
@@ -50,7 +52,7 @@ const ConfigProp gConfigProps[gConfigPropCount] = {
 	{"tabSize",                ConfigPropType::Number},
 	{"cursorMoveHeight",       ConfigPropType::Number},
 	{"multiAmount",            ConfigPropType::Number},
-	{"style",                  ConfigPropType::Number},
+	{"style",                  ConfigPropType::String},
 	{"displayLineNumbers",     ConfigPropType::Bool},
 	{"autoIndent",             ConfigPropType::Bool},
 	{"cursorLock",             ConfigPropType::Bool},

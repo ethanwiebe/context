@@ -2,7 +2,7 @@
 
 #include "config.h"
 
-std::map<u64,StyleSet> gStyleMap = {};
+std::map<std::string,StyleSet> gStyleMap = {};
 
 void LoadStyle(){
 	if (!gStyleMap.contains(gConfig.style))
@@ -28,52 +28,13 @@ void SaveStyle(){
 
 }
 
-//#define SOLARIZED
-#define GRUVBOX
+bool StyleExists(const std::string& name){
+	return gStyleMap.contains(name);
+}
 
 Color ColorBlack = {0,0,0};
 Color ColorWhite = {255,255,255};
 
-#ifdef DEFAULTCOLORS
-Color ColorRed = {255,0,0};
-Color ColorOrange = {255,128,0};
-Color ColorGreen = {0,255,0};
-Color ColorYellow = {255,255,0};
-Color ColorBlue = {0,0,255};
-Color ColorCyan = {0,255,255};
-Color ColorMagenta = {255,0,255};
-
-Color ColorBackgroundDark = ColorBlack;
-Color ColorBackgroundLight = ColorWhite;
-Color ColorForegroundDark = ColorWhite;
-Color ColorForegroundLight = ColorBlack;
-#endif
-#ifdef SOLARIZED
-Color ColorBackground1 = {0,43,54};
-Color ColorBackground2 = {7,54,66};
-Color ColorContent1 = {88,110,117};
-Color ColorContent2 = {101,123,131};
-Color ColorContent3 = {131,148,150};
-Color ColorContent4 = {147,161,161};
-Color ColorBackgroundLight1 = {238,232,213};
-Color ColorBackgroundLight2 = {253,246,227};
-
-Color ColorYellow = {181,137,0};
-Color ColorOrange = {203,75,22};
-Color ColorRed = {220,50,47};
-Color ColorMagenta = {211,54,130};
-Color ColorViolet = {108,113,196};
-Color ColorBlue = {38,139,210};
-Color ColorCyan = {42,161,152};
-Color ColorGreen = {133,153,0};
-
-
-Color ColorBackgroundDark = ColorBackground1;
-Color ColorBackgroundLight = ColorBackgroundLight1;
-Color ColorForegroundDark = ColorContent4;
-Color ColorForegroundLight = ColorContent1;
-#endif
-#ifdef GRUVBOX
 Color ColorBackground1 = {0x28,0x28,0x28};
 Color ColorBackground2 = {0x3c,0x38,0x36};
 Color ColorBackground3 = {0x50,0x49,0x45};
@@ -100,8 +61,6 @@ Color ColorGray = {0x92,0x83,0x74};
 
 Color ColorBackground = ColorBackground1;
 Color ColorForeground = ColorForeground1;
-
-#endif
 
 const StyleSet defaultStyleSet = {
 	.textStyle = {ColorForeground,ColorBackground,StyleFlag::NoFlag},

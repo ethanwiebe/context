@@ -96,6 +96,7 @@ void ContextEditor::RunFile(std::string_view path,bool silent){
 	} else {
 		if (silent) errorMessage.clear();
 	}
+	infoMessage.clear();
 }
 
 void ContextEditor::MoveEntryPosLeft(size_t count){
@@ -621,6 +622,9 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 			formattedError += modeError;
 			ts.RenderString(0,h-1,formattedError,errorStyle);
 			modeError.clear();
+		} else if (!infoMessage.empty()){
+			ts.RenderString(0,h-1,infoMessage,barStyle);
+			infoMessage.clear();
 		} else if (!modeInfo.empty()){
 			std::string formattedInfo = {};
 			formattedInfo += modes[currentMode]->GetModeName();
@@ -920,9 +924,11 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 			errorMessage = "multiAmount must be a positive integer";
 		}
 	} else if (name=="style"){
-		size_t n = strtol(val.data(),NULL,10);
 		SaveStyle();
-		gConfig.style = n;
+		gConfig.style = val;
+		if (!StyleExists(gConfig.style)){
+			infoMessage = "New style '"+gConfig.style+"' created.";
+		}
 		LoadStyle();
 		for (size_t i=0;i<modes.size();++i)
 			modes[i]->UpdateStyle();

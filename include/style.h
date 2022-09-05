@@ -39,7 +39,7 @@ struct StyleSet {
 };
 #undef STYLE
 
-extern std::map<u64,StyleSet> gStyleMap;
+extern std::map<std::string,StyleSet> gStyleMap;
 
 extern const StyleSet defaultStyleSet;
 
@@ -49,4 +49,4 @@ extern const StyleSet defaultStyleSet;
 
 void LoadStyle();
 void SaveStyle();
-
+bool StyleExists(const std::string&);
