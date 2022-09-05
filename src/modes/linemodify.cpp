@@ -86,7 +86,7 @@ void LineModeBase::VisualCursorDeletePreviousWord(VisualCursor& cursor){
 	MoveCursorLeft(cursor.cursor,1);
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		DeleteCharAt(cursor.cursor);
 		return SetCachedX(cursor);
 	}
@@ -98,7 +98,7 @@ void LineModeBase::VisualCursorDeletePreviousWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')){
 		DeleteCharAt(cursor.cursor);
 		if (cursor.cursor.column==0) return SetCachedX(cursor);
 		MoveCursorLeft(cursor.cursor,1);
@@ -117,7 +117,7 @@ void LineModeBase::VisualCursorDeleteCurrentWord(VisualCursor& cursor){
 	
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		DeleteCharAt(cursor.cursor);
 		return;
 	}
@@ -128,7 +128,7 @@ void LineModeBase::VisualCursorDeleteCurrentWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')){
 		DeleteCharAt(cursor.cursor);
 		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
 		c = GetCharAt(cursor.cursor);
@@ -142,7 +142,7 @@ void LineModeBase::VisualCursorDeletePreviousPascalWord(VisualCursor& cursor){
 	MoveCursorLeft(cursor.cursor,1);
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		DeleteCharAt(cursor.cursor);
 		return SetCachedX(cursor);
 	}
@@ -154,16 +154,42 @@ void LineModeBase::VisualCursorDeletePreviousPascalWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	while ((c>='a'&&c<='z')){
+	bool isNumber = false;
+	while (c>='0'&&c<='9'){
+		isNumber = true;
 		DeleteCharAt(cursor.cursor);
 		if (cursor.cursor.column==0) return SetCachedX(cursor);
 		MoveCursorLeft(cursor.cursor,1);
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	if (c>='A'&&c<='Z'){
+	if (isNumber){
+		MoveCursorRight(cursor.cursor,1);
+		SetCachedX(cursor);
+		return;
+	}
+	
+	bool capFirst = false;
+	while (c>='A'&&c<='Z'){
+		capFirst = true;
 		DeleteCharAt(cursor.cursor);
-		return SetCachedX(cursor);
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (!capFirst){
+		while ((c>='a'&&c<='z')){
+			DeleteCharAt(cursor.cursor);
+			if (cursor.cursor.column==0) return SetCachedX(cursor);
+			MoveCursorLeft(cursor.cursor,1);
+			c = GetCharAt(cursor.cursor);
+		}
+		
+		if (c>='A'&&c<='Z'){
+			DeleteCharAt(cursor.cursor);
+			return SetCachedX(cursor);
+		}
 	}
 	
 	MoveCursorRight(cursor.cursor,1);
@@ -178,7 +204,7 @@ void LineModeBase::VisualCursorDeleteCurrentPascalWord(VisualCursor& cursor){
 	
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		DeleteCharAt(cursor.cursor);
 		return;
 	}
@@ -189,9 +215,37 @@ void LineModeBase::VisualCursorDeleteCurrentPascalWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	if (c>='A'&&c<='Z'){
+	bool isNumber = false;
+	while (c>='0'&&c<='9'){
+		isNumber = true;
 		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
 		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (isNumber){
+		return;
+	}
+	
+	size_t capCount = 0;
+	while (c>='A'&&c<='Z'){
+		DeleteCharAt(cursor.cursor);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
+		c = GetCharAt(cursor.cursor);
+		if (c>='A'&&c<='Z'){
+			MoveCursorRight(cursor.cursor,1);
+			char testC = GetCharAt(cursor.cursor);
+			if (testC>='a'&&testC<='z'){
+				MoveCursorLeft(cursor.cursor,1);
+				return;
+			}
+			MoveCursorLeft(cursor.cursor,1);
+		}
+		++capCount;
+	}
+	
+	if (capCount>1){
+		return;
 	}
 	
 	while (c>='a'&&c<='z'){

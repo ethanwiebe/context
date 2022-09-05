@@ -170,7 +170,7 @@ void LineModeBase::MoveVisualCursorLeftWord(VisualCursor& cursor){
 	MoveCursorLeft(cursor.cursor,1);
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		return SetCachedX(cursor);
 	}
 	
@@ -180,7 +180,7 @@ void LineModeBase::MoveVisualCursorLeftWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')){
 		if (cursor.cursor.column==0) return SetCachedX(cursor);
 		MoveCursorLeft(cursor.cursor,1);
 		c = GetCharAt(cursor.cursor);
@@ -202,7 +202,7 @@ void LineModeBase::MoveVisualCursorRightWord(VisualCursor& cursor){
 	
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		MoveCursorRight(cursor.cursor,1);
 		return;
 	}
@@ -213,7 +213,7 @@ void LineModeBase::MoveVisualCursorRightWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')){
+	while ((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')){
 		MoveCursorRight(cursor.cursor,1);
 		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return SetCachedX(cursor);
 		c = GetCharAt(cursor.cursor);
@@ -233,7 +233,7 @@ void LineModeBase::MoveVisualCursorLeftPascalWord(VisualCursor& cursor){
 	MoveCursorLeft(cursor.cursor,1);
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		return SetCachedX(cursor);
 	}
 	
@@ -243,14 +243,38 @@ void LineModeBase::MoveVisualCursorLeftPascalWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	while ((c>='a'&&c<='z')){
+	bool isNumber = false;
+	while (c>='0'&&c<='9'){
 		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		isNumber = true;
 		MoveCursorLeft(cursor.cursor,1);
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	if (c>='A'&&c<='Z'){
-		return SetCachedX(cursor);
+	if (isNumber){
+		MoveCursorRight(cursor.cursor,1);
+		SetCachedX(cursor);
+		return;
+	}
+	
+	bool capFirst = false;
+	while (c>='A'&&c<='Z'){
+		if (cursor.cursor.column==0) return SetCachedX(cursor);
+		capFirst = true;
+		MoveCursorLeft(cursor.cursor,1);
+		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (!capFirst){
+		while ((c>='a'&&c<='z')){
+			if (cursor.cursor.column==0) return SetCachedX(cursor);
+			MoveCursorLeft(cursor.cursor,1);
+			c = GetCharAt(cursor.cursor);
+		}
+		
+		if (c>='A'&&c<='Z'){
+			return SetCachedX(cursor);
+		}
 	}
 	
 	MoveCursorRight(cursor.cursor,1);
@@ -269,7 +293,7 @@ void LineModeBase::MoveVisualCursorRightPascalWord(VisualCursor& cursor){
 	
 	char c = GetCharAt(cursor.cursor);
 	
-	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')){
+	if (c!=' '&&c!='\t'&&(c<'a'||c>'z')&&(c<'A'||c>'Z')&&(c<'0'||c>'9')){
 		MoveCursorRight(cursor.cursor,1);
 		return;
 	}
@@ -280,9 +304,31 @@ void LineModeBase::MoveVisualCursorRightPascalWord(VisualCursor& cursor){
 		c = GetCharAt(cursor.cursor);
 	}
 	
-	if (c>='A'&&c<='Z'){
+	bool isNumber = false;
+	while (c>='0'&&c<='9'){
+		isNumber = true;
 		MoveCursorRight(cursor.cursor,1);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return SetCachedX(cursor);
 		c = GetCharAt(cursor.cursor);
+	}
+	
+	if (isNumber){
+		SetCachedX(cursor);
+		return;
+	}
+	
+	size_t capCount = 0;
+	while (c>='A'&&c<='Z'){
+		MoveCursorRight(cursor.cursor,1);
+		if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return SetCachedX(cursor);
+		c = GetCharAt(cursor.cursor);
+		++capCount;
+	}
+	
+	if (capCount>1){
+		MoveCursorLeft(cursor.cursor,1);
+		SetCachedX(cursor);
+		return;
 	}
 	
 	while (c>='a'&&c<='z'){
