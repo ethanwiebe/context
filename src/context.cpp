@@ -237,7 +237,7 @@ void ContextEditor::AutocompleteCommand(){
 	CommandTokenizer ct(entryString);
 	TokenVector tokens = GetTokens<CommandTokenizer>(ct);
 	
-	if (tokens[0].token=="open"&&tokens.size()>1){
+	if ((tokens[0].token=="open"||tokens[0].token=="saveas")&&tokens.size()>1){
 		std::string sub = entryString.substr(tokens[1].col,tokens[1].token.size());
 		osInterface->AutocompletePath(sub);
 		entryString = entryString.substr(0,tokens[1].col) + sub +
