@@ -677,10 +677,23 @@ std::string ContextEditor::GetTabString(size_t index,size_t tabW){
 }
 
 void ContextEditor::DrawTabsBar(TextScreen& ts){
-	// how many tabs per page
-	size_t tabCount = ts.GetWidth()/tabBarWidth;
+	// how many tabs per page (minus 3 for ' ...')
+	size_t tabCount = (ts.GetWidth()-4)/tabBarWidth;
+	size_t sansSymbolTabCount = (ts.GetWidth())/tabBarWidth;
+	// if there is just enough space to display one more
+	// tab without the symbols then let it happen
+	if (modes.size()==sansSymbolTabCount)
+		tabCount = sansSymbolTabCount;
+	
 	// current page of tabs
 	size_t pageNum = currentMode/tabCount;
+	size_t pageCount = modes.size()/tabCount;
+	if (modes.size()%tabCount!=0)
+		pageCount++;
+	
+	size_t startX = 0;
+	if (pageNum!=0)
+		startX = 2;
 	
 	for (size_t i=0;i<(size_t)ts.GetWidth();++i){
 		ts.SetAt(i,0,{' ',tabBarStyle});
@@ -691,9 +704,17 @@ void ContextEditor::DrawTabsBar(TextScreen& ts){
 		if (currTab>=modes.size()) break;
 		
 		if (currTab==currentMode)
-			ts.RenderString(i*tabBarWidth,0,GetTabString(currTab,tabBarWidth),tabBarSelectStyle);
+			ts.RenderString(startX+i*tabBarWidth,0,
+				GetTabString(currTab,tabBarWidth),tabBarSelectStyle);
 		else
-			ts.RenderString(i*tabBarWidth,0,GetTabString(currTab,tabBarWidth),tabBarStyle);
+			ts.RenderString(startX+i*tabBarWidth,0,
+				GetTabString(currTab,tabBarWidth),tabBarStyle);
+	}
+	if (modes.size()>tabCount){
+		if (pageNum!=pageCount-1)
+			ts.RenderString(ts.GetWidth()-2,0,"-",tabBarStyle);
+		if (pageNum!=0)
+			ts.RenderString(0,0,"-",tabBarStyle);
 	}
 }
 
