@@ -111,6 +111,7 @@ class Builder:
         self.commandFailed = False
         self.failLock = threading.Lock()
         self.printLock = threading.Lock()
+        self.dispatchLock = threading.Lock()
 
     def DebugPrint(self,msg):
         if self.debug:
@@ -396,15 +397,25 @@ class Builder:
             self.CollectAllCompilables(mode,srcDir,self.GetSourceExts(mode))
             self.InvertDependencies()
             self.GetRebuildSet(mode)
+            
+    def RequestCommand(self):
+        with self.dispatchLock:
+            if self.dispatchedCommands:
+                return True,self.dispatchedCommands.pop(0)
+        
+        return False,None
 	
-    def BuildObjectsFromList(self,l,totalCount):
+    def BuildObjectsFromList(self,totalCount):
         code = 0
         threadName = threading.current_thread().name
-        i = 1
-
-        for src,obj,cmd,index in l:
+        while True:
+            status,req = self.RequestCommand()
+            if not status:
+                break
             if self.HasCommandFailed():
                 quit()
+                
+            src,obj,cmd,index = req[0],req[1],req[2],req[3]
                 
             if self.debug:
                 self.ThreadedPrint(f"{TextColor(BLUE)}{cmd}{ResetTextColor()}")
@@ -415,8 +426,7 @@ class Builder:
             if code!=0:
                 self.SetCommandFailed()
                 break
-            i += 1
-
+                
         return code
 
     def HasCommandFailed(self):
@@ -436,20 +446,20 @@ class Builder:
     def DispatchCommands(self,cmdList,totalCount):
         cores = os.cpu_count()
         threads = []
+        self.dispatchedCommands = cmdList
 
         for i in range(cores):
-            cmds = cmdList[i::cores]
-            thread = threading.Thread(target=self.BuildObjectsFromList,args=(cmds,totalCount),name=str(i+1))
+            thread = threading.Thread(target=self.BuildObjectsFromList,args=(totalCount,),name=str(i+1))
             thread.start()
             threads.append(thread)
         
-        try:
-            while threading.active_count()!=1:
-                if self.HasCommandFailed():
-                    quit()
-                time.sleep(0.2)
-        except KeyboardInterrupt:
-            self.SetCommandFailed()
+        #try:
+        while threading.active_count()!=1:
+            if self.HasCommandFailed():
+                quit()
+            time.sleep(0.25)
+        #except KeyboardInterrupt:
+         #   self.SetCommandFailed()
 
         if self.HasCommandFailed():
             self.CommandFailedQuit()
@@ -618,10 +628,7 @@ class Builder:
                 src = self.GetObjectsPath(mode)
                 dest = self.GetOutputPath(mode)
                 self.InfoPrint(f'{TextColor(GREEN)}Linking: {TextColor(BLUE)}{src} {TextColor(WHITE,1)}-> {TextColor(GREEN,1)}{dest}{ResetTextColor()}')
-            try:
-                code = self.RunCommand(cmd)
-            except KeyboardInterrupt:
-                code = 1
+            code = self.RunCommand(cmd)
 
             if code!=0:
                 self.InfoPrint(f"{TextColor(RED,1)}Linker error!{ResetTextColor()}")
@@ -843,7 +850,9 @@ def GetOptionsFromFile(file):
 def main():    
     global noColor
     name = 'builder'
-    builderVersion = '0.0.2'
+    builderVersion = '0.0.3'
+    
+    os.system('')
 
     parser = argparse.ArgumentParser(prog='builder',description="Only builds what needs to be built.")
     group = parser.add_mutually_exclusive_group()
@@ -862,7 +871,6 @@ def main():
 
     if args.nocolor or not sys.stdout.isatty():
         noColor = True
-
 
     builderLog = ''
 
@@ -910,4 +918,8 @@ def main():
 
 
 if __name__=='__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print()
+        quit(1)
