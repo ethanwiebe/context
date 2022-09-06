@@ -4,6 +4,7 @@
 
 #include "keybind.h"
 #include "tokenizer.h"
+#include "async.h"
 
 #include "modes/mode.h"
 #include "interfaces/os.h"
@@ -13,6 +14,7 @@
 #include <string>
 #include <string_view>
 #include <functional>
+#include <mutex>
 
 enum class EntryMode {
 	None,
@@ -32,6 +34,8 @@ class ContextEditor {
 	size_t currentMode;
 	
 	std::string clipboardText;
+	
+	bool willUpdate;
 
 	bool quit;
 	EntryMode entryMode;
@@ -43,6 +47,10 @@ class ContextEditor {
 	ssize_t entryPos;
 
 	std::function<void()> yesAction,noAction;
+	
+	std::mutex asyncMutex;
+	size_t asyncIndex;
+	std::vector<AsyncData> asyncState;
 
 	bool WriteFileChecks(std::string_view);
 	bool ReadFileChecks(std::string_view);
@@ -88,6 +96,15 @@ public:
 	void OpenMode(std::string_view);
 	
 	void OpenHelpMode();
+	
+	// internal async helpers
+	void AsyncFinished(size_t);
+	bool GetAsyncCancel(size_t) const;
+	
+	// use for async tasks
+	size_t StartAsyncTask(const AsyncContext&);
+	bool IsAsyncTaskDone(size_t) const;
+	void CancelAsyncTask(size_t);
 	
 	std::string& GetClipboard();
 

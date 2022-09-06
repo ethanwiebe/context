@@ -25,6 +25,8 @@ class CursesInterface : public TextInterfaceBase {
 	cchar_t* charArray;
 
 	s32 definedColors, definedPairs;
+	
+	size_t missCount;
 
 	std::vector<Color> colorDefinitions;
 	std::vector<ColorPair> pairDefinitions;

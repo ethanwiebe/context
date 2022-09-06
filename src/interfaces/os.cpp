@@ -56,3 +56,9 @@ void OSInterface::AutocompletePath(std::string& path) const {
 		path = closest;
 }
 
+#include <thread>
+#include <chrono>
+
+void OSInterface::Sleep(float f) const {
+	std::this_thread::sleep_for(std::chrono::milliseconds((s32)(f*1000)));
+}

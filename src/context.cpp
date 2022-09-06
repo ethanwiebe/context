@@ -6,12 +6,21 @@
 #include "command.h"
 #include "util.h"
 
+#include <thread>
+#include <mutex>
+#include <assert.h>
+
 ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();
 	LoadStyle();
 
 	yesAction = [](){};
 	noAction = [](){};
+
+	asyncIndex = 0;
+	asyncState = {};
+	
+	willUpdate = true;
 
 	quit = false;
 	entryMode = EntryMode::None;
@@ -49,15 +58,8 @@ void ContextEditor::Loop(){
 	KeyboardEvent* event;
 	TextAction textAction;
 	while (!quit){
-		TextScreen& textScreen = modes[currentMode]->GetTextScreen(
-			interface->GetWidth(),interface->GetHeight()
-		);
-		DrawStatusBar(textScreen);
-		DrawTabsBar(textScreen);
-
-		interface->RenderScreen(textScreen);
-
 		if ((event = interface->GetKeyboardEvent())){
+			willUpdate = true;
 			textAction = GetTextActionFromKey((KeyEnum)event->key,(KeyModifier)event->mod);
 			
 			if (entryMode==EntryMode::Command){
@@ -69,6 +71,20 @@ void ContextEditor::Loop(){
 					modes[currentMode]->ProcessTextAction(textAction);
 			}
 		}
+		
+		if (quit) break;
+		
+		if (!willUpdate)
+			continue;
+		
+		TextScreen& textScreen = modes[currentMode]->GetTextScreen(
+			interface->GetWidth(),interface->GetHeight()
+		);
+		DrawStatusBar(textScreen);
+		DrawTabsBar(textScreen);
+
+		interface->RenderScreen(textScreen);
+		willUpdate = false;
 	}
 }
 
@@ -986,6 +1002,86 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 	} else if (name=="deleteMode"){
 		if (!SetMultiMode(gConfig.deleteMode,val))
 			errorMessage = "deleteMode must be one of 'multi', 'word', or 'pascal'";
+	}
+}
+
+void WaitForAsyncTimer(ContextEditor* ctx,size_t index,AsyncContext a){
+	if (a.preDelay>0.0f){
+		ctx->GetOSInterface()->Sleep(a.preDelay);
+		if (ctx->GetAsyncCancel(index)){
+			ctx->AsyncFinished(index);
+			return;
+		}
+	}
+	
+	a.func();
+	
+	ctx->AsyncFinished(index);
+}
+
+bool ContextEditor::GetAsyncCancel(size_t i) const {
+	for (const auto& a : asyncState){
+		if (a.index==i)
+			return a.canceled;
+	}
+	return true;
+}
+
+void ContextEditor::AsyncFinished(size_t i){
+	AsyncData async = {};
+	bool found = false;
+	(void)found;
+	
+	std::scoped_lock lock{asyncMutex};
+	
+	for (auto& a : asyncState){
+		if (a.index==i){
+			async = a;
+			found = true;
+			break;
+		}
+	}
+	
+	assert(found);
+	
+	if (async.updateAfter&&!async.canceled)
+		willUpdate = true;
+	
+	for (auto it=asyncState.begin();it!=asyncState.end();++it){
+		if (it->index==i){
+			asyncState.erase(it);
+			break;
+		}
+	}
+}
+
+size_t ContextEditor::StartAsyncTask(const AsyncContext& async){
+	size_t i = asyncIndex++;
+	asyncState.emplace_back(i,false,async.updateAfter);
+	
+	std::thread task{std::bind(WaitForAsyncTimer,this,i,async)};
+	
+	task.detach();
+	
+	return i;
+}
+
+bool ContextEditor::IsAsyncTaskDone(size_t index) const {
+	for (const auto& async : asyncState){
+		if (async.index == index){
+			return false;
+		}
+	}
+	
+	return true;
+}
+void ContextEditor::CancelAsyncTask(size_t index){
+	std::scoped_lock lock{asyncMutex};
+	for (auto& async : asyncState){
+		if (async.index == index){
+			async.canceled = true;
+			return;
+		}
 	}
 }
 

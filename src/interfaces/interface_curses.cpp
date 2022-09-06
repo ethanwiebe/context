@@ -94,12 +94,14 @@ CursesInterface::CursesInterface(){
 	
 	setlocale(LC_ALL,"");
 
+	missCount = 0;
 	initscr();
 	start_color();
 
 	keypad(stdscr,true);
 	noecho(); // don't echo typed keys into the terminal
 	raw(); //pass input through instantly
+	nodelay(stdscr,true);
 	notimeout(stdscr,false);
 	ESCDELAY = 50;
 	
@@ -206,13 +208,32 @@ void CursesInterface::SetMappings(){
 	keyMapping[494] = {KeyEnum::Down,ctrlalt};
 }
 
+#include <thread>
+#include <chrono>
+using namespace std::chrono_literals;
+
 KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 	s32 key = getch();
+	
+	if (key==ERR||key==0){
+		if (missCount>2500)
+			std::this_thread::sleep_for(250ms);
+		else if (missCount>500)
+			std::this_thread::sleep_for(75ms);
+		else if (missCount>50)
+			std::this_thread::sleep_for(10ms);
+			
+		++missCount;
+		return nullptr;
+	}
+	
+	missCount = 0;
 
 	if (key==KEY_RESIZE){
 		resize_term(0,0);
 		WindowResized(COLS,LINES);
-		return nullptr;
+		lastEvent = KeyboardEvent(0,KeyModifier::None);
+		return &lastEvent;
 	}
 
 	LOG("Pre: " << (char)key << ' ' << key << ' ');

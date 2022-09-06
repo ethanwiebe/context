@@ -26,4 +26,6 @@ public:
 	virtual bool WriteTextBufferIntoFile(std::string_view,Ref<TextBuffer>) const = 0;
 	
 	virtual std::string GetHomePath() const = 0;
+	
+	virtual void Sleep(float) const;
 };
