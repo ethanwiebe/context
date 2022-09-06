@@ -19,40 +19,11 @@ struct ColorData {
 };
 
 typedef std::vector<ColorData> ColorLine;
-typedef std::vector<ColorLine> ColorLineList;
+typedef std::vector<ColorLine> ColorBuffer;
 
-typedef ColorLineList::iterator ColorIterator;
+typedef ColorBuffer::iterator ColorIterator;
 
 typedef std::map<std::string_view,TextStyle*> KeywordStyleMap;
-
-class ColorBuffer {
-	ColorLineList colors;
-public:
-	inline ColorLineList::iterator begin() noexcept {
-		return colors.begin();
-	}
-
-	inline ColorLineList::iterator end() noexcept {
-		return colors.end();
-	}
-
-	inline size_t size() const noexcept {
-		return colors.size();
-	}
-
-	inline void clear() noexcept {
-		colors.clear();
-	}
-
-	inline void resize(size_t s) noexcept {
-		colors.resize(s);
-	}
-
-	inline ColorLine& operator[](size_t i) noexcept {
-		return colors[i];
-	}
-
-};
 
 class SyntaxHighlighter {
 protected:
@@ -104,7 +75,7 @@ public:
 	~ConfigurableSyntaxHighlighter() override;
 private:
 	bool TokenInKeywords(std::string_view,TextStyle&) const;
-	void AddColorData(ColorLineList::iterator,std::string_view,s32,TextStyle) const;
+	void AddColorData(ColorIterator,std::string_view,s32,TextStyle) const;
 };
 
 class CPPSyntaxHighlighter : public ConfigurableSyntaxHighlighter {
