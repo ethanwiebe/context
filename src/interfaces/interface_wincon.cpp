@@ -16,8 +16,6 @@ wchar_t* currChar;
 
 bool shiftDown,ctrlDown,altDown;
 
-s64 totalSize;
-
 INPUT_RECORD consoleEvent;
 
 bool EnableVTMode(HANDLE h){
@@ -46,8 +44,6 @@ WinConInterface::WinConInterface(){
 	outHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	
 	inHandle = GetStdHandle(STD_INPUT_HANDLE);
-	
-	totalSize = 0;
 	
 	DWORD mode = 0;
 	GetConsoleMode(inHandle,&mode);
@@ -236,7 +232,6 @@ void WinConInterface::ResizeScreen(s32 w,s32 h){
 	if (charArray)
 		delete[] charArray;
 	charArray = new wchar_t[w*h*39+1]; //probably will be big enough
-	totalSize = w*h*40+1;
 }
 
 #endif
