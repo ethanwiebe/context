@@ -1,5 +1,7 @@
 #include "linemode.h"
 
+#include "../context.h"
+
 #ifdef _WIN32
 inline s32 wcwidth(u32 c){
 	if (c>127)
@@ -37,12 +39,15 @@ LineModeBase::LineModeBase(ContextEditor* ctx) :
 	textBuffer = MakeRef<TextBuffer>();
 	textBuffer->InsertLine(textBuffer->begin(),"");
 	colorBuffer = {};
-	colorBuffer.resize(textBuffer->size());
+	colorBuffer.assign(textBuffer->size(),{});
+	altColorBuffer = {};
 	highlighterNeedsUpdate = true;
+	highlightTask = -1ULL;
 	
 	readonly = false;
 	modified = false;
 	InitIterators();
+	SetColorLine();
 	bufferPath = {};
 	undoStack = {};
 	selecting = false;
@@ -54,12 +59,29 @@ LineModeBase::LineModeBase(ContextEditor* ctx) :
 	screenHeight = -1;
 }
 
+void LineModeBase::UpdateHighlighterTask(){
+	std::scoped_lock lock{colorMutex};
+
+	syntaxHighlighter->FillColorBuffer(altColorBuffer);
+	SetColorLine();
+	
+	colorBuffer = altColorBuffer;
+}
+
 void LineModeBase::UpdateHighlighter(){
 	if (!syntaxHighlighter)
 		return;
 
-	syntaxHighlighter->FillColorBuffer(colorBuffer);
-	SetColorLine();
+	std::scoped_lock lock{colorMutex};
+	
+	if (!ctx->IsAsyncTaskDone(highlightTask)){
+		ctx->CancelAsyncTask(highlightTask);
+	}
+	AsyncContext a = {};
+	a.func = std::bind(&LineModeBase::UpdateHighlighterTask,this);
+	a.preDelay = 0.03f;
+	a.updateAfter = true;
+	highlightTask = ctx->StartAsyncTask(a);
 	highlighterNeedsUpdate = false;
 }
 
@@ -123,6 +145,25 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	
 	if (highlighterNeedsUpdate)
 		UpdateHighlighter();
+		
+	std::scoped_lock lock{colorMutex};
+	
+	// fix color buffer line count
+	size_t cursorColorInsert=cursors.front().cursor.line.index;
+	if (cursorColorInsert)
+		--cursorColorInsert;
+		
+	while (colorBuffer.size() < textBuffer->size()){
+		colorBuffer.emplace(colorBuffer.cbegin()+cursorColorInsert);
+	}
+	
+	cursorColorInsert = std::min(cursorColorInsert+1,textBuffer->size()-1);
+	
+	while (colorBuffer.size() > textBuffer->size()){
+		colorBuffer.erase(colorBuffer.cbegin()+cursorColorInsert);
+	}
+	
+	SetColorLine();
 
 	SetVisualCursorColumn(cursors.front(),cursors.front().cursor.column);
 	MoveScreenToVisualCursor(cursors.front());
@@ -423,6 +464,9 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	if (textBuffer->empty()){
 		textBuffer->InsertLine(textBuffer->end(),{});
 	}
+
+	colorBuffer = {};
+	colorBuffer.assign(textBuffer->size(),{});
 
 	GetSyntaxHighlighter(bufferPath);
 	highlighterNeedsUpdate = true;

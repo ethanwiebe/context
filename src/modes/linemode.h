@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <wchar.h>
+#include <mutex>
 
 struct VisualCursor {
 	Cursor cursor;
@@ -69,16 +70,18 @@ struct BufferAction {
 	}
 };
 
-
 class LineModeBase : public ModeBase {
 protected:
 	TextScreen textScreen;
 	Ref<TextBuffer> textBuffer;
-	ColorBuffer colorBuffer;
+	ColorBuffer colorBuffer,altColorBuffer;
 	std::string copiedText;
 	std::string bufferPath;
 	std::string cursorPosText;
 	bool highlighterNeedsUpdate;
+	size_t highlightTask;
+	
+	std::mutex colorMutex;
 
 	LineIndexedIterator viewLine;
 	ColorIterator colorLine;
@@ -103,6 +106,8 @@ protected:
 	Handle<SyntaxHighlighter> syntaxHighlighter;
 
 	bool readonly,modified;
+	
+	void UpdateHighlighterTask();
 public:
 	LineModeBase(ContextEditor* ctx);
 	void InitIterators();
