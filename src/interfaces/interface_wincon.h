@@ -29,6 +29,6 @@ public:
 	
 private:
 	void ResizeScreen(s32,s32);
-	void WaitingLoop();
+	void GetEvent();
 	void SetMappings();
 };

@@ -148,7 +148,6 @@ inline void SetStyle(const TextStyle& style){
 
 void WinConInterface::RenderScreen(const TextScreen& textScreen){
 	s32 w = textScreen.GetWidth(), h = textScreen.GetHeight();
-	wchar_t buf[2] = {0,0};
 	currChar = charArray;
 	
 	TextStyle currStyle = textScreen[0].style;
@@ -173,30 +172,25 @@ void WinConInterface::RenderScreen(const TextScreen& textScreen){
 	WriteConsoleW(outHandle,charArray,wcslen(charArray),NULL,NULL);
 }
 
-void WinConInterface::WaitingLoop(){
+void WinConInterface::GetEvent(){
 	DWORD eventCount = 0;
-	while (!eventCount){
-		ReadConsoleInput(inHandle,&consoleEvent,1,&eventCount);
-	}
+	ReadConsoleInput(inHandle,&consoleEvent,1,&eventCount);
 }
 
 KeyboardEvent* WinConInterface::GetKeyboardEvent(){
 	lastEvent = {0,0};
 	
-	while (lastEvent.key==0){
-		WaitingLoop();
-		
-		KEY_EVENT_RECORD keyEvent;
-		
-		if (consoleEvent.EventType==WINDOW_BUFFER_SIZE_EVENT){
-			auto s = consoleEvent.Event.WindowBufferSizeEvent.dwSize;
-			ResizeScreen(s.X,s.Y);
-			break;
-		}
+	GetEvent();
+	
+	KEY_EVENT_RECORD keyEvent;
+	
+	if (consoleEvent.EventType==WINDOW_BUFFER_SIZE_EVENT){
+		auto s = consoleEvent.Event.WindowBufferSizeEvent.dwSize;
+		ResizeScreen(s.X,s.Y);
+		return &lastEvent;
+	}
 
-		if (consoleEvent.EventType!=KEY_EVENT)
-			continue;
-		
+	if (consoleEvent.EventType==KEY_EVENT){
 		keyEvent = consoleEvent.Event.KeyEvent;
 		
 		if (keyEvent.wVirtualKeyCode==VK_SHIFT){
@@ -213,20 +207,27 @@ KeyboardEvent* WinConInterface::GetKeyboardEvent(){
 			else
 				lastEvent.key = keyEvent.uChar.AsciiChar;
 		}
-
-		lastEvent.mod = 0;
-		
-		if (shiftDown)
-			lastEvent.mod |= KeyModifier::Shift;
-		
-		if (ctrlDown)
-			lastEvent.mod |= KeyModifier::Ctrl;
-		
-		if (altDown)
-			lastEvent.mod |= KeyModifier::Alt;
 	}
-
-	LOG("After :" << lastEvent.key << ", " << lastEvent.mod);
+	
+	if (!lastEvent.key){
+		return nullptr;
+	}
+	
+	lastEvent.mod = 0;
+	
+	if (shiftDown)
+		lastEvent.mod |= KeyModifier::Shift;
+	
+	if (ctrlDown)
+		lastEvent.mod |= KeyModifier::Ctrl;
+	
+	if (altDown)
+		lastEvent.mod |= KeyModifier::Alt;
+	
+	
+	if (lastEvent.key){
+		LOG("After :" << lastEvent.key << ", " << lastEvent.mod);
+	}
 	
 	return &lastEvent;
 }
