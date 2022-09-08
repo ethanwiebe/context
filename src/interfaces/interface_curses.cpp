@@ -216,12 +216,12 @@ KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 	s32 key = getch();
 	
 	if (key==ERR||key==0){
-		if (missCount>2500)
-			std::this_thread::sleep_for(250ms);
+		if (missCount>5000)
+			std::this_thread::sleep_for(150ms);
 		else if (missCount>500)
-			std::this_thread::sleep_for(75ms);
+			std::this_thread::sleep_for(40ms);
 		else if (missCount>50)
-			std::this_thread::sleep_for(10ms);
+			std::this_thread::sleep_for(5ms);
 			
 		++missCount;
 		return nullptr;
