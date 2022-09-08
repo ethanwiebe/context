@@ -60,12 +60,11 @@ LineModeBase::LineModeBase(ContextEditor* ctx) :
 }
 
 void LineModeBase::UpdateHighlighterTask(){
-	std::scoped_lock lock{colorMutex};
-
 	syntaxHighlighter->FillColorBuffer(altColorBuffer);
-	SetColorLine();
 	
+	std::scoped_lock lock{colorMutex};
 	colorBuffer = altColorBuffer;
+	SetColorLine();
 }
 
 void LineModeBase::UpdateHighlighter(){
@@ -74,13 +73,14 @@ void LineModeBase::UpdateHighlighter(){
 
 	std::scoped_lock lock{colorMutex};
 	
-	if (!ctx->IsAsyncTaskDone(highlightTask)){
-		ctx->CancelAsyncTask(highlightTask);
-	}
 	AsyncContext a = {};
 	a.func = std::bind(&LineModeBase::UpdateHighlighterTask,this);
-	a.preDelay = 0.03f;
+	a.preDelay = 0.0f;
 	a.updateAfter = true;
+	if (!ctx->IsAsyncTaskDone(highlightTask)){
+		ctx->CancelAsyncTask(highlightTask);
+		a.preDelay = 0.03f;
+	}
 	highlightTask = ctx->StartAsyncTask(a);
 	highlighterNeedsUpdate = false;
 }

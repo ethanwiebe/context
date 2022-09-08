@@ -74,17 +74,20 @@ void ContextEditor::Loop(){
 		
 		if (quit) break;
 		
-		if (!willUpdate)
-			continue;
-		
-		TextScreen& textScreen = modes[currentMode]->GetTextScreen(
-			interface->GetWidth(),interface->GetHeight()
-		);
-		DrawStatusBar(textScreen);
-		DrawTabsBar(textScreen);
-
-		interface->RenderScreen(textScreen);
-		willUpdate = false;
+		{
+			std::scoped_lock lock{updateMutex};
+			if (!willUpdate)
+				continue;
+			
+			TextScreen& textScreen = modes[currentMode]->GetTextScreen(
+				interface->GetWidth(),interface->GetHeight()
+			);
+			DrawStatusBar(textScreen);
+			DrawTabsBar(textScreen);
+	
+			interface->RenderScreen(textScreen);
+			willUpdate = false;
+		}
 	}
 }
 
@@ -1032,32 +1035,42 @@ void ContextEditor::AsyncFinished(size_t i){
 	bool found = false;
 	(void)found;
 	
-	std::scoped_lock lock{asyncMutex};
-	
-	for (auto& a : asyncState){
-		if (a.index==i){
-			async = a;
-			found = true;
-			break;
+	{
+		std::scoped_lock lock{asyncMutex};
+		
+		for (auto& a : asyncState){
+			if (a.index==i){
+				async = a;
+				found = true;
+				break;
+			}
 		}
 	}
 	
 	assert(found);
+	{
+		std::scoped_lock lock{updateMutex};
+		if (async.updateAfter)
+			willUpdate = true;
+	}
 	
-	if (async.updateAfter&&!async.canceled)
-		willUpdate = true;
-	
-	for (auto it=asyncState.begin();it!=asyncState.end();++it){
-		if (it->index==i){
-			asyncState.erase(it);
-			break;
+	{
+		std::scoped_lock lock{asyncMutex};
+		for (auto it=asyncState.begin();it!=asyncState.end();++it){
+			if (it->index==i){
+				asyncState.erase(it);
+				break;
+			}
 		}
 	}
 }
 
 size_t ContextEditor::StartAsyncTask(const AsyncContext& async){
 	size_t i = asyncIndex++;
-	asyncState.emplace_back(i,false,async.updateAfter);
+	{
+		std::scoped_lock lock{asyncMutex};
+		asyncState.emplace_back(i,false,async.updateAfter);
+	}
 	
 	std::thread task{std::bind(WaitForAsyncTimer,this,i,async)};
 	
@@ -1066,7 +1079,7 @@ size_t ContextEditor::StartAsyncTask(const AsyncContext& async){
 	return i;
 }
 
-bool ContextEditor::IsAsyncTaskDone(size_t index) const {
+bool ContextEditor::IsAsyncTaskDone(size_t index){
 	for (const auto& async : asyncState){
 		if (async.index == index){
 			return false;

@@ -48,7 +48,7 @@ class ContextEditor {
 
 	std::function<void()> yesAction,noAction;
 	
-	std::mutex asyncMutex;
+	std::mutex asyncMutex,updateMutex;
 	size_t asyncIndex;
 	std::vector<AsyncData> asyncState;
 
@@ -103,7 +103,7 @@ public:
 	
 	// use for async tasks
 	size_t StartAsyncTask(const AsyncContext&);
-	bool IsAsyncTaskDone(size_t) const;
+	bool IsAsyncTaskDone(size_t);
 	void CancelAsyncTask(size_t);
 	
 	std::string& GetClipboard();
