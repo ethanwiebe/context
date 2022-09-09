@@ -391,12 +391,12 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		return true;
 	} else if (tokens[0].token=="find"){
 		if (tokens.size()<2){
-			modeErrorMessage = "Expected 2 arguments, got ";
-			modeErrorMessage += std::to_string(tokens.size());
+			modeErrorMessage.Set( "Expected 2 arguments, got "+
+				std::to_string(tokens.size()) );
 			return true;
 		}
 		if (tokens[1].token.empty()){
-			modeErrorMessage = "'' is not a valid search string!";
+			modeErrorMessage.Set("'' is not a valid search string!");
 			return true;
 		}
 		
@@ -404,7 +404,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		
 		FindTextInBuffer(fixedToken);
 		if (!matches.size()){
-			modeErrorMessage = "No matches for '"+findText+"'";
+			modeErrorMessage.Set("No matches for '"+findText+"'");
 		} else {
 			finding = true;
 			CursorToNextMatch();
@@ -412,12 +412,12 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		return true;
 	} else if (tokens[0].token=="replace"){
 		if (tokens.size()<2){
-			modeErrorMessage = "Expected at least 2 arguments, got ";
-			modeErrorMessage += std::to_string(tokens.size());
+			modeErrorMessage.Set( "Expected at least 2 arguments, got "+
+				std::to_string(tokens.size()) );
 			return true;
 		}
 		if (tokens[1].token.empty()){
-			modeErrorMessage = "'' is not a valid search string!";
+			modeErrorMessage.Set("'' is not a valid search string!");
 			return true;
 		}
 		std::string find = RemoveEscapes(tokens[1].token);
@@ -433,16 +433,12 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		
 		size_t replaceCount = ReplaceAll(*textBuffer,find,replace,diffs);
 		if (replaceCount==0){
-			modeErrorMessage = "No matches for '";
-			modeErrorMessage += find;
-			modeErrorMessage += "'";
+			modeErrorMessage.Set("No matches for '"+find+"'");
 		} else {
 			PushLineReplacementAction(std::move(diffs));
-			modeInfoMessage = "Replaced ";
-			modeInfoMessage += std::to_string(replaceCount);
-			modeInfoMessage += " occurences of '";
-			modeInfoMessage += find;
-			modeInfoMessage += "'";
+			
+			modeInfoMessage.Set("Replaced "+std::to_string(replaceCount)+
+				" occurences of '"+find+"'");
 			SetModified();
 			highlighterNeedsUpdate = true;
 		}
@@ -485,7 +481,7 @@ bool LineModeBase::SaveAction(const OSInterface& os){
 	}
 
 	modified = false;
-	modeInfoMessage = "Saved successfully.";
+	modeInfoMessage.Set("Saved successfully.");
 
 	return true;
 }

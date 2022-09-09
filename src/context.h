@@ -5,6 +5,7 @@
 #include "keybind.h"
 #include "tokenizer.h"
 #include "async.h"
+#include "message.h"
 
 #include "modes/mode.h"
 #include "interfaces/os.h"
@@ -36,13 +37,14 @@ class ContextEditor {
 	std::string clipboardText;
 	
 	bool willUpdate;
+	bool silentUpdate;
 
 	bool quit;
 	EntryMode entryMode;
 	std::string entryString;
 	std::string yesNoMessage;
-	std::string errorMessage;
-	std::string infoMessage;
+	Message errorMessage;
+	Message infoMessage;
 	
 	ssize_t entryPos;
 

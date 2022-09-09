@@ -3,6 +3,7 @@
 #include "core.h"
 
 #include "../key.h"
+#include "../message.h"
 #include "../textscreen.h"
 #include "../tokenizer.h"
 #include "../interfaces/os.h"
@@ -16,18 +17,18 @@ protected:
 	ContextEditor* ctx;
 
 	s32 screenWidth,screenHeight;
-	std::string modeErrorMessage,modeInfoMessage;
+	Message modeErrorMessage,modeInfoMessage;
 
 public:
 	ModeBase(ContextEditor* c) : ctx(c){}
 	ModeBase(const ModeBase&) = delete;
 	ModeBase& operator=(const ModeBase&) = delete;
 
-	std::string& GetErrorMessage(){
+	Message& GetErrorMessage(){
 		return modeErrorMessage;
 	}
 	
-	std::string& GetInfoMessage(){
+	Message& GetInfoMessage(){
 		return modeInfoMessage;
 	}
 

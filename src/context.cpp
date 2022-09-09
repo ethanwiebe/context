@@ -23,10 +23,12 @@ ContextEditor::ContextEditor(const std::string& file){
 	willUpdate = true;
 
 	quit = false;
+	silentUpdate = false;
 	entryMode = EntryMode::None;
 	entryPos = 0;
 	
-	errorMessage = {};
+	errorMessage = {"",false};
+	infoMessage = {"",false};
 	
 	helpBuffer = MakeRef<TextBuffer>();
 
@@ -37,7 +39,7 @@ ContextEditor::ContextEditor(const std::string& file){
 	if (!file.empty()){
 		if (osInterface->PathExists(file)){
 			OpenMode(file);
-			if (!errorMessage.empty())
+			if (!errorMessage.Empty())
 				NewMode();
 		} else {
 			NewMode();
@@ -79,6 +81,9 @@ void ContextEditor::Loop(){
 			if (!willUpdate)
 				continue;
 			
+			
+			silentUpdate = (event==nullptr)||(event->key==0);
+			
 			TextScreen& textScreen = modes[currentMode]->GetTextScreen(
 				interface->GetWidth(),interface->GetHeight()
 			);
@@ -104,18 +109,22 @@ void ContextEditor::RunFile(std::string_view path,bool silent){
 					
 				entryString = line;
 				SubmitCommand();
-				if (!errorMessage.empty()){
-					errorMessage = "Error at line "+std::to_string(l)
-							+": "+errorMessage;
+				if (!errorMessage.Empty()){
+					errorMessage.Set("Error at line "+std::to_string(l)+
+						": "+errorMessage.msg);
 					break;
 				}
 				++l;
 			}
 		}
 	} else {
-		if (silent) errorMessage.clear();
+		if (silent){
+			errorMessage.Clear();
+			errorMessage.msg.clear();
+		}
 	}
-	infoMessage.clear();
+	infoMessage.Clear();
+	infoMessage.msg.clear();
 }
 
 void ContextEditor::MoveEntryPosLeft(size_t count){
@@ -284,9 +293,7 @@ void ContextEditor::SubmitCommand(){
 	
 	if (!ProcessCommand(tokens)){
 		if (!modes[currentMode]->ProcessCommand(tokens)){
-			errorMessage = "Unrecognized command '";
-			errorMessage += tokens[0].token;
-			errorMessage += "'";
+			errorMessage.Set("Unrecognized command '"+std::string(tokens[0].token)+"'");
 		}
 	}
 }
@@ -323,10 +330,8 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	
 	auto count = GetReqArgCount(*cmd);
 	if (count>tokens.size()-1){
-		errorMessage = "Expected ";
-		errorMessage += std::to_string(count);
-		errorMessage += " args, got ";
-		errorMessage += std::to_string(tokens.size()-1);
+		errorMessage.Set( "Expected "+std::to_string(count)+" args, got "+
+			std::to_string(tokens.size()-1) );
 		return true;
 	}
 	
@@ -490,9 +495,7 @@ inline bool ParseKeybind(std::string_view bindstr,KeyEnum& key,KeyModifier& mod)
 void ContextEditor::SetConfigBind(std::string_view actionName,const TokenVector& tokens){
 	Action action = GetActionFromName(actionName);
 	if (action==Action::None){
-		errorMessage = "Unrecognized action: '";
-		errorMessage += actionName;
-		errorMessage += "'";
+		errorMessage.Set("Unrecognized action: '"+std::string(actionName)+"'");
 		return;
 	}
 	
@@ -510,9 +513,7 @@ void ContextEditor::SetConfigBind(std::string_view actionName,const TokenVector&
 			}
 			ADD_BIND(action,key,mod);
 		} else {
-			errorMessage = "Could not parse keybind '";
-			errorMessage += bindIt->token;
-			errorMessage += "'";
+			errorMessage.Set("Could not parse keybind '"+std::string(bindIt->token)+"'");
 			break;
 		}
 		
@@ -543,9 +544,7 @@ void ContextEditor::SetStyleOpts(std::string_view styleName,
 		std::string_view opts){
 	std::string copied = std::string(styleName);
 	if (!styleNameMap.contains(copied)){
-		errorMessage = "Unrecognized style name '";
-		errorMessage += copied;
-		errorMessage += "'!";
+		errorMessage.Set("Unrecognized style name '"+copied+"'!");
 		return;
 	}
 	
@@ -553,16 +552,12 @@ void ContextEditor::SetStyleOpts(std::string_view styleName,
 	
 	Color fg,bg;
 	if (!ParseColor(fgStr,fg)){
-		errorMessage = "Cannot convert '";
-		errorMessage += fgStr;
-		errorMessage += "' into a color!";
+		errorMessage.Set("Cannot convert '"+std::string(fgStr)+"' into a color!");
 		return;
 	}
 	
 	if (!ParseColor(bgStr,bg)){
-		errorMessage = "Cannot convert '";
-		errorMessage += bgStr;
-		errorMessage += "' into a color!";
+		errorMessage.Set("Cannot convert '"+std::string(bgStr)+"' into a color!");
 		return;
 	}
 	
@@ -575,9 +570,9 @@ void ContextEditor::SetStyleOpts(std::string_view styleName,
 			else if (c=='u'||c=='U')
 				sf |= StyleFlag::Underline;
 			else {
-				errorMessage = "Unrecognized style option '";
-				errorMessage += c;
-				errorMessage += "'!";
+				std::string cs = {};
+				cs += c;
+				errorMessage.Set("Unrecognized style option '"+cs+"'!");
 				return;
 			}
 		}
@@ -613,12 +608,9 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	std::string modeStatusBar = {};
 	modeStatusBar += modes[currentMode]->GetStatusBarText();
 
-	for (s32 x=0;x<w;++x){
+	for (s32 x=0;x<w;++x)
 		ts.SetAt(x,h-1,TextCell(' ',barStyle));
-	}
-
-	std::string& modeError = modes[currentMode]->GetErrorMessage();
-	std::string& modeInfo = modes[currentMode]->GetInfoMessage();
+	
 	if (entryMode==EntryMode::Command){
 		ts.RenderString(0,h-1,entryPrefix + entryString,barStyle);
 		auto x = entryPrefix.size()+entryPos;
@@ -628,29 +620,41 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 	} else if (entryMode==EntryMode::YesNo){
 		ts.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
-		if (!modeStatusBar.empty())
-			ts.RenderString(0,h-1,modeStatusBar,barStyle);
-
-		if (!errorMessage.empty()){
-			ts.RenderString(0,h-1,errorMessage,errorStyle);
-			errorMessage.clear();
-		} else if (!modeError.empty()){
+		Message& modeError = modes[currentMode]->GetErrorMessage();
+		Message& modeInfo = modes[currentMode]->GetInfoMessage();
+		if (!silentUpdate){
+			if (!errorMessage.Empty())
+				errorMessage.Clear();
+			else if (!modeError.Empty())
+				modeError.Clear();
+			else if (!infoMessage.Empty())
+				infoMessage.Clear();
+			else if (!modeInfo.Empty())
+				modeInfo.Clear();
+		}
+	
+		if (!errorMessage.Empty()){
+			ts.RenderString(0,h-1,errorMessage.msg,errorStyle);
+			errorMessage.Mark();
+		} else if (!modeError.Empty()){
 			std::string formattedError = {};
 			formattedError += modes[currentMode]->GetModeName();
 			formattedError += ": ";
-			formattedError += modeError;
+			formattedError += modeError.msg;
 			ts.RenderString(0,h-1,formattedError,errorStyle);
-			modeError.clear();
-		} else if (!infoMessage.empty()){
-			ts.RenderString(0,h-1,infoMessage,barStyle);
-			infoMessage.clear();
-		} else if (!modeInfo.empty()){
+			modeError.Mark();
+		} else if (!infoMessage.Empty()){
+			ts.RenderString(0,h-1,infoMessage.msg,barStyle);
+			infoMessage.Mark();
+		} else if (!modeInfo.Empty()){
 			std::string formattedInfo = {};
 			formattedInfo += modes[currentMode]->GetModeName();
 			formattedInfo += ": ";
-			formattedInfo += modeInfo;
+			formattedInfo += modeInfo.msg;
 			ts.RenderString(0,h-1,formattedInfo,barStyle);
-			modeInfo.clear();
+			modeInfo.Mark();
+		} else if (!modeStatusBar.empty()){
+			ts.RenderString(0,h-1,modeStatusBar,barStyle);
 		}
 
 		ts.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);
@@ -731,9 +735,9 @@ void ContextEditor::DrawTabsBar(TextScreen& ts){
 	}
 	if (modes.size()>tabCount){
 		if (pageNum!=pageCount-1)
-			ts.RenderString(ts.GetWidth()-2,0,"-",tabBarStyle);
+			ts.RenderString(ts.GetWidth()-2,0,"+",tabBarStyle);
 		if (pageNum!=0)
-			ts.RenderString(0,0,"-",tabBarStyle);
+			ts.RenderString(0,0,"+",tabBarStyle);
 	}
 }
 
@@ -775,9 +779,9 @@ void ContextEditor::SaveMode(size_t index){
 	if (modes[index]->Modified()){
 		if (!modes[index]->SaveAction(*osInterface)){
 			if (modes[index]->Readonly()){
-				errorMessage = "File is readonly!";
+				errorMessage.Set("File is readonly!");
 			} else {
-				errorMessage = "Could not save!";
+				errorMessage.Set("Could not save!");
 			}
 		}
 	}
@@ -789,9 +793,7 @@ void ContextEditor::SwitchMode(size_t index){
 
 bool ContextEditor::WriteFileChecks(std::string_view path){
 	if (!osInterface->FileIsWritable(path)){
-		errorMessage = "File ";
-		errorMessage += path;
-		errorMessage += " is not writable!";
+		errorMessage.Set("File "+std::string(path)+" is not writable!");
 		return false;
 	}
 
@@ -800,21 +802,15 @@ bool ContextEditor::WriteFileChecks(std::string_view path){
 
 bool ContextEditor::ReadFileChecks(std::string_view path){
 	if (!osInterface->PathExists(path)){
-		errorMessage = "File '";
-		errorMessage += path;
-		errorMessage += "' does not exist!";
+		errorMessage.Set("File '"+std::string(path)+"' does not exist!");
 		return false;
 	}
 	if (!osInterface->PathIsFile(path)){
-		errorMessage = "Path '";
-		errorMessage += path;
-		errorMessage += "' is not a file!";
+		errorMessage.Set("Path '"+std::string(path)+"' is not a file!");
 		return false;
 	}
 	if (!osInterface->FileIsReadable(path)){
-		errorMessage = "File '";
-		errorMessage += path;
-		errorMessage += "' is not readable!";
+		errorMessage.Set("File '"+std::string(path)+"' is not readable!");
 		return false;
 	}
 	
@@ -858,9 +854,7 @@ void ContextEditor::OpenMode(std::string_view path){
 			++currentMode;
 		}
 	} else {
-		errorMessage = "Could not open '";
-		errorMessage += copiedPath;
-		errorMessage += "'!";
+		errorMessage.Set("Could not open '"+copiedPath+"'!");
 	}
 }
 
@@ -935,10 +929,7 @@ inline bool SetMultiMode(MultiMode& var,std::string_view val){
 
 void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 	if (!NameIsConfigVar(name)){
-		errorMessage = {};
-		errorMessage += "'";
-		errorMessage += name;
-		errorMessage += "' is not a config var!";
+		errorMessage.Set("'"+std::string(name)+"' is not a config var!");
 		return;
 	}
 	
@@ -947,50 +938,50 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 		if (n>0){
 			gConfig.tabSize = n;
 		} else {
-			errorMessage = "tabSize must be a positive integer";
+			errorMessage.Set("tabSize must be a positive integer");
 		}
 	} else if (name=="cursorMoveHeight"){
 		ssize_t n = strtol(val.data(),NULL,10);
 		if (n>=0){
 			gConfig.cursorMoveHeight = n;
 		} else {
-			errorMessage = "cursorMoveHeight must be a non-negative integer";
+			errorMessage.Set("cursorMoveHeight must be a non-negative integer");
 		}
 	} else if (name=="multiAmount"){
 		ssize_t n = strtol(val.data(),NULL,10);
 		if (n>0){
 			gConfig.multiAmount = n;
 		} else {
-			errorMessage = "multiAmount must be a positive integer";
+			errorMessage.Set("multiAmount must be a positive integer");
 		}
 	} else if (name=="style"){
 		SaveStyle();
 		gConfig.style = val;
 		if (!StyleExists(gConfig.style)){
-			infoMessage = "New style '"+gConfig.style+"' created.";
+			infoMessage.Set("New style '"+gConfig.style+"' created.");
 		}
 		LoadStyle();
 		for (size_t i=0;i<modes.size();++i)
 			modes[i]->UpdateStyle();
 	} else if (name=="displayLineNumbers"){
 		if (!SetBool(gConfig.displayLineNumbers,val)){
-			errorMessage = "displayLineNumbers must be a boolean value";
+			errorMessage.Set("displayLineNumbers must be a boolean value");
 		}
 	} else if (name=="autoIndent"){
 		if (!SetBool(gConfig.autoIndent,val)){
-			errorMessage = "autoIndent must be a boolean value";
+			errorMessage.Set("autoIndent must be a boolean value");
 		}
 	} else if (name=="cursorLock"){
 		if (!SetBool(gConfig.cursorLock,val)){
-			errorMessage = "cursorLock must be a boolean value";
+			errorMessage.Set("cursorLock must be a boolean value");
 		}
 	} else if (name=="cursorWrap"){
 		if (!SetBool(gConfig.cursorWrap,val)){
-			errorMessage = "cursorWrap must be a boolean value";
+			errorMessage.Set("cursorWrap must be a boolean value");
 		}
 	} else if (name=="smartHome"){
 		if (!SetBool(gConfig.smartHome,val)){
-			errorMessage = "smartHome must be a boolean value";
+			errorMessage.Set("smartHome must be a boolean value");
 		}
 	} else if (name=="tabMode"){
 		if (val=="tabs")
@@ -998,13 +989,13 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 		else if (val=="spaces")
 			gConfig.tabMode = TabMode::Spaces;
 		else
-			errorMessage = "tabMode must be either 'tabs' or 'spaces'";
+			errorMessage.Set("tabMode must be either 'tabs' or 'spaces'");
 	} else if (name=="moveMode"){
 		if (!SetMultiMode(gConfig.moveMode,val))
-			errorMessage = "moveMode must be one of 'multi', 'word', or 'pascal'";
+			errorMessage.Set("moveMode must be one of 'multi', 'word', or 'pascal'");
 	} else if (name=="deleteMode"){
 		if (!SetMultiMode(gConfig.deleteMode,val))
-			errorMessage = "deleteMode must be one of 'multi', 'word', or 'pascal'";
+			errorMessage.Set("deleteMode must be one of 'multi', 'word', or 'pascal'");
 	}
 }
 
@@ -1050,8 +1041,10 @@ void ContextEditor::AsyncFinished(size_t i){
 	assert(found);
 	{
 		std::scoped_lock lock{updateMutex};
-		if (async.updateAfter)
+		if (async.updateAfter){
 			willUpdate = true;
+			silentUpdate = true;
+		}
 	}
 	
 	{
