@@ -20,7 +20,7 @@ inline s32 GetTokenSize(
 			return token.end.col-token.start.col;
 		return token.end.col-token.end.line->begin();
 	} else if (token.start.line==textIt){
-		return token.end.line->end()-token.start.col;
+		return token.start.line->end()-token.start.col;
 	} else {
 		return textIt->size();
 	}
