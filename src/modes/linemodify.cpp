@@ -19,6 +19,8 @@ void LineModeBase::VisualCursorInsertLine(VisualCursor& cursor){
 			}
 		}
 	}
+	
+	SetCachedX(cursor);
 }
 
 void LineModeBase::DeleteLine(Cursor cursor){
@@ -34,6 +36,7 @@ void LineModeBase::DeleteLine(Cursor cursor){
 
 void LineModeBase::VisualCursorDeleteLine(VisualCursor& cursor){
 	Cursor cachedCursor = cursor.cursor;
+	SetCachedX(cursor);
 	if (cursor.cursor.line.index>=(s32)textBuffer->size()-1&&
 			cursor.cursor.line.index!=0)
 		--cursor.cursor.line;
@@ -41,7 +44,9 @@ void LineModeBase::VisualCursorDeleteLine(VisualCursor& cursor){
 	DeleteLine(cachedCursor);
 	
 	s32 maxLine = cursor.CurrentLineLen();
-	SetVisualCursorColumn(cursor,std::min(cursor.cachedX,maxLine));
+	cursor.cursor.column = std::min(cursor.cursor.column,maxLine);
+	SetVisualCursorColumn(cursor,cursor.cursor.column);
+	
 	ForceFinishAction();
 }
 

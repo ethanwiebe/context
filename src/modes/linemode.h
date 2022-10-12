@@ -213,8 +213,8 @@ public:
 	void VisualCursorDeleteSelection(VisualCursor&,bool=false);
 	void CopySelection();
 	void CopyLinesInSelection();
-	void IndentSelection();
-	void DedentSelection();
+	void IndentSelection(VisualCursor&);
+	void DedentSelection(VisualCursor&);
 	void DeleteLinesInSelection(VisualCursor&);
 
 	void UpdateHighlighter();

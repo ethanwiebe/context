@@ -176,10 +176,14 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	s32 lineLen,lineStart = 0;
 	s32 lineNumber;
 	u32 c;
-	Cursor startSelect = GetSelectStartPos();
-	Cursor endSelect = GetSelectEndPos();
-	bool inSelection = selecting && viewLine.index > startSelect.line.index; //TODO: handle sublines here
-	
+	Cursor startSelect = cursors.front().cursor;
+	Cursor endSelect = cursors.front().cursor;
+	bool inSelection = false;
+	if (selecting){
+		startSelect = GetSelectStartPos();
+		endSelect = GetSelectEndPos();
+		inSelection = selecting && viewLine.index > startSelect.line.index; //TODO: handle sublines here
+	}
 	s32 findCount = 0;
 	s32 findIndex = 0;
 	bool cursorFind = findNum==0;
@@ -482,6 +486,7 @@ bool LineModeBase::SaveAction(const OSInterface& os){
 		return false;
 	}
 
+	ForceFinishAction();
 	modified = false;
 	modeInfoMessage.Set("Saved successfully.");
 

@@ -20,7 +20,10 @@ void UpdateSublineUpwards(LineIndexedIterator& line,s32& subline,s32& column,s32
 void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false,s32 lineCount=0){
 	s32 lineSize;
 	while (--num>=0){
-		lineSize = GetXPosOfIndex(*line,(*line).size(),width);
+		if (line.index>=lineCount)
+			lineSize = 0;
+		else
+			lineSize = GetXPosOfIndex(*line,(*line).size(),width);
 
 		if (constrain&&line.index==lineCount-1&&subline==lineSize/width) return;
 		if (lineSize>=(subline+1)*width){
@@ -134,7 +137,7 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 	}
 
 	cursor.cursor.column = newCol;
-	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
+	SetCachedX(cursor);
 }
 
 void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
@@ -156,7 +159,7 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 	}
 
 	cursor.cursor.column = newCol;
-	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
+	SetCachedX(cursor);
 }
 
 void LineModeBase::MoveVisualCursorLeftWord(VisualCursor& cursor){
@@ -408,7 +411,7 @@ void LineModeBase::SetVisualCursorColumn(VisualCursor& cursor,s32 col){
 }
 
 void LineModeBase::SetCachedX(VisualCursor& cursor){
-	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth;
+	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
 }
 
 void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){

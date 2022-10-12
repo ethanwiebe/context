@@ -16,47 +16,55 @@ void LineModeBase::UpdateSelection(const VisualCursor& cursor){
 }
 
 Cursor LineModeBase::GetSelectStartPos() const {
-	if (selectAnchor.line.index>selectCursor.line.index)
-		return selectCursor;
+	if (selectAnchor.line.index>selectCursor.line.index){
+		Cursor copy = selectCursor;
+		MoveCursorRight(copy,1);
+		return copy;
+	}
 	if (selectAnchor.line.index<selectCursor.line.index)
 		return selectAnchor;
-	if (selectAnchor.column>selectCursor.column)
-		return selectCursor;
+	if (selectAnchor.column>selectCursor.column){
+		Cursor copy = selectCursor;
+		MoveCursorRight(copy,1);
+		return copy;
+	}
 	return selectAnchor;
 }
 
 Cursor LineModeBase::GetSelectEndPos() const {
 	if (selectAnchor.line.index>selectCursor.line.index)
 		return selectAnchor;
-	if (selectAnchor.line.index<selectCursor.line.index)
-		return selectCursor;
+	if (selectAnchor.line.index<selectCursor.line.index){
+		Cursor copy = selectCursor;
+		MoveCursorLeft(copy,1);
+		return copy;
+	}
 	if (selectAnchor.column>selectCursor.column)
 		return selectAnchor;
-	return selectCursor;
+	Cursor copy = selectCursor;
+	MoveCursorLeft(copy,1);
+	return copy;
 }
 
 void LineModeBase::VisualCursorDeleteSelection(VisualCursor& cursor,bool copy){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
 	
-	if (end.line.index==(s32)(textBuffer->size()-1)&&end.column==(s32)end.line.it->size())
-		MoveCursorLeft(end,1);
+	if (end>=start){
+		if (copy) copiedText.clear();
 	
-	if (copy) copiedText.clear();
-
-	while (end.line.index>start.line.index||end.column>start.column){
-		if (copy) copiedText.insert(copiedText.begin(),GetCharAt(end));
-		DeleteCharAt(end);
-		MoveCursorLeft(end,1);
+		while (end>=start){
+			if (copy) copiedText.insert(copiedText.begin(),GetCharAt(end));
+			DeleteCharAt(end);
+			if (end.line.index==0&&end.column==0) break;
+			MoveCursorLeft(end,1);
+		}
+		
+		cursor.cursor = start;
+		if (start.line.index<=viewLine.index)
+			viewLine = start.line; //viewLine invalidated
+		SetVisualCursorColumn(cursor,cursor.cursor.column);
 	}
-	
-	if (copy) copiedText.insert(copiedText.begin(),GetCharAt(end));
-	DeleteCharAt(end);
-
-	cursor.cursor = start;
-	if (start.line.index<=viewLine.index)
-		viewLine = start.line; //viewLine invalidated
-	SetVisualCursorColumn(cursor,cursor.cursor.column);
 	StopSelecting();
 	ForceFinishAction();
 	highlighterNeedsUpdate = true;
@@ -95,50 +103,70 @@ void LineModeBase::CopyLinesInSelection(){
 	copiedText += *end.line.it;
 }
 
-void LineModeBase::IndentSelection(){
+void LineModeBase::IndentSelection(VisualCursor& cursor){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
+	Cursor& affected = cursor.cursor;
 	
 	end.column = 0;
-	
+	size_t diff;
 	while (end.line.index>=start.line.index){
 		bool tab = textBuffer->IsTabIndented(end.line.it);
-		if (tab)
+		diff = 0;
+		if (tab){
 			InsertCharAt(end,'\t');
-		else {
-			for (ssize_t i=0;i<gConfig.tabSize;++i)
+			++diff;
+		} else {
+			for (ssize_t i=0;i<gConfig.tabSize;++i){
+				++diff;
 				InsertCharAt(end,' ');
+			}
 		}
+		if (end.line.index==selectAnchor.line.index)
+			selectAnchor.column += diff;
+		if (end.line.index==selectCursor.line.index)
+			selectCursor.column += diff;
+		if (end.line.index==affected.line.index)
+			affected.column += diff;
 		--end.line;
 	}
 	
-	selectAnchor.column = 0;
-	selectCursor.column = 0;
+	SetCachedX(cursor);
 }
 
-void LineModeBase::DedentSelection(){
+void LineModeBase::DedentSelection(VisualCursor& cursor){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
+	Cursor& affected = cursor.cursor;
 	
 	end.column = 0;
-	
+	size_t diff;
 	while (end.line.index>=start.line.index){
 		bool tab = textBuffer->IsTabIndented(end.line.it);
+		diff = 0;
 		if (tab){
-			if (GetCharAt(end)=='\t')
+			if (GetCharAt(end)=='\t'){
+				++diff;
 				DeleteCharAt(end);
+			}
 		} else {
 			for (ssize_t i=0;i<gConfig.tabSize;++i){
 				if (GetCharAt(end)!=' ') break;
 				DeleteCharAt(end);
+				++diff;
 			}
 		}
+		if (end.line.index==selectAnchor.line.index)
+			selectAnchor.column -= diff;
+		if (end.line.index==selectCursor.line.index)
+			selectCursor.column -= diff;
+		if (end.line.index==affected.line.index)
+			affected.column -= diff;
 		
 		--end.line;
 	}
 	
-	selectAnchor.column = 0;
-	selectCursor.column = 0;
+	SetCachedX(cursor);
 }
 
 void LineModeBase::DeleteLinesInSelection(VisualCursor& cursor){

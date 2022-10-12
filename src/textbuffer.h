@@ -11,6 +11,8 @@ typedef std::list<std::string> LineList;
 typedef LineList::iterator LineIterator;
 typedef std::string_view LineView;
 
+const std::string NULL_LINE = {};
+
 template<typename T>
 struct IndexedIterator {
 	T::iterator it;
@@ -75,6 +77,7 @@ struct IndexedIterator {
 	}
 
 	const auto& operator*() const {
+		if (index<0) return NULL_LINE;
 		return *it;
 	}
 	

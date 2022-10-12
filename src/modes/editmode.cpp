@@ -126,10 +126,10 @@ void EditMode::ProcessTextAction(TextAction a){
 				ctx->GetClipboard() = copiedText;
 				return;
 			case Action::Tab:
-				IndentSelection();
+				IndentSelection(cursor);
 				return;
 			case Action::Untab:
-				DedentSelection();
+				DedentSelection(cursor);
 				return;
 			case Action::DeleteLine:
 				DeleteLinesInSelection(cursor);
@@ -225,8 +225,8 @@ void EditMode::ProcessTextAction(TextAction a){
 			case Action::SelectAll:
 				selecting = true;
 				selectAnchor = MakeCursorAtBufferStart(*textBuffer);
-				selectCursor = MakeCursorAtBufferEnd(*textBuffer);
 				MoveVisualCursorToBufferEnd(cursor);
+				UpdateSelection(cursor);
 				break;
 			case Action::Copy:
 			case Action::CopyLines:
