@@ -43,6 +43,8 @@ protected:
 	std::string comment,altComment,multiLineCommentStart,multiLineCommentEnd;
 public:
 	ConfigurableSyntaxHighlighter(TextBuffer& b) : SyntaxHighlighter(b){
+		// keywords is a container of strings
+		// for the SVs in styleMap
 		keywords = {};
 		styleMap = {};
 		
@@ -69,13 +71,12 @@ public:
 		multiLineCommentEnd = end;
 	}
 
-	virtual SyntaxTokenizer* GetTokenizer() const;
+	virtual Tokenizer* GetTokenizer() const;
 	virtual TextStyle GetStyleFromTokenType(TokenType) const;
 
 	~ConfigurableSyntaxHighlighter() override;
 private:
-	bool TokenInKeywords(std::string_view,TextStyle&) const;
-	void AddColorData(ColorIterator,std::string_view,s32,TextStyle) const;
+	bool TokenInKeywords(const Token&,TextStyle&) const;
 };
 
 class CPPSyntaxHighlighter : public ConfigurableSyntaxHighlighter {
@@ -85,7 +86,7 @@ public:
 		BuildKeywords();
 	}
 
-	SyntaxTokenizer* GetTokenizer() const override;
+	Tokenizer* GetTokenizer() const override;
 };
 
 SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer&,std::string_view extension);

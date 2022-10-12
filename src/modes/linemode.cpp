@@ -380,27 +380,28 @@ std::string RemoveEscapes(std::string_view token){
 }
 
 bool LineModeBase::ProcessCommand(const TokenVector& tokens){
-	if (tokens[0].token=="goto"){
+	if (tokens[0].Matches("goto")){
 		if (tokens.size()<2) return true;
-		s32 l = strtol(tokens[1].token.data(),NULL,10);
+		s32 l = strtol(tokens[1].Stringify().data(),NULL,10);
 		s32 c = 0;
-		if (tokens.size()>=3) c = strtol(tokens[2].token.data(),NULL,10);
+		if (tokens.size()>=3) c = strtol(tokens[2].Stringify().data(),NULL,10);
 		l = std::min(std::max(l-1,0),(s32)textBuffer->size()-1);
 		c = std::max(c-1,0);
 		cursors.front().cursor = MakeCursor(l,c);
 		return true;
-	} else if (tokens[0].token=="find"){
+	} else if (tokens[0].Matches("find")){
 		if (tokens.size()<2){
 			modeErrorMessage.Set( "Expected 2 arguments, got "+
 				std::to_string(tokens.size()) );
 			return true;
 		}
-		if (tokens[1].token.empty()){
+		std::string search = tokens[1].Stringify();
+		if (search.empty()){
 			modeErrorMessage.Set("'' is not a valid search string!");
 			return true;
 		}
 		
-		std::string fixedToken = RemoveEscapes(tokens[1].token);
+		std::string fixedToken = RemoveEscapes(search);
 		
 		FindTextInBuffer(fixedToken);
 		if (!matches.size()){
@@ -410,23 +411,24 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			CursorToNextMatch();
 		}
 		return true;
-	} else if (tokens[0].token=="replace"){
+	} else if (tokens[0].Matches("replace")){
 		if (tokens.size()<2){
 			modeErrorMessage.Set( "Expected at least 2 arguments, got "+
 				std::to_string(tokens.size()) );
 			return true;
 		}
-		if (tokens[1].token.empty()){
+		std::string search = tokens[1].Stringify();
+		if (search.empty()){
 			modeErrorMessage.Set("'' is not a valid search string!");
 			return true;
 		}
-		std::string find = RemoveEscapes(tokens[1].token);
+		std::string find = RemoveEscapes(search);
 		
 		std::string replace;
 		if (tokens.size()<3)
 			replace = {};
 		else
-			replace = RemoveEscapes(tokens[2].token);
+			replace = RemoveEscapes(tokens[2].Stringify());
 		
 		
 		LineDiffInfo diffs = {};

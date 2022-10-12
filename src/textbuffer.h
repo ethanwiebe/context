@@ -86,9 +86,9 @@ struct IndexedIterator {
 typedef IndexedIterator<LineList> LineIndexedIterator;
 
 class TextBuffer {
+public:
 	LineList lines;
 	
-public:
 	TextBuffer(){}
 	TextBuffer(const char*);
 	

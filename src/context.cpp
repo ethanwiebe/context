@@ -13,7 +13,10 @@
 ContextEditor::ContextEditor(const std::string& file){
 	SetKeybinds();
 	LoadStyle();
-
+	
+	commandBuffer.lines.resize(1);
+	commandBuffer.SetLine(commandBuffer.begin(),"");
+	
 	yesAction = [](){};
 	noAction = [](){};
 
@@ -261,16 +264,39 @@ void ContextEditor::ProcessYesNoEntry(TextAction textAction){
 	}
 }
 
-void ContextEditor::AutocompleteCommand(){
-	CommandTokenizer ct(entryString);
-	TokenVector tokens = GetTokens<CommandTokenizer>(ct);
+size_t GetTokenCol(const Token& t){
+	assert(t.start.line==t.end.line);
+	return t.start.col-t.start.line->begin();
+}
+
+size_t GetTokenSize(const Token& t){
+	return t.end.col-t.start.col;
+}
+
+TokenVector ContextEditor::GetCommandTokens(){
+	commandBuffer.SetLine(commandBuffer.begin(),entryString);
+	CommandTokenizer ct;
 	
-	if ((tokens[0].token=="open"||tokens[0].token=="saveas")&&tokens.size()>1){
-		std::string sub = entryString.substr(tokens[1].col,tokens[1].token.size());
+	ct.SetBuffer(&commandBuffer);
+	
+	TokenVector tokens = {};
+	while (!ct.Done()){
+		tokens.push_back(ct.EmitToken());
+	}
+	
+	return tokens;
+}
+
+void ContextEditor::AutocompleteCommand(){
+	TokenVector tokens = GetCommandTokens();
+	
+	if ((tokens[0].Matches("open")||tokens[0].Matches("saveas"))&&tokens.size()>1){
+		std::string sub = entryString.substr(GetTokenCol(tokens[1]),
+											GetTokenSize(tokens[1]));
 		osInterface->AutocompletePath(sub);
-		entryString = entryString.substr(0,tokens[1].col) + sub +
-				entryString.substr(tokens[1].col+tokens[1].token.size());
-		entryPos = tokens[1].col+sub.size();
+		entryString = entryString.substr(0,GetTokenCol(tokens[1])) + sub +
+				entryString.substr(GetTokenCol(tokens[1])+GetTokenSize(tokens[1]));
+		entryPos = GetTokenCol(tokens[1])+sub.size();
 	}
 }
 
@@ -288,12 +314,11 @@ void ContextEditor::CancelCommand(){
 void ContextEditor::SubmitCommand(){
 	entryMode = EntryMode::None;
 	
-	CommandTokenizer ct(entryString);
-	TokenVector tokens = GetTokens<CommandTokenizer>(ct);
+	TokenVector tokens = GetCommandTokens();
 	
 	if (!ProcessCommand(tokens)){
 		if (!modes[currentMode]->ProcessCommand(tokens)){
-			errorMessage.Set("Unrecognized command '"+std::string(tokens[0].token)+"'");
+			errorMessage.Set("Unrecognized command '"+tokens[0].Stringify()+"'");
 		}
 	}
 }
@@ -301,7 +326,7 @@ void ContextEditor::SubmitCommand(){
 #ifndef NDEBUG
 inline void LogTokens(TokenVector tokens){
 	for (const auto& token : tokens){
-		LOG((s32)token.type << ":'" << token.token << "' @" << token.col << ",");
+		LOG((s32)token.type << ":'" << token.Stringify() << ",");
 	}
 }
 #endif
@@ -324,7 +349,7 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 #endif
 	
 	const Command* cmd;
-	if (!GetCommandFromName(tokens[0].token,&cmd)){
+	if (!GetCommandFromName(tokens[0].Stringify(),&cmd)){
 		return false;
 	}
 	
@@ -335,39 +360,39 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		return true;
 	}
 	
-	if (tokens[0].token=="open"){
-		std::string_view path = tokens[1].token;
+	if (tokens[0].Matches("open")){
+		std::string path = tokens[1].Stringify();
 		std::string parsedPath = ParsePath(path,*osInterface);
 		OpenMode(parsedPath);
 		return true;
-	} else if (tokens[0].token=="saveas"){
-		std::string_view path = tokens[1].token;
+	} else if (tokens[0].Matches("saveas")){
+		std::string path = tokens[1].Stringify();
 		std::string parsedPath = ParsePath(path,*osInterface);
 		SaveAsMode(parsedPath,currentMode);
 		return true;
-	} else if (tokens[0].token=="set"){
-		std::string_view varName = tokens[1].token;
-		std::string_view val = tokens[2].token;
+	} else if (tokens[0].Matches("set")){
+		std::string varName = tokens[1].Stringify();
+		std::string val = tokens[2].Stringify();
 		SetConfigVar(varName,val);
 		return true;
-	} else if (tokens[0].token=="bind"){
-		std::string_view actionName = tokens[1].token;
+	} else if (tokens[0].Matches("bind")){
+		std::string actionName = tokens[1].Stringify();
 		SetConfigBind(actionName,tokens);
 		return true;
-	} else if (tokens[0].token=="style"){
-		std::string_view styleName = tokens[1].token;
-		std::string_view fg = tokens[2].token;
-		std::string_view bg = tokens[3].token;
-		std::string_view opts = {};
+	} else if (tokens[0].Matches("style")){
+		std::string styleName = tokens[1].Stringify();
+		std::string fg = tokens[2].Stringify();
+		std::string bg = tokens[3].Stringify();
+		std::string opts = {};
 		if (tokens.size()>4)
-			opts = tokens[4].token;
+			opts = tokens[4].Stringify();
 		SetStyleOpts(styleName,fg,bg,opts);
 		for (size_t i=0;i<modes.size();++i){
 			modes[i]->UpdateStyle();
 		}
 		return true;
-	} else if (tokens[0].token=="source"){
-		std::string_view path = tokens[1].token;
+	} else if (tokens[0].Matches("source")){
+		std::string path = tokens[1].Stringify();
 		std::string parsedPath = ParsePath(path,*osInterface);
 		RunFile(parsedPath);
 		return true;
@@ -468,6 +493,14 @@ inline KeyEnum ParseKey(std::string_view& bindstr){
 	return KeyEnum::None;
 }
 
+inline void SkipWhitespace(std::string_view& str,std::string_view::iterator pos){
+	while (pos!=str.end()&&(*pos==' '||*pos=='\n'||*pos=='\t')){
+		++pos;
+	}
+	
+	str = {pos,str.end()};
+}
+
 inline bool ParseKeybind(std::string_view bindstr,KeyEnum& key,KeyModifier& mod){
 	std::string_view::iterator pos;
 	mod = KeyModifier::None;
@@ -506,14 +539,14 @@ void ContextEditor::SetConfigBind(std::string_view actionName,const TokenVector&
 	KeyEnum key;
 	KeyModifier mod;
 	while (bindIt!=tokens.end()){
-		if (ParseKeybind(bindIt->token,key,mod)){
+		if (ParseKeybind(bindIt->Stringify(),key,mod)){
 			if (!cleared){
 				cleared = true;
 				gKeyBindings[action].clear();
 			}
 			ADD_BIND(action,key,mod);
 		} else {
-			errorMessage.Set("Could not parse keybind '"+std::string(bindIt->token)+"'");
+			errorMessage.Set("Could not parse keybind '"+bindIt->Stringify()+"'");
 			break;
 		}
 		

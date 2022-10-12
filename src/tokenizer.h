@@ -2,9 +2,11 @@
 
 #include "core.h"
 
-#include <vector>
+#include "textbuffer.h"
+
+#include <string>
 #include <string_view>
-#include <assert.h>
+#include <vector>
 
 enum class TokenType : u8 {
 	Name,
@@ -12,140 +14,210 @@ enum class TokenType : u8 {
 	String,
 	Comment,
 	SpecialChar,
-	Directive
+	Directive,
+	EndOfFile
+};
+
+struct TokenPos {
+	LineList::iterator line;
+	std::string::iterator col;
 };
 
 struct Token {
 	TokenType type;
-	s16 col;
-	std::string_view token;
+	TokenPos start,end;
+	
+	inline bool Matches(const std::string_view& s) const {
+		auto lineCopy = start.line;
+		auto colCopy = start.col;
+		auto sIt = s.begin();
+		while (lineCopy!=end.line||colCopy!=end.col){
+			if (colCopy==lineCopy->end()){
+				if (*sIt!='\n') return false;
+			} else {
+				if (*colCopy!=*sIt) return false;
+			}
+			
+			if (colCopy==lineCopy->end()){
+				++lineCopy;
+				colCopy = lineCopy->begin();
+			} else {
+				++colCopy;
+			}
+			++sIt;
+		}
+		return sIt==s.end();
+	}
+	
+	inline std::string Stringify() const {
+		std::string out = {};
+		
+		auto lineCopy = start.line;
+		auto colCopy = start.col;
+		while (lineCopy!=end.line||colCopy!=end.col){
+			if (colCopy==lineCopy->end()){
+				out += '\n';
+			} else {
+				out += *colCopy;
+			}
+			
+			if (colCopy==lineCopy->end()){
+				++lineCopy;
+				colCopy = lineCopy->begin();
+			} else {
+				++colCopy;
+			}
+		}
+		
+		return out;
+	}
 };
 
 typedef std::vector<Token> TokenVector;
 
-void ClipString(std::string_view&,std::string_view::iterator&);
-void SkipWhitespace(std::string_view&,std::string_view::iterator&);
-
-template <typename Tokenizer>
-TokenVector GetTokens(Tokenizer& t){
-	TokenVector tv;
-	while (t.TokensLeft()){
-		tv.push_back(t.EmitToken());
+struct Tokenizer {
+	TextBuffer* buffer;
+	LineList::iterator bufferPos;
+	std::string::iterator linePos;
+	u8 lastChar;
+	u8 currentChar;
+	
+	void SkipWhitespace();
+	void TokenizeSingleQuoteString();
+	void TokenizeDoubleQuoteString();
+	void TokenizeNumber();
+	void TokenizeHexNumber();
+	void TokenizeSyntaxName();
+	
+	inline void SetBuffer(TextBuffer* buf){
+		buffer = buf;
+		bufferPos = buffer->begin();
+		linePos = bufferPos->begin();
+		lastChar = '\n';
+		if (linePos!=bufferPos->end())
+			currentChar = *linePos;
+		else
+			currentChar = '\n';
+			
+		PostSetBuffer();
 	}
 	
-	return tv;
-}
-
-class TokenizerBase {
-public:
-	std::string_view str;
-	std::string_view::iterator pos;
-	std::string_view::iterator begin;
-
-	TokenizerBase(std::string_view sv) : str(sv){
-		pos = str.begin();
-		begin = str.begin();
+	virtual void PostSetBuffer(){
+		SkipWhitespace();
 	}
-
-	inline void Reset(std::string_view newStr){
-		str = newStr;
-		begin = str.begin();
-		pos = str.begin();
+	
+	inline TokenPos GetPos() const {
+		return {bufferPos,linePos};
 	}
-
-	inline bool TokensLeft(){
-		return pos != str.end();
+	
+	inline bool Done() const {
+		return bufferPos==buffer->end();
 	}
-
-	~TokenizerBase() = default;
-};
-
-class CommandTokenizer : public TokenizerBase {
-public:
-	CommandTokenizer(std::string_view sv) : TokenizerBase(sv){
-		SkipWhitespace(str,pos);
-		if (pos!=str.end()&&*pos=='#'){
-			pos = str.end();
-			str = {pos,pos};
+	
+	inline u8 GetCharAtPos() const {
+		if (linePos!=bufferPos->end())
+			return *linePos;
+		else
+			return '\n';
+	}
+	
+	inline void NextChar(){
+		lastChar = currentChar;
+		if (linePos==bufferPos->end()){
+			++bufferPos;
+			if (bufferPos==buffer->end()) return;
+			linePos = bufferPos->begin();
+		} else {
+			++linePos;
 		}
-	}
-
-	Token EmitToken();
-};
-
-class SyntaxTokenizer : public TokenizerBase {
-protected:
-	bool unfinishedToken;
-	u8 unfinishedStringType;
-	TokenType unfinishedTokenType;
-
-	std::string strDelim1,strDelim2;
-	std::string comment,altComment,multiLineCommentStart,multiLineCommentEnd;
-	char strEscape;
-
-	virtual void ChooseToken(Token&,char,char);
-	void SetUnfinishedToken(TokenType,u8=0);
-public:
-	SyntaxTokenizer(std::string_view sv) : TokenizerBase(sv){
-		SkipWhitespace(str,pos);
-		strDelim1 = "'";
-		strDelim2 = "\"";
-		strEscape = '\\';
-		comment = "//";
-		altComment = "";
-		multiLineCommentStart = "/*";
-		multiLineCommentEnd = "*/";
-		unfinishedToken = false;
-	}
-
-	inline void SetComment(const std::string& s){
-		comment = s;
+		
+		currentChar = GetCharAtPos();
 	}
 	
-	inline void SetAltComment(const std::string& s){
-		altComment = s;
-	}
-
-	inline void SetMultiLineCommentStart(const std::string& s){
-		multiLineCommentStart = s;
-	}
-
-	inline void SetMultiLineCommentEnd(const std::string& s){
-		multiLineCommentEnd = s;
-	}
-
-	Token EmitToken();
-};
-
-class CPPTokenizer : public SyntaxTokenizer {
-
-protected:
-	void ChooseToken(Token&,char,char);
-public:
-	CPPTokenizer(std::string_view sv) : SyntaxTokenizer(sv){}
-};
-
-template <typename Tokenizer>
-class TokenInterface {
-	Tokenizer& tokenizer;
-	TokenVector tokens;
-public:
-	TokenInterface(Tokenizer& t) : tokenizer(t){}
-
-	void Reset(std::string_view sv){
-		tokenizer.Reset(sv);
-		tokens = GetTokens<Tokenizer>(tokenizer);
+	inline void SafeNextChar(){
+		if (!Done())
+			NextChar();
 	}
 	
-	inline TokenVector::const_iterator begin() const noexcept {
-		return tokens.cbegin();
+	inline u8 PeekNextChar(){
+		auto cachedLine = bufferPos;
+		auto cachedCol = linePos;
+		auto cachedPrevChar = lastChar;
+		auto cachedChar = currentChar;
+		
+		NextChar();
+		u8 newChar = currentChar;
+		
+		bufferPos = cachedLine;
+		linePos = cachedCol;
+		lastChar = cachedPrevChar;
+		currentChar = cachedChar;
+		
+		return newChar;
+	}
+	
+	inline bool PeekMatch(const std::string& s){
+		if (s.empty()) return false;
+		
+		if (currentChar!=s[0])
+			return false;
+			
+		if (s.size()==1) return true;
+	
+		auto cachedLine = bufferPos;
+		auto cachedCol = linePos;
+		auto cachedPrevChar = lastChar;
+		auto cachedChar = currentChar;
+		
+		bool match = true;
+		for (const auto c : s){
+			if (c!=currentChar){
+				match = false;
+				break;
+			}
+			NextChar();
+		}
+		
+		bufferPos = cachedLine;
+		linePos = cachedCol;
+		lastChar = cachedPrevChar;
+		currentChar = cachedChar;
+		
+		return match;
+	}
+	
+	virtual Token EmitToken() = 0;
+};
+
+struct CommandTokenizer : public Tokenizer {
+	void SkipWhitespaceAndComment();
+
+	void PostSetBuffer() override;
+	Token EmitToken() override;
+};
+
+struct SyntaxTokenizer : public Tokenizer {
+	std::string comment = {},altComment = {},
+		multiCommentStart = {},multiCommentEnd = {};
+
+	constexpr void SetComment(const std::string& str){
+		comment = str;
+	}
+	
+	constexpr void SetAltComment(const std::string& str){
+		altComment = str;
+	}
+	
+	constexpr void SetMultiLineComment(const std::string& start,const std::string& end){
+		multiCommentStart = start;
+		multiCommentEnd = end;
 	}
 
-	inline TokenVector::const_iterator end() const noexcept {
-		return tokens.cend();
-	}
+	Token EmitToken() override;
+};
 
-	inline size_t size() const noexcept {
-		return tokens.size();
-	}
+struct CPPTokenizer : public Tokenizer {
+	void TokenizeCPPNumber();
+
+	Token EmitToken() override;
 };

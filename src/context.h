@@ -41,6 +41,7 @@ class ContextEditor {
 
 	bool quit;
 	EntryMode entryMode;
+	TextBuffer commandBuffer;
 	std::string entryString;
 	std::string yesNoMessage;
 	Message errorMessage;
@@ -62,6 +63,7 @@ class ContextEditor {
 	void MoveEntryPosLeft(size_t);
 	void MoveEntryPosRight(size_t);
 	
+	TokenVector GetCommandTokens();
 	void CancelCommand();
 	void SubmitCommand();
 	void AutocompleteCommand();

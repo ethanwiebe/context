@@ -2,7 +2,44 @@
 
 typedef IndexedIterator<std::string> CharIndexedIterator;
 
-void ConfigurableSyntaxHighlighter::AddKeywords(const std::vector<std::string>& kws,TextStyle* style){
+inline s32 GetTokenStart(
+		LineList::iterator textIt,
+		const Token& token
+	){
+	if (token.start.line==textIt)
+		return token.start.col-token.start.line->begin();
+	return 0;
+}
+
+inline s32 GetTokenSize(
+		LineList::iterator textIt,
+		const Token& token
+	){
+	if (token.end.line==textIt){
+		if (token.start.line==token.end.line)
+			return token.end.col-token.start.col;
+		return token.end.col-token.end.line->begin();
+	} else if (token.start.line==textIt){
+		return token.end.line->end()-token.start.col;
+	} else {
+		return textIt->size();
+	}
+}		
+
+inline void AddColorData(
+		ColorIterator it,
+		LineList::iterator textIt,
+		const Token& token,
+		const TextStyle& style
+	){
+	
+	it->emplace_back(GetTokenStart(textIt,token),GetTokenSize(textIt,token),style);
+}
+
+void ConfigurableSyntaxHighlighter::AddKeywords(
+		const std::vector<std::string>& kws,
+		TextStyle* style
+	){
 	for (auto keyword : kws){
 		keywords.push_back(keyword);
 		styleMap[keywords.back()] = style;
@@ -30,58 +67,67 @@ TextStyle ConfigurableSyntaxHighlighter::GetStyleFromTokenType(TokenType type) c
 	return textStyle;
 }
 
-SyntaxTokenizer* ConfigurableSyntaxHighlighter::GetTokenizer() const {
-	return new SyntaxTokenizer("");
+Tokenizer* ConfigurableSyntaxHighlighter::GetTokenizer() const {
+	auto t = new SyntaxTokenizer();
+	t->SetComment(comment);
+	t->SetAltComment(altComment);
+	t->SetMultiLineComment(multiLineCommentStart,multiLineCommentEnd);
+	return t;
 }
 
 void ConfigurableSyntaxHighlighter::FillColorBuffer(ColorBuffer& c){
 	c.resize(buffer.size());
 	
-	Handle<SyntaxTokenizer> tokenizer = Handle<SyntaxTokenizer>(GetTokenizer());
-	TokenInterface tokenInterface{*tokenizer};
-
-	tokenizer->SetComment(comment);
-	tokenizer->SetAltComment(altComment);
-	tokenizer->SetMultiLineCommentStart(multiLineCommentStart);
-	tokenizer->SetMultiLineCommentEnd(multiLineCommentEnd);
+	Handle<Tokenizer> tokenizer = Handle<Tokenizer>(GetTokenizer());
+	tokenizer->SetBuffer(&buffer);
 
 	auto colorIt = c.begin();
-	for (auto& line : buffer){
-		tokenInterface.Reset(line);
-		colorIt->clear();
-		colorIt->reserve(4);
-		std::string_view prevToken = {};
-
-		for (Token token : tokenInterface){
-			auto index = (token.token.data()-line.data());
-			if (token.type==TokenType::Name){
-				TextStyle style;
-				if (prevToken!="."&&TokenInKeywords(token.token,style))
-					AddColorData(colorIt,token.token,index,style);
-			} else {
-				AddColorData(colorIt,token.token,index,GetStyleFromTokenType(token.type));
-			}
-			prevToken = token.token;
+	colorIt->clear();
+	auto textIt = buffer.begin();
+	
+	Token currToken,prevToken;
+	prevToken = {TokenType::SpecialChar,{textIt,textIt->begin()},{textIt,textIt->begin()+1}};
+	
+	while (!tokenizer->Done()){
+		currToken = tokenizer->EmitToken();
+		
+		while (currToken.start.line!=textIt){
+			++textIt;
+			++colorIt;
+			colorIt->clear();
 		}
-		++colorIt;
+		
+		if (currToken.type==TokenType::Name||currToken.type==TokenType::SpecialChar){
+			// name highlights only span 1 line
+			TextStyle style;
+			if (!prevToken.Matches(".")&&TokenInKeywords(currToken,style))
+				AddColorData(colorIt,textIt,currToken,style);
+		} else {
+			TextStyle tStyle = GetStyleFromTokenType(currToken.type);
+			while (textIt!=currToken.end.line){
+				AddColorData(colorIt,textIt,currToken,tStyle);
+				++textIt;
+				++colorIt;
+				colorIt->clear();
+			}
+			AddColorData(colorIt,textIt,currToken,tStyle);
+		}
 	}
 }
 
-bool ConfigurableSyntaxHighlighter::TokenInKeywords(std::string_view token,TextStyle& style) const {
-	if (styleMap.contains(token)){
-		style = *styleMap.at(token);
-		return true;
+bool ConfigurableSyntaxHighlighter::TokenInKeywords(const Token& token,TextStyle& style) const {
+	for (const auto& [k,v] : styleMap){
+		if (token.Matches(k)){
+			style = *v;
+			return true;
+		}
 	}
 
 	return false;
 }
 
-void ConfigurableSyntaxHighlighter::AddColorData(ColorIterator it,std::string_view token,s32 index,TextStyle style) const {
-	it->emplace_back(index,token.size(),style);
-}
-
-SyntaxTokenizer* CPPSyntaxHighlighter::GetTokenizer() const {
-	return new CPPTokenizer("");
+Tokenizer* CPPSyntaxHighlighter::GetTokenizer() const {
+	return new CPPTokenizer();
 }
 
 void CPPSyntaxHighlighter::BuildKeywords(){
@@ -119,7 +165,8 @@ static std::vector<std::string> pythonFuncs = {"range","len","print","repr","ord
 	"__iter__","__getitem__","__setitem__","__reversed__","__format__","__doc__","__delitem__","__contains__",
 	"__class__","__len__"};
 static std::vector<std::string> pythonTypes = {"int","float","bool","object","str","tuple",
-	"list","map","set","dict","zip","enumerate","type","Exception","TypeError","ValueError","NotImplementedError"};
+	"list","map","set","dict","zip","enumerate","type","Exception","TypeError","ValueError",
+	"NotImplementedError","bytes","bytearray"};
 	
 static std::vector<std::string> glslKeywords = {"layout","in","out","inout","flat","uniform","if","else","for","while",
 	"do","switch","case","discard","break","continue","return","struct"};
@@ -139,6 +186,10 @@ static std::vector<std::string> glslTypes = {"vec3","vec2","vec4","uvec3","uvec2
 	"usamplerCubeArray","samplerBuffer","isamplerBuffer","usamplerBuffer","sampler2DMS","isampler2DMS","usampler2DMS","sampler2DMSArray",
 	"isampler2DMSArray","usampler2DMSArray","sampler1DShadow","sampler2DShadow","samplerCubeShadow","sampler2DRectShadow","sampler1DArrayShadow",
 	"sampler2DArrayShadow","samplerCubeArrayShadow"};
+static std::vector<std::string> terseKeywords = {"def","axiom","theorem","lemma","template","import",
+	"alias","let","module"};
+static std::vector<std::string> terseDefs = {"true","false"};
+static std::vector<std::string> terseFuncs = {"&"};
 
 SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::string_view ext){
 	if (ext.empty())
@@ -163,8 +214,16 @@ SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::str
 		sh->SetAltComment("#");
 		sh->SetMultiLineComment("/*","*/");
 		return sh;
+	} else if (ext=="trs"||ext=="thm"||ext=="axm"){
+		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);
+		sh->AddKeywords(terseKeywords,&statementStyle);
+		sh->AddKeywords(terseDefs,&typeStyle);
+		sh->AddKeywords(terseFuncs,&funcStyle);
+		sh->SetComment("//");
+		sh->SetAltComment("#");
+		sh->SetMultiLineComment("/*","*/");
+		return sh;
 	}
-	
 
 	return nullptr;
 }
