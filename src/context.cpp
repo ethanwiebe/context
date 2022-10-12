@@ -64,6 +64,7 @@ void ContextEditor::Loop(){
 	TextAction textAction;
 	while (!quit){
 		if ((event = interface->GetKeyboardEvent())){
+			debugEvent = event;
 			willUpdate = true;
 			textAction = GetTextActionFromKey((KeyEnum)event->key,(KeyModifier)event->mod);
 			

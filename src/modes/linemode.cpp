@@ -29,6 +29,23 @@ s32 numWidth(s32 i){
 	return c;
 }
 
+std::string GetEventString(KeyboardEvent e){
+	std::string s = {};
+	
+	if (e.mod & KeyModifier::Shift){
+		s += "S-";
+	}
+	if (e.mod & KeyModifier::Ctrl){
+		s += "C-";
+	}
+	if (e.mod & KeyModifier::Alt){
+		s += "M-";
+	}
+	s += (char)e.key;
+	s += " ("+std::to_string(e.key)+")";
+	return s;
+}
+
 s32 TrueLineDistance(LineIndexedIterator,s32,LineIndexedIterator,s32,s32);
 
 LineModeBase::LineModeBase(ContextEditor* ctx) : 
@@ -327,7 +344,12 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	
 	if (showDebugInfo){
 		std::string locString = "";
+		KeyboardEvent* e = ctx->GetDebugEvent();
 
+		std::string evString = GetEventString(*e);
+		
+		textScreen.RenderString(w-evString.size()-1,h-4,evString);
+		
 		locString += "CL: " + std::to_string(cursors[0].cursor.line.index);
 		locString += ", CVL: " + std::to_string(cursors[0].visualLine);
 		locString += ", CSL: " + std::to_string(cursors[0].subline);

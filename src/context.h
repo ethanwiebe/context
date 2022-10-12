@@ -51,6 +51,8 @@ class ContextEditor {
 
 	std::function<void()> yesAction,noAction;
 	
+	KeyboardEvent* debugEvent;
+	
 	std::mutex asyncMutex,updateMutex;
 	size_t asyncIndex;
 	std::vector<AsyncData> asyncState;
@@ -85,6 +87,10 @@ class ContextEditor {
 	void Loop();
 public:
 	ContextEditor(const std::string& file);
+	
+	KeyboardEvent* GetDebugEvent() const {
+		return debugEvent;
+	}
 	
 	void BeginCommand(const std::string&);
 
