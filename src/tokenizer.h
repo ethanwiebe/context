@@ -79,6 +79,8 @@ struct Tokenizer {
 	TextBuffer* buffer;
 	LineList::iterator bufferPos;
 	std::string::iterator linePos;
+	
+	LineList::iterator penultimate;
 	u8 lastChar;
 	u8 currentChar;
 	
@@ -98,6 +100,10 @@ struct Tokenizer {
 			currentChar = *linePos;
 		else
 			currentChar = '\n';
+		
+		penultimate = buffer->end();
+		if (penultimate!=buffer->begin())
+			--penultimate;
 			
 		PostSetBuffer();
 	}
@@ -111,7 +117,7 @@ struct Tokenizer {
 	}
 	
 	inline bool Done() const {
-		return bufferPos==buffer->end();
+		return bufferPos==penultimate&&linePos==bufferPos->end();
 	}
 	
 	inline u8 GetCharAtPos() const {

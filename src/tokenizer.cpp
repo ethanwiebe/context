@@ -158,9 +158,9 @@ Token SyntaxTokenizer::EmitToken(){
 		while (!Done()&&!PeekMatch(multiCommentEnd)){
 			NextChar();
 		}
-		
 		// include comment end in token
-		for (const auto& c : multiCommentEnd){
+		s32 count = (s32)multiCommentEnd.size();
+		while (--count>=0){
 			SafeNextChar();
 		}
 	} else {
