@@ -189,13 +189,11 @@ KeyboardEvent* WinConInterface::GetKeyboardEvent(){
 	if (consoleEvent.EventType==KEY_EVENT){
 		keyEvent = consoleEvent.Event.KeyEvent;
 		
-		if (keyEvent.wVirtualKeyCode==VK_SHIFT){
-			shiftDown = keyEvent.bKeyDown;
-		} else if (keyEvent.wVirtualKeyCode==VK_CONTROL){
-			ctrlDown = keyEvent.bKeyDown;
-		} else if (keyEvent.wVirtualKeyCode==VK_MENU){
-			altDown = keyEvent.bKeyDown;
-		} else if (keyEvent.bKeyDown){
+		shiftDown = keyEvent.dwControlKeyState & SHIFT_PRESSED;
+		ctrlDown = keyEvent.dwControlKeyState & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED);
+		altDown = keyEvent.dwControlKeyState & (LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED);
+		
+		if (keyEvent.bKeyDown){
 			if (keyEvent.wVirtualKeyCode>='0'&&keyEvent.wVirtualKeyCode<='9'&&shiftDown)
 				lastEvent.key = keyEvent.uChar.AsciiChar;
 			else if (keyMapping.contains(keyEvent.wVirtualKeyCode))
