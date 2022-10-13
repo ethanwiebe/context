@@ -217,9 +217,9 @@ KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 	
 	if (key==ERR||key==0){
 		if (missCount>5000)
-			std::this_thread::sleep_for(150ms);
+			std::this_thread::sleep_for(100ms);
 		else if (missCount>500)
-			std::this_thread::sleep_for(40ms);
+			std::this_thread::sleep_for(20ms);
 		else if (missCount>50)
 			std::this_thread::sleep_for(5ms);
 			
