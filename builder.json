@@ -34,7 +34,8 @@
 		"%libs"
 	],
 	"libs":[
-		"-lncursesw"
+		"-lncursesw",
+		"-lX11"
 	],
 	"libStyle":"",
 	"libStyleSetVar":"",

@@ -2,6 +2,17 @@
 
 #include "interface_curses.h"
 
+#include <map>
+
+struct CursesKeyBind {
+	KeyEnum key;
+	KeyModifier mod;
+};
+
+typedef std::map<s32,CursesKeyBind> CursesKeyMapping;
+
+CursesKeyMapping keyMapping;
+
 void DefineAltKeys(){
 	std::string s = "\033";
 	for (char i='a';i<='z';i++){
@@ -116,6 +127,8 @@ CursesInterface::CursesInterface(){
 	SetMappings();
 
 	WindowResized(COLS,LINES);
+	
+	InitX();
 
 	LOG("Has colors: " << (has_colors() ? "TRUE" : "FALSE"));
 	
@@ -208,11 +221,13 @@ void CursesInterface::SetMappings(){
 	keyMapping[494] = {KeyEnum::Down,ctrlalt};
 }
 
+//#define X_INPUT_INTERFACE
+
 #include <thread>
 #include <chrono>
 using namespace std::chrono_literals;
 
-KeyboardEvent* CursesInterface::GetKeyboardEvent(){
+KeyboardEvent* CursesInterface::CursesKeyboardEvent(){
 	s32 key = getch();
 	
 	if (key==ERR||key==0){
@@ -247,6 +262,10 @@ KeyboardEvent* CursesInterface::GetKeyboardEvent(){
 	lastEvent = KeyboardEvent((s32)k.key,k.mod);
 
 	return &lastEvent;
+}
+
+KeyboardEvent* CursesInterface::GetKeyboardEvent(){
+	return XKeyboardEvent();
 }
 
 s32 CursesInterface::GetWidth(){
@@ -343,7 +362,6 @@ void CursesInterface::RenderScreen(const TextScreen& textScreen){
 	for (s32 y=0;y<LINES;y++){
 		mvadd_wchnstr(y,0,&charArray[y*COLS],COLS);
 	}
-
 }
 
 #endif

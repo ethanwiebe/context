@@ -10,14 +10,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <map>
 
-struct CursesKeyBind {
-	KeyEnum key;
-	KeyModifier mod;
-};
-
-typedef std::map<s32,CursesKeyBind> CursesKeyMapping;
 typedef std::pair<Color,Color> ColorPair;
 
 class CursesInterface : public TextInterfaceBase {
@@ -30,8 +23,6 @@ class CursesInterface : public TextInterfaceBase {
 
 	std::vector<Color> colorDefinitions;
 	std::vector<ColorPair> pairDefinitions;
-
-	CursesKeyMapping keyMapping;
 public:
 	CursesInterface();
 	~CursesInterface();
@@ -52,5 +43,10 @@ private:
 	s32 DefinePair(Color,Color);
 	s32 DefineColor(Color);
 	void SetMappings();
+	
+	void InitX();
+	
+	KeyboardEvent* CursesKeyboardEvent();
+	KeyboardEvent* XKeyboardEvent();
 };
 
