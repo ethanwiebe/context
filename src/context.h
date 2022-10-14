@@ -101,6 +101,7 @@ public:
 	void SetPathMode(std::string_view,size_t);
 	void SetPathAndSaveMode(std::string_view,size_t);
 	void SwitchMode(size_t);
+	void MoveMode(size_t,size_t);
 
 	void NewMode();
 	void OpenMode(std::string_view);

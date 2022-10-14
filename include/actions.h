@@ -64,6 +64,9 @@ ACTION(SaveMode)
 ACTION(SaveAsMode)
 ACTION(RenameMode)
 
+ACTION(MoveModeToNext)
+ACTION(MoveModeToPrevious)
+
 ACTION(Mode1)
 ACTION(Mode2)
 ACTION(Mode3)

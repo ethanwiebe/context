@@ -160,6 +160,14 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 		case Action::PreviousMode:
 			SwitchMode(currentMode-1);
 			return true;
+		case Action::MoveModeToNext:
+			MoveMode(currentMode,currentMode+1);
+			SwitchMode(currentMode+1);
+			return true;
+		case Action::MoveModeToPrevious:
+			MoveMode(currentMode,currentMode-1);
+			SwitchMode(currentMode-1);
+			return true;
 		case Action::Mode1:
 		case Action::Mode2:
 		case Action::Mode3:
@@ -823,6 +831,13 @@ void ContextEditor::SaveMode(size_t index){
 
 void ContextEditor::SwitchMode(size_t index){
 	currentMode = (index+modes.size())%modes.size();
+}
+
+void ContextEditor::MoveMode(size_t index,size_t newIndex){
+	index = (index+modes.size())%modes.size();
+	newIndex = (newIndex+modes.size())%modes.size();
+	
+	std::swap(modes[index],modes[newIndex]);
 }
 
 bool ContextEditor::WriteFileChecks(std::string_view path){
