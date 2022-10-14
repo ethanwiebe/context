@@ -69,7 +69,7 @@ LineModeBase::LineModeBase(ContextEditor* ctx) :
 	undoStack = {};
 	selecting = false;
 	finding = false;
-
+	
 	showDebugInfo = false;
 
 	screenWidth = -1;
@@ -511,6 +511,7 @@ bool LineModeBase::SaveAction(const OSInterface& os){
 	ForceFinishAction();
 	modified = false;
 	modeInfoMessage.Set("Saved successfully.");
+	undoStack.SetSaveHeight();
 
 	return true;
 }
@@ -594,7 +595,7 @@ bool LineModeBase::Modified(){
 	if (textBuffer->size()==1&&textBuffer->begin()->empty()&&bufferPath.empty())
 		return false;
 	
-	if (undoStack.UndoHeight()==0&&currentAction.Empty())
+	if (undoStack.IsAtSaveHeight()&&currentAction.Empty())
 		return false;
 	
 	return modified;
