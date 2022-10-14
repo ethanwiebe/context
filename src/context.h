@@ -51,7 +51,7 @@ class ContextEditor {
 
 	std::function<void()> yesAction,noAction;
 	
-	KeyboardEvent* debugEvent;
+	KeyboardEvent* currentEvent;
 	
 	std::mutex asyncMutex,updateMutex;
 	size_t asyncIndex;
@@ -85,11 +85,13 @@ class ContextEditor {
 	void ProcessCommandEntry(TextAction);
 	void ProcessYesNoEntry(TextAction);
 	void Loop();
+	inline void Update();
+	inline void Render();
 public:
 	ContextEditor(const std::string& file);
 	
-	KeyboardEvent* GetDebugEvent() const {
-		return debugEvent;
+	KeyboardEvent* GetCurrentEvent() const {
+		return currentEvent;
 	}
 	
 	void BeginCommand(const std::string&);

@@ -1,6 +1,7 @@
 #ifdef __linux__
 
 #include "interface_curses.h"
+#include "config.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -8,6 +9,9 @@
 
 #include <thread>
 #include <chrono>
+
+#define SHORT_SLEEP_START_THRESHOLD 40000
+#define LONG_SLEEP_START_THRESHOLD 25000
 
 using namespace std::chrono_literals;
 
@@ -120,11 +124,9 @@ KeyboardEvent* CursesInterface::XKeyboardEvent(){
 		}
 	}
 	
-	if (missCount>5000)
-		std::this_thread::sleep_for(100ms);
-	else if (missCount>500)
-		std::this_thread::sleep_for(20ms);
-	else if (missCount>50)
+	if (missCount>LONG_SLEEP_START_THRESHOLD&&gConfig.sleepy)
+		std::this_thread::sleep_for(50ms);
+	else if (missCount>SHORT_SLEEP_START_THRESHOLD||gConfig.sleepy)
 		std::this_thread::sleep_for(5ms);
 		
 	++missCount;

@@ -11,6 +11,7 @@ Config gConfig = {
 	.cursorLock = false,
 	.cursorWrap = false,
 	.smartHome = true,
+	.sleepy = true,
 	
 	.tabMode = TabMode::Tabs,
 	.moveMode = MultiMode::Multi,

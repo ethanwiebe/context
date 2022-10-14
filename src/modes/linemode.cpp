@@ -2,6 +2,8 @@
 
 #include "../context.h"
 
+#include "../profiler.h"
+
 #ifdef _WIN32
 inline s32 wcwidth(u32 c){
 	if (c>127)
@@ -344,7 +346,15 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	
 	if (showDebugInfo){
 		std::string locString = "";
-		KeyboardEvent* e = ctx->GetDebugEvent();
+		
+		auto pair = gProfilerMap.begin();
+		ProfilerInfo pInfo = pair->second;
+		
+		std::string profileString = pair->first + ": " + std::to_string(pInfo.time.count());
+		
+		textScreen.RenderString(w-profileString.size()-1,h-5,profileString);
+		
+		KeyboardEvent* e = ctx->GetCurrentEvent();
 
 		std::string evString = GetEventString(*e);
 		

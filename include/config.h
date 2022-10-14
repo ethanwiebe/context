@@ -26,6 +26,7 @@ struct Config {
 	bool cursorLock;
 	bool cursorWrap;
 	bool smartHome;
+	bool sleepy;
 	TabMode tabMode;
 	MultiMode moveMode;
 	MultiMode deleteMode;
@@ -46,7 +47,7 @@ struct ConfigProp {
 
 extern Config gConfig;
 
-const s64 gConfigPropCount = 12;
+const s64 gConfigPropCount = 13;
 
 const ConfigProp gConfigProps[gConfigPropCount] = {
 	{"tabSize",                ConfigPropType::Number},
@@ -57,6 +58,7 @@ const ConfigProp gConfigProps[gConfigPropCount] = {
 	{"autoIndent",             ConfigPropType::Bool},
 	{"cursorLock",             ConfigPropType::Bool},
 	{"cursorWrap",             ConfigPropType::Bool},
+	{"sleepy",                 ConfigPropType::Bool},
 	{"smartHome",              ConfigPropType::Bool},
 	{"tabMode",                ConfigPropType::Number},
 	{"moveMode",               ConfigPropType::Number},

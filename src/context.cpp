@@ -5,6 +5,7 @@
 #include "modes/editmode.h"
 #include "command.h"
 #include "util.h"
+#include "profiler.h"
 
 #include <thread>
 #include <mutex>
@@ -59,44 +60,53 @@ ContextEditor::ContextEditor(const std::string& file){
 	Loop();
 }
 
-void ContextEditor::Loop(){
-	KeyboardEvent* event;
-	TextAction textAction;
-	while (!quit){
-		if ((event = interface->GetKeyboardEvent())){
-			debugEvent = event;
-			willUpdate = true;
-			textAction = GetTextActionFromKey((KeyEnum)event->key,(KeyModifier)event->mod);
-			
-			if (entryMode==EntryMode::Command){
-				ProcessCommandEntry(textAction);
-			} else if (entryMode==EntryMode::YesNo){
-				ProcessYesNoEntry(textAction);
-			} else {
-				if (!ProcessKeyboardEvent(textAction))
-					modes[currentMode]->ProcessTextAction(textAction);
-			}
-		}
-		
-		if (quit) break;
-		
-		{
-			std::scoped_lock lock{updateMutex};
-			if (!willUpdate)
-				continue;
-			
-			
-			silentUpdate = (event==nullptr)||(event->key==0);
-			
-			TextScreen& textScreen = modes[currentMode]->GetTextScreen(
-				interface->GetWidth(),interface->GetHeight()
-			);
-			DrawStatusBar(textScreen);
-			DrawTabsBar(textScreen);
+inline void ContextEditor::Render(){
+	ProfileThis p{};
 	
-			interface->RenderScreen(textScreen);
-			willUpdate = false;
+	TextScreen& textScreen = modes[currentMode]->GetTextScreen(
+		interface->GetWidth(),interface->GetHeight()
+	);
+	DrawStatusBar(textScreen);
+	DrawTabsBar(textScreen);
+
+	interface->RenderScreen(textScreen);
+}
+
+inline void ContextEditor::Update(){
+	if ((currentEvent = interface->GetKeyboardEvent())){
+		willUpdate = true;
+		TextAction textAction = GetTextActionFromKey(
+			(KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod
+		);
+		
+		if (entryMode==EntryMode::Command){
+			ProcessCommandEntry(textAction);
+		} else if (entryMode==EntryMode::YesNo){
+			ProcessYesNoEntry(textAction);
+		} else {
+			if (!ProcessKeyboardEvent(textAction))
+				modes[currentMode]->ProcessTextAction(textAction);
 		}
+	}
+	
+	if (quit) return;
+	
+	{
+		std::scoped_lock lock{updateMutex};
+		if (!willUpdate)
+			return;
+		
+		silentUpdate = (currentEvent==nullptr)||(currentEvent->key==0);
+		
+		Render();
+		
+		willUpdate = false;
+	}
+}
+
+void ContextEditor::Loop(){
+	while (!quit){
+		Update();
 	}
 }
 
@@ -1031,6 +1041,10 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 	} else if (name=="smartHome"){
 		if (!SetBool(gConfig.smartHome,val)){
 			errorMessage.Set("smartHome must be a boolean value");
+		}
+	} else if (name=="sleepy"){
+		if (!SetBool(gConfig.sleepy,val)){
+			errorMessage.Set("sleepy must be a boolean value!");
 		}
 	} else if (name=="tabMode"){
 		if (val=="tabs")
