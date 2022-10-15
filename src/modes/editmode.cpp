@@ -13,10 +13,10 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 			MoveScreenDown(1);
 			break;
 		case Action::MoveUpPage:
-			MoveVisualCursorUp(cursor,innerHeight-1);
+			MoveVisualCursorUp(cursor,screenHeight-1);
 			break;
 		case Action::MoveDownPage:
-			MoveVisualCursorDown(cursor,innerHeight-1);
+			MoveVisualCursorDown(cursor,screenHeight-1);
 			break;
 		case Action::MoveUpLine:
 			MoveVisualCursorUp(cursor,a.num);

@@ -40,14 +40,14 @@ void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,s
 void LineModeBase::MoveScreenDown(s32 num,bool constrain){
 	s32 dummy;
 	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,textBuffer->size());
-	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
+	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
 	CalculateScreenData();
 }
 
 void LineModeBase::MoveScreenUp(s32 num,bool constrain){
 	s32 dummy;
 	UpdateSublineUpwards(viewLine,screenSubline,dummy,lineWidth,num,constrain);
-	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
+	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
 	CalculateScreenData();
 }
 
@@ -55,7 +55,7 @@ void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor,bool constrain)
 	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
-	MoveScreenUp(innerHeight/2,constrain);
+	MoveScreenUp(screenHeight/2,constrain);
 }
 
 s32 TrueLineDistance(LineIndexedIterator start,s32 sublineStart,
@@ -82,21 +82,21 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 		return;
 	}
 
-	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
+	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
 	if (cursor.visualLine > gConfig.cursorMoveHeight && 
-			cursor.visualLine < innerHeight-1-gConfig.cursorMoveHeight) return;
+			cursor.visualLine < screenHeight-1-gConfig.cursorMoveHeight) return;
 
 	s32 lineDiff = TrueLineDistance(cursor.cursor.line,cursor.subline,viewLine,screenSubline,lineWidth);
 		
 	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
-	if (lineDiff>innerHeight/2)
-		MoveScreenUp(innerHeight-1-gConfig.cursorMoveHeight,true);
+	if (lineDiff>screenHeight/2)
+		MoveScreenUp(screenHeight-1-gConfig.cursorMoveHeight,true);
 	else
 		MoveScreenUp(gConfig.cursorMoveHeight,true);
 	
-	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,innerHeight);
+	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
 	CalculateScreenData();
 }
 

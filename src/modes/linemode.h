@@ -87,7 +87,7 @@ protected:
 	ColorIterator colorLine;
 	s32 screenSubline;
 	std::vector<VisualCursor> cursors;
-	s32 lineWidth,innerHeight;
+	s32 lineWidth;
 	s32 lineNumberWidth;
 
 	bool showDebugInfo;

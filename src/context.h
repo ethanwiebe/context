@@ -26,6 +26,8 @@ enum class EntryMode {
 class ContextEditor {
 	const std::string entryPrefix = "> ";
 
+	TextScreen screen;
+
 	std::vector<Handle<ModeBase>> modes;
 	Handle<TextInterfaceBase> interface;
 	Handle<OSInterface> osInterface;
@@ -76,10 +78,10 @@ class ContextEditor {
 	void SetConfigBind(std::string_view,const TokenVector&);
 	
 	std::string ConstructModeString(size_t);
-	void DrawStatusBar(TextScreen&);
+	void DrawStatusBar();
 	
 	std::string GetTabString(size_t,size_t);
-	void DrawTabsBar(TextScreen&);
+	void DrawTabsBar();
 
 	bool ProcessKeyboardEvent(TextAction);
 	void ProcessCommandEntry(TextAction);

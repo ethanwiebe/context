@@ -12,6 +12,9 @@
 #include <assert.h>
 
 ContextEditor::ContextEditor(const std::string& file){
+	screen = {};
+	screen.SetSize(1,1);
+
 	SetKeybinds();
 	LoadStyle();
 	
@@ -63,13 +66,20 @@ ContextEditor::ContextEditor(const std::string& file){
 inline void ContextEditor::Render(){
 	ProfileThis p{};
 	
+	if (interface->GetWidth()!=screen.GetWidth()||
+		interface->GetHeight()!=screen.GetHeight()){
+		screen.SetSize(interface->GetWidth(),interface->GetHeight());
+	}
+	
 	TextScreen& textScreen = modes[currentMode]->GetTextScreen(
-		interface->GetWidth(),interface->GetHeight()
+		interface->GetWidth(),interface->GetHeight()-2
 	);
-	DrawStatusBar(textScreen);
-	DrawTabsBar(textScreen);
+	DrawStatusBar();
+	DrawTabsBar();
+	
+	screen.Blit(textScreen,0,1);
 
-	interface->RenderScreen(textScreen);
+	interface->RenderScreen(screen);
 }
 
 inline void ContextEditor::Update(){
@@ -651,26 +661,26 @@ std::string ContextEditor::ConstructModeString(size_t index){
 	return modeStr;
 }
 
-void ContextEditor::DrawStatusBar(TextScreen& ts){
+void ContextEditor::DrawStatusBar(){
 	s32 w,h;
-	w = ts.GetWidth();
-	h = ts.GetHeight();
+	w = screen.GetWidth();
+	h = screen.GetHeight();
 
 	std::string modeStr = ConstructModeString(currentMode);
 	std::string modeStatusBar = {};
 	modeStatusBar += modes[currentMode]->GetStatusBarText();
 
 	for (s32 x=0;x<w;++x)
-		ts.SetAt(x,h-1,TextCell(' ',barStyle));
+		screen.SetAt(x,h-1,TextCell(' ',barStyle));
 	
 	if (entryMode==EntryMode::Command){
-		ts.RenderString(0,h-1,entryPrefix + entryString,barStyle);
+		screen.RenderString(0,h-1,entryPrefix + entryString,barStyle);
 		auto x = entryPrefix.size()+entryPos;
-		auto cell = ts.GetAt(x,h-1);
+		auto cell = screen.GetAt(x,h-1);
 		cell.style = cursorStyle;
-		ts.SetAt(x,h-1,cell);
+		screen.SetAt(x,h-1,cell);
 	} else if (entryMode==EntryMode::YesNo){
-		ts.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
+		screen.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
 		Message& modeError = modes[currentMode]->GetErrorMessage();
 		Message& modeInfo = modes[currentMode]->GetInfoMessage();
@@ -686,30 +696,30 @@ void ContextEditor::DrawStatusBar(TextScreen& ts){
 		}
 	
 		if (!errorMessage.Empty()){
-			ts.RenderString(0,h-1,errorMessage.msg,errorStyle);
+			screen.RenderString(0,h-1,errorMessage.msg,errorStyle);
 			errorMessage.Mark();
 		} else if (!modeError.Empty()){
 			std::string formattedError = {};
 			formattedError += modes[currentMode]->GetModeName();
 			formattedError += ": ";
 			formattedError += modeError.msg;
-			ts.RenderString(0,h-1,formattedError,errorStyle);
+			screen.RenderString(0,h-1,formattedError,errorStyle);
 			modeError.Mark();
 		} else if (!infoMessage.Empty()){
-			ts.RenderString(0,h-1,infoMessage.msg,barStyle);
+			screen.RenderString(0,h-1,infoMessage.msg,barStyle);
 			infoMessage.Mark();
 		} else if (!modeInfo.Empty()){
 			std::string formattedInfo = {};
 			formattedInfo += modes[currentMode]->GetModeName();
 			formattedInfo += ": ";
 			formattedInfo += modeInfo.msg;
-			ts.RenderString(0,h-1,formattedInfo,barStyle);
+			screen.RenderString(0,h-1,formattedInfo,barStyle);
 			modeInfo.Mark();
 		} else if (!modeStatusBar.empty()){
-			ts.RenderString(0,h-1,modeStatusBar,barStyle);
+			screen.RenderString(0,h-1,modeStatusBar,barStyle);
 		}
 
-		ts.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);
+		screen.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);
 	}
 }
 
@@ -751,10 +761,10 @@ std::string ContextEditor::GetTabString(size_t index,size_t tabW){
 	return s;
 }
 
-void ContextEditor::DrawTabsBar(TextScreen& ts){
+void ContextEditor::DrawTabsBar(){
 	// how many tabs per page (minus 3 for ' ...')
-	size_t tabCount = (ts.GetWidth()-4)/tabBarWidth;
-	size_t sansSymbolTabCount = (ts.GetWidth())/tabBarWidth;
+	size_t tabCount = (screen.GetWidth()-4)/tabBarWidth;
+	size_t sansSymbolTabCount = (screen.GetWidth())/tabBarWidth;
 	// if there is just enough space to display one more
 	// tab without the symbols then let it happen
 	if (modes.size()==sansSymbolTabCount)
@@ -770,8 +780,8 @@ void ContextEditor::DrawTabsBar(TextScreen& ts){
 	if (pageNum!=0)
 		startX = 2;
 	
-	for (size_t i=0;i<(size_t)ts.GetWidth();++i){
-		ts.SetAt(i,0,{' ',tabBarStyle});
+	for (size_t i=0;i<(size_t)screen.GetWidth();++i){
+		screen.SetAt(i,0,{' ',tabBarStyle});
 	}
 	
 	for (size_t i=0;i<tabCount;++i){
@@ -779,17 +789,17 @@ void ContextEditor::DrawTabsBar(TextScreen& ts){
 		if (currTab>=modes.size()) break;
 		
 		if (currTab==currentMode)
-			ts.RenderString(startX+i*tabBarWidth,0,
+			screen.RenderString(startX+i*tabBarWidth,0,
 				GetTabString(currTab,tabBarWidth),tabBarSelectStyle);
 		else
-			ts.RenderString(startX+i*tabBarWidth,0,
+			screen.RenderString(startX+i*tabBarWidth,0,
 				GetTabString(currTab,tabBarWidth),tabBarStyle);
 	}
 	if (modes.size()>tabCount){
 		if (pageNum!=pageCount-1)
-			ts.RenderString(ts.GetWidth()-2,0,"+",tabBarStyle);
+			screen.RenderString(screen.GetWidth()-2,0,"+",tabBarStyle);
 		if (pageNum!=0)
-			ts.RenderString(0,0,"+",tabBarStyle);
+			screen.RenderString(0,0,"+",tabBarStyle);
 	}
 }
 

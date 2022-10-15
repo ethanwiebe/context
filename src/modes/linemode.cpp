@@ -154,7 +154,6 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	if (w!=screenWidth||h!=screenHeight){
 		screenWidth = w;
 		screenHeight = h;
-		innerHeight = screenHeight - 2;
 	
 		textScreen.SetSize(w,h);
 
@@ -221,7 +220,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	if (it.index>=0&&it.it!=textBuffer->end())
 		i = GetIndexOfXPos(*it.it,screenSubline*lineWidth,lineWidth);
 
-	for (s32 y=1;y<innerHeight+1;y++){
+	for (s32 y=0;y<screenHeight;y++){
 		if (it.index<0||it.it==textBuffer->end()){
 			if (gConfig.displayLineNumbers){
 				for (s32 n=0;n<lineNumberWidth;++n){
@@ -323,7 +322,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 			if (x >= w-lineStart){
 				y++;
 				x = 0;
-				if (y>=innerHeight) break;
+				if (y>=screenHeight) break;
 
 				if (gConfig.displayLineNumbers){
 					for (s32 n=0;n<lineNumberWidth;++n){
@@ -339,8 +338,8 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	s32 loc;
 	for (const auto& cursor : cursors){
-		loc = (cursor.visualLine+1)*w + GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth + lineStart;
-		if (loc>=0&&loc<screenWidth*innerHeight)
+		loc = (cursor.visualLine)*w + GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth + lineStart;
+		if (loc>=0&&loc<screenWidth*screenHeight)
 			textScreen[loc].style = cursorStyle;
 	}
 	
@@ -352,20 +351,20 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		
 		std::string profileString = pair->first + ": " + std::to_string(pInfo.time.count());
 		
-		textScreen.RenderString(w-profileString.size()-1,h-5,profileString);
+		textScreen.RenderString(w-profileString.size()-1,h-4,profileString);
 		
 		KeyboardEvent* e = ctx->GetCurrentEvent();
 
 		std::string evString = GetEventString(*e);
 		
-		textScreen.RenderString(w-evString.size()-1,h-4,evString);
+		textScreen.RenderString(w-evString.size()-1,h-3,evString);
 		
 		locString += "CL: " + std::to_string(cursors[0].cursor.line.index);
 		locString += ", CVL: " + std::to_string(cursors[0].visualLine);
 		locString += ", CSL: " + std::to_string(cursors[0].subline);
 		locString += ", CC: " + std::to_string(cursors[0].cursor.column);
 		locString += ", CX: " + std::to_string(GetXPosOfIndex(*cursors[0].cursor.line,cursors[0].cursor.column,lineWidth));
-		textScreen.RenderString(w-locString.size()-1,h-3,locString);
+		textScreen.RenderString(w-locString.size()-1,h-2,locString);
 	
 		s32 lineDiff = TrueLineDistance(cursors[0].cursor.line,cursors[0].subline,viewLine,screenSubline,lineWidth);
 
@@ -376,7 +375,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		locString += ", UH: " + std::to_string(undoStack.UndoHeight());
 		locString += ", RH: " + std::to_string(undoStack.RedoHeight());
 		locString += ", FC: " + std::to_string(matches.size());
-		textScreen.RenderString(w-locString.size()-1,h-2,locString);
+		textScreen.RenderString(w-locString.size()-1,h-1,locString);
 	}
 
 	return textScreen;
