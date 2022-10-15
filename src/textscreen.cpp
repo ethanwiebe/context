@@ -61,3 +61,30 @@ void TextScreen::RenderString(s32 x,s32 y,std::string_view s,TextStyle style){
 			cells[index] = TextCell(c,style);
 	}
 }
+
+#include <cstring>
+
+void TextScreen::FastBlit(const TextScreen& other,s32 y){
+	constexpr auto cellSize = sizeof(TextCell);
+	
+	s32 realH = std::min(height-y,other.height);
+	
+	memcpy(&cells[y*width],&other.cells[0],width*realH*cellSize);
+}
+
+void TextScreen::Blit(const TextScreen& other,s32 x,s32 y){
+	if (other.width==width&&x==0){
+		return FastBlit(other,y);
+	}
+	
+	constexpr auto cellSize = sizeof(TextCell);
+	s32 realW = std::min(width-x,other.width);
+	if (realW<=0) return;
+	
+	s32 realH = std::min(height-y,other.height);
+	if (realH<=0) return;
+	
+	for (s32 j=0;j<realH;++j){
+		memcpy(&cells[(y+j)*width+x],&other.cells[j*width],realW*cellSize);
+	}
+}

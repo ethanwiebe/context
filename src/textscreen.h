@@ -14,6 +14,7 @@ class TextScreen {
 	s32 width,height;
 	std::vector<TextCell> cells;
 
+	void FastBlit(const TextScreen& other,s32 y);
 public:
 	s32 GetWidth() const;
 	s32 GetHeight() const;
@@ -32,5 +33,7 @@ public:
 	TextCell& operator[](size_t);
 
 	void RenderString(s32 x,s32 y,std::string_view s,TextStyle = textStyle);
+	
+	void Blit(const TextScreen& other,s32 x,s32 y);
 };
 
