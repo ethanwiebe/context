@@ -22,7 +22,6 @@
 		"-fno-exceptions",
 		"-fno-rtti",
 		"-pedantic",
-		"-DCURSES_INTERFACE",
 		"-Iinclude",
 		"%in"
 	],
@@ -37,17 +36,34 @@
 		"-lncursesw",
 		"-lX11"
 	],
+	"installLoc":"/usr/local/bin/",
+	"installCmd":[
+		"cp",
+		"bin/",
+		"#%outputName",
+		"%installLoc",
+		"#%outputName"
+	],
 	"libStyle":"",
-	"libStyleSetVar":"",
+	"libStylePointer":"",
 	"modes": {
 		"windows":{
 			"compileCmd":"",
 			"linkCmd":"",
+			
 			"set":{
 				"libs":[
 					"-lshlwapi"
 				],
-				"libStyleSetVar":"libStyle"
+				"libStylePointer":"libStyle",
+				"installLoc":"%SystemRoot%",
+				"installCmd":[
+					"copy",
+					"bin\\",
+					"#%outputName",
+					"#.exe",
+					"\\%SystemRoot%"
+				]
 			}
 		},
 		"debug":{
@@ -58,7 +74,7 @@
 		},
 		"release":{
 			"set":{
-				"%libStyleSetVar":"-static"
+				"%libStylePointer":"-static"
 			},
 			"outputDir":"bin",
 			"compileFlags":[
@@ -89,13 +105,17 @@
 			"compileCmd":"",
 			"linkCmd":"",
 			"preCmds":[
-				"echo Installing context at /usr/local/bin/ctx...",
 				[
-					"cp",
-					"bin/",
-					"#%outputName",
-					"/usr/local/bin/",
-					"#%outputName"
+					"echo Installing context at",
+					"%installLoc",
+					"#..."
+				],
+				[
+					"echo",
+					"%installCmd"
+				],
+				[
+					"%installCmd"
 				]
 			]
 		}
