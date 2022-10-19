@@ -2,17 +2,23 @@
 	"sourceDir":"src",
 	"includeDir":"include",
 	"outputName":"ctx",
-	"defaultMode":"debug",
+	"defaultMode":"%platform",
 	"outputDir":[
 		"bin",
-		"%mode"
+		"%modeLast"
 	],
 	"objectDir":[
 		"build",
-		"%mode"
+		"%modeLast"
 	],
-	"compileCmd": "g++ -c",
-	"linkCmd": "g++",
+	"compileCmd":[
+		"g++ -c",
+		"%compileFlags"
+	],
+	"linkCmd":[
+		"g++",
+		"%linkFlags"
+	],
 	"compileFlags":[
 		"-std=c++20",
 		"-o",
@@ -22,7 +28,8 @@
 		"-fno-exceptions",
 		"-fno-rtti",
 		"-pedantic",
-		"-Iinclude",
+		"-I",
+		"#%includeDir",
 		"%in"
 	],
 	"linkFlags":[
@@ -32,92 +39,96 @@
 		"%libStyle",
 		"%libs"
 	],
-	"libs":[
-		"-lncursesw",
-		"-lX11"
-	],
-	"installLoc":"/usr/local/bin/",
-	"installCmd":[
-		"cp",
-		"bin/",
-		"#%outputName",
-		"%installLoc",
-		"#%outputName"
-	],
-	"libStyle":"",
-	"libStylePointer":"",
-	"modes": {
+	"defaultModes":{
+		"release":"%releaseMode",
+		"debug":"%debugMode",
+		"size":"%sizeMode",
+		"install":"%installMode"
+	},
+	"releaseMode":{
+		"outputDir":"bin",
+		"compileFlags":[
+			"%compileFlags",
+			"-O3",
+			"-DNDEBUG"
+		],
+		"linkFlags":[
+			"%linkFlags",
+			"-s"
+		]
+	},
+	"debugMode":{
+		"compileFlags":[
+			"%compileFlags",
+			"-ggdb3",
+			"-Og"
+		]
+	},
+	"sizeMode":{
+		"compileFlags":[
+			"%compileFlags",
+			"-Os",
+			"-fdata-sections",
+			"-ffunction-sections",
+			"-fvisibility=hidden",
+			"-fvisibility-inlines-hidden",
+			"-DNDEBUG"
+		],
+		"linkFlags":[
+			"-s",
+			"-Wl,--gc-sections",
+			"-Bsymbolic",
+			"-Wl,--exclude-libs,ALL",
+			"%linkFlags"
+		]
+	},
+	"installMode":{
+		"compileCmd":"",
+		"linkCmd":"",
+		"preCmds":[
+			[
+				"echo Installing context at",
+				"%installLoc",
+				"#..."
+			],
+			[
+				"echo",
+				"%installCmd"
+			],
+			[
+				"%installCmd"
+			]
+		]
+	},
+	"modes":{
+		"linux":{
+			"libStyle":"",
+			"libs":[
+				"-lncursesw",
+				"-lX11"
+			],
+			"installLoc":"/usr/local/bin/",
+			"installCmd":[
+				"cp",
+				"bin/",
+				"#%outputName",
+				"%installLoc",
+				"#%outputName"
+			],
+			"modes":"%defaultModes"
+		},
 		"windows":{
-			"compileCmd":"",
-			"linkCmd":"",
-			
-			"set":{
-				"libs":[
-					"-lshlwapi"
-				],
-				"libStylePointer":"libStyle",
-				"installLoc":"%SystemRoot%",
-				"installCmd":[
-					"copy",
-					"bin\\",
-					"#%outputName",
-					"#.exe",
-					"\\%SystemRoot%"
-				]
-			}
-		},
-		"debug":{
-			"compileFlags":[
-				"-ggdb3",
-				"-Og"
-			]
-		},
-		"release":{
-			"set":{
-				"%libStylePointer":"-static"
-			},
-			"outputDir":"bin",
-			"compileFlags":[
-				"-O3",
-				"-DNDEBUG"
+			"libStyle":"-static",
+			"libs":"-lshlwapi",
+			"installLoc":"%SystemRoot%",
+			"installCmd":[
+				"copy",
+				"bin\\",
+				"#%outputName",
+				"#.exe",
+				"\\%SystemRoot%"
 			],
-			"linkFlags":[
-				"-s"
-			]
-		},
-		"size":{
-			"compileFlags":[
-				"-Os",
-				"-fdata-sections",
-				"-ffunction-sections",
-				"-fvisibility=hidden",
-				"-fvisibility-inlines-hidden",
-				"-DNDEBUG"
-			],
-			"linkFlags":[
-				"-s",
-				"-Wl,--gc-sections",
-				"-Bsymbolic",
-				"-Wl,--exclude-libs,ALL"
-			]
-		},
-		"install":{
-			"compileCmd":"",
-			"linkCmd":"",
-			"preCmds":[
-				[
-					"echo Installing context at",
-					"%installLoc",
-					"#..."
-				],
-				[
-					"echo",
-					"%installCmd"
-				],
-				[
-					"%installCmd"
-				]
-			]
+			"modes":"%defaultModes"
 		}
 	}
 }
