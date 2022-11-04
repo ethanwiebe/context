@@ -230,11 +230,16 @@ Token CPPTokenizer::EmitToken(){
 		}
 		SafeNextChar();
 		SafeNextChar();
-	} else if (currentChar=='#'&&IsAlphabet(PeekNextChar())){
+	} else if (currentChar=='#'){
 		t.type = TokenType::Directive;
 		
 		while (!Done()&&currentChar!='\n'){
-			NextChar();
+			if (currentChar=='\\'){
+				NextChar();
+				SafeNextChar();
+			} else {
+				NextChar();
+			}
 		}
 	} else {
 		t.type = TokenType::SpecialChar;
