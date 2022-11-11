@@ -111,13 +111,13 @@ void LineModeBase::IndentSelection(VisualCursor& cursor){
 	end.column = 0;
 	size_t diff;
 	while (end.line.index>=start.line.index){
-		bool tab = textBuffer->IsTabIndented(end.line.it);
+		bool tab = IsTabIndented(end.line.it);
 		diff = 0;
 		if (tab){
 			InsertCharAt(end,'\t');
 			++diff;
 		} else {
-			for (ssize_t i=0;i<gConfig.tabSize;++i){
+			for (ssize_t i=0;i<gEditConfig.tabSize;++i){
 				++diff;
 				InsertCharAt(end,' ');
 			}
@@ -142,7 +142,7 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 	end.column = 0;
 	size_t diff;
 	while (end.line.index>=start.line.index){
-		bool tab = textBuffer->IsTabIndented(end.line.it);
+		bool tab = IsTabIndented(end.line.it);
 		diff = 0;
 		if (tab){
 			if (GetCharAt(end)=='\t'){
@@ -150,7 +150,7 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 				DeleteCharAt(end);
 			}
 		} else {
-			for (ssize_t i=0;i<gConfig.tabSize;++i){
+			for (ssize_t i=0;i<gEditConfig.tabSize;++i){
 				if (GetCharAt(end)!=' ') break;
 				DeleteCharAt(end);
 				++diff;

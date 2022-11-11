@@ -1,5 +1,59 @@
 #include "linemode.h"
 
+s32 ToNextMultiple(s32 x,s32 d,s32 w){
+	s32 xproper = x%w;
+	return x + (d-xproper%d);
+}
+
+void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
+	u8 c = str[i];
+	if (c=='\t'){
+		x = std::min(ToNextMultiple(x,gEditConfig.tabSize,width),ToNextMultiple(x,width,width));
+		++i;
+	} else if (c&128){ //utf8 handling
+		if ((c>>5)==6){
+			++x;
+			i += 2;
+		} else if ((c>>4)==14){
+			++x;
+			i += 3;
+		} else if ((c>>3)==30){
+			++x;
+			i += 4;
+		} else {
+			++i;
+			++x;
+		}
+	} else {
+		++x;
+		++i;
+	}
+}
+
+s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width){
+	s32 x = 0;
+	s32 strLen = str.size();
+	for (s32 i=0;i<index;){
+		UpdateXI(str,x,i,width);
+
+		if (i>=strLen) break;
+	}
+
+	return x;
+}
+
+s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width){
+	s32 index = 0;
+	s32 strLen = str.size();
+	for (s32 i=0;i<x;){
+		UpdateXI(str,i,index,width);
+
+		if (index>=strLen) break;
+	}
+
+	return std::min(index,strLen);
+}
+
 void UpdateSublineUpwards(LineIndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false){
 	s32 lineSize;
 	while (--num>=0){
@@ -77,14 +131,14 @@ s32 TrueLineDistance(LineIndexedIterator start,s32 sublineStart,
 }
 
 void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
-	if (gConfig.cursorLock){
+	if (gEditConfig.cursorLock){
 		LineModeBase::LockScreenToVisualCursor(cursor);
 		return;
 	}
 
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
-	if (cursor.visualLine > gConfig.cursorMoveHeight && 
-			cursor.visualLine < screenHeight-1-gConfig.cursorMoveHeight) return;
+	if (cursor.visualLine > gEditConfig.cursorMoveHeight && 
+			cursor.visualLine < screenHeight-1-gEditConfig.cursorMoveHeight) return;
 
 	s32 lineDiff = TrueLineDistance(cursor.cursor.line,cursor.subline,viewLine,screenSubline,lineWidth);
 		
@@ -92,9 +146,9 @@ void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
 	screenSubline = cursor.subline;
 
 	if (lineDiff>screenHeight/2)
-		MoveScreenUp(screenHeight-1-gConfig.cursorMoveHeight,true);
+		MoveScreenUp(screenHeight-1-gEditConfig.cursorMoveHeight,true);
 	else
-		MoveScreenUp(gConfig.cursorMoveHeight,true);
+		MoveScreenUp(gEditConfig.cursorMoveHeight,true);
 	
 	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
 	CalculateScreenData();
@@ -121,7 +175,7 @@ void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column-num;
 	
-	if (gConfig.cursorWrap){	
+	if (gEditConfig.cursorWrap){	
 		while (newCol<0){ //move cursor up lines until only horiz adjust is left
 			if (cursor.cursor.line.index==0){
 				SetVisualCursorColumn(cursor,0);
@@ -143,7 +197,7 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column+num;
 
-	if (gConfig.cursorWrap){
+	if (gEditConfig.cursorWrap){
 		while (newCol>cursor.CurrentLineLen()){
 			if (cursor.cursor.line.index==(s32)textBuffer->size()-1){
 				SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
@@ -165,7 +219,7 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorLeftWord(VisualCursor& cursor){
 	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
 	if (cursor.cursor.column==0){
-		if (gConfig.cursorWrap)
+		if (gEditConfig.cursorWrap)
 			return MoveCursorLeft(cursor.cursor,1);
 		return;
 	}
@@ -198,7 +252,7 @@ void LineModeBase::MoveVisualCursorRightWord(VisualCursor& cursor){
 	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
 			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
 	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()){
-		if (gConfig.cursorWrap)
+		if (gEditConfig.cursorWrap)
 			return MoveCursorRight(cursor.cursor,1);
 		return;
 	}
@@ -228,7 +282,7 @@ void LineModeBase::MoveVisualCursorRightWord(VisualCursor& cursor){
 void LineModeBase::MoveVisualCursorLeftPascalWord(VisualCursor& cursor){
 	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
 	if (cursor.cursor.column==0){
-		if (gConfig.cursorWrap)
+		if (gEditConfig.cursorWrap)
 			return MoveCursorLeft(cursor.cursor,1);
 		return;
 	}
@@ -289,7 +343,7 @@ void LineModeBase::MoveVisualCursorRightPascalWord(VisualCursor& cursor){
 	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
 			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
 	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()){
-		if (gConfig.cursorWrap)
+		if (gEditConfig.cursorWrap)
 			return MoveCursorRight(cursor.cursor,1);
 		return;
 	}
@@ -378,7 +432,7 @@ void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
 void LineModeBase::MoveVisualCursorToLineStart(VisualCursor& cursor){
 	s32 col = cursor.cursor.column;
 	SetVisualCursorColumn(cursor,0);
-	if (gConfig.smartHome){
+	if (gEditConfig.smartHome){
 		while (GetCharAt(cursor.cursor)==' '||GetCharAt(cursor.cursor)=='\t')
 			MoveVisualCursorRight(cursor,1);
 		

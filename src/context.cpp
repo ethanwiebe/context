@@ -2,10 +2,13 @@
 
 #include "platform.h"
 
-#include "modes/editmode.h"
+#include "modes/edit/editmode.h"
 #include "command.h"
 #include "util.h"
 #include "profiler.h"
+
+// for entry movement
+#include "modes/edit/editbinds.h"
 
 #include <thread>
 #include <mutex>
@@ -15,7 +18,10 @@ ContextEditor::ContextEditor(const std::string& file){
 	screen = {};
 	screen.SetSize(1,1);
 
-	SetKeybinds();
+	SetGlobalBinds();
+	UpdateBinds(gBinds.at("ctx"));
+	LineModeBase::RegisterBinds();
+	UpdateBinds(gBinds.at("edit"));
 	LoadStyle();
 	
 	commandBuffer.lines.resize(1);
@@ -85,17 +91,14 @@ inline void ContextEditor::Render(){
 inline void ContextEditor::Update(){
 	if ((currentEvent = interface->GetKeyboardEvent())){
 		willUpdate = true;
-		TextAction textAction = GetTextActionFromKey(
-			(KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod
-		);
 		
 		if (entryMode==EntryMode::Command){
-			ProcessCommandEntry(textAction);
+			ProcessCommandEntry((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
 		} else if (entryMode==EntryMode::YesNo){
-			ProcessYesNoEntry(textAction);
+			ProcessYesNoEntry((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
 		} else {
-			if (!ProcessKeyboardEvent(textAction))
-				modes[currentMode]->ProcessTextAction(textAction);
+			if (!ProcessKeyboardEvent((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod))
+				modes[currentMode]->ProcessKeyboardEvent((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
 		}
 	}
 	
@@ -161,8 +164,13 @@ void ContextEditor::MoveEntryPosRight(size_t count){
 	entryPos = std::min(entryPos,(ssize_t)entryString.size());
 }
 
-bool ContextEditor::ProcessKeyboardEvent(TextAction action){
-	switch (action.action){
+bool ContextEditor::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
+	s16 found = FindActionFromKey(gBinds.at("ctx"),key,mod);
+	if (found==ACTION_NOT_FOUND) return false;
+	
+	Action action = (Action)found;
+	
+	switch (action){
 		case Action::CloseMode:
 			CloseMode(currentMode);
 			return true;
@@ -198,8 +206,8 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 		case Action::Mode8:
 		case Action::Mode9:
 		case Action::Mode10:
-			if (modes.size()>(size_t)action.action-(size_t)Action::Mode1){
-				SwitchMode((size_t)action.action-(size_t)Action::Mode1);
+			if (modes.size()>(size_t)action-(size_t)Action::Mode1){
+				SwitchMode((size_t)action-(size_t)Action::Mode1);
 			}
 			return true;
 		case Action::NewMode:
@@ -221,48 +229,48 @@ bool ContextEditor::ProcessKeyboardEvent(TextAction action){
 	return false;
 }
 
-void ContextEditor::ProcessCommandEntry(TextAction textAction){
+void ContextEditor::ProcessCommandEntry(KeyEnum key,KeyModifier mod){
+	TextAction textAction = GetTextActionFromKey(key,mod);
 	switch (textAction.action){
-		case Action::InsertChar:
+		case EditAction::InsertChar:
 			entryString.insert(entryPos,1,textAction.character);
 			MoveEntryPosRight(1);
 			break;
-		case Action::DeletePreviousChar:
+		case EditAction::DeletePreviousChar:
 			if (!entryString.empty()&&entryPos!=0){
 				MoveEntryPosLeft(1);
 				entryString.erase(entryPos,1);
 			}
 			break;
-		case Action::DeleteCurrentChar:
+		case EditAction::DeleteCurrentChar:
 			if (!entryString.empty()&&entryPos!=(ssize_t)entryString.size()){
 				entryString.erase(entryPos,1);
 			}
 			break;
-		case Action::InsertLine:
+		case EditAction::InsertLine:
 			SubmitCommand();
 			break;
-		case Action::Escape:
-		case Action::CloseMode:
+		case EditAction::Escape:
 			CancelCommand();
 			break;
-		case Action::Tab:
+		case EditAction::Tab:
 			AutocompleteCommand();
 			break;
-		case Action::MoveLeftMulti:
-		case Action::MoveLeftChar:
+		case EditAction::MoveLeftMulti:
+		case EditAction::MoveLeftChar:
 			MoveEntryPosLeft(textAction.num);
 			break;
-		case Action::MoveRightMulti:
-		case Action::MoveRightChar:
+		case EditAction::MoveRightMulti:
+		case EditAction::MoveRightChar:
 			MoveEntryPosRight(textAction.num);
 			break;
-		case Action::MoveToLineStart:
+		case EditAction::MoveToLineStart:
 			entryPos = 0;
 			break;
-		case Action::MoveToLineEnd:
+		case EditAction::MoveToLineEnd:
 			entryPos = entryString.size();
 			break;
-		case Action::DeleteLine:
+		case EditAction::DeleteLine:
 			entryString.clear();
 			entryPos = 0;
 			break;
@@ -272,24 +280,15 @@ void ContextEditor::ProcessCommandEntry(TextAction textAction){
 	}
 }
 
-void ContextEditor::ProcessYesNoEntry(TextAction textAction){
-	switch (textAction.action){
-		case Action::InsertChar:
-			if (textAction.character=='y'||textAction.character=='Y'){
-				yesAction();
-				entryMode = EntryMode::None;
-			} else if (textAction.character=='n'||textAction.character=='N'){
-				noAction();
-				entryMode = EntryMode::None;
-			}
-			break;
-
-		case Action::Escape:
-			entryMode = EntryMode::None;
-			break;
-
-		default:
-			break;
+void ContextEditor::ProcessYesNoEntry(KeyEnum key,KeyModifier mod){
+	if (key==(KeyEnum)'y'||key==(KeyEnum)'Y'){
+		yesAction();
+		entryMode = EntryMode::None;
+	} else if (key==(KeyEnum)'n'||key==(KeyEnum)'N'){
+		noAction();
+		entryMode = EntryMode::None;
+	} else if (key==KeyEnum::Escape){
+		entryMode = EntryMode::None;
 	}
 }
 
@@ -345,8 +344,8 @@ void ContextEditor::SubmitCommand(){
 	
 	TokenVector tokens = GetCommandTokens();
 	
-	if (!ProcessCommand(tokens)){
-		if (!modes[currentMode]->ProcessCommand(tokens)){
+	if (!modes[currentMode]->ProcessCommand(tokens)){
+		if (!ProcessCommand(tokens)){
 			errorMessage.Set("Unrecognized command '"+tokens[0].Stringify()+"'");
 		}
 	}
@@ -430,12 +429,6 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	return false;
 }
 
-#define ACTION(x) {#x, Action::x},
-const std::map<std::string,Action> actionNameMap = {
-	#include "actions.h"
-};
-#undef ACTION
-
 #define STYLE(x) {#x, x##Style},
 const std::map<std::string,TextStyle&> styleNameMap = {
 	#include "stylenames.h"
@@ -463,27 +456,56 @@ const std::map<std::string,KeyEnum> keyNameMap = {
 	{"Ins",KeyEnum::Insert},
 };
 
-inline Action GetActionFromName(std::string_view name){
-	std::string copied = std::string(name);
-	if (actionNameMap.contains(copied))
-		return actionNameMap.at(copied);
-		
-	return Action::None;
+inline bool ResolveActionMode(const std::string& name,std::string& modeOut){
+	auto index = name.find('.');
+	
+	if (index==std::string::npos||index==0) return false;
+	
+	modeOut = name.substr(0,index);
+	return true;
+}
+
+inline bool ResolveActionName(const std::string& name,std::string& actionOut){
+	auto index = name.find('.');
+	if (index==name.size()-1) return false;
+	
+	actionOut = name.substr(index+1);
+	return true;
 }
 
 inline KeyModifier ParseMod(std::string_view& bindstr){
-	if (bindstr.starts_with("ctrl")||bindstr.starts_with("CTRL")||bindstr.starts_with("Ctrl")){
-		bindstr = {bindstr.begin()+4,bindstr.end()};
+	if (bindstr.starts_with("ctrl-")||bindstr.starts_with("CTRL-")||
+		bindstr.starts_with("Ctrl-")){
+		bindstr.remove_prefix(5);
 		return KeyModifier::Ctrl;
 	}
 	
-	if (bindstr.starts_with("shift")||bindstr.starts_with("SHIFT")||bindstr.starts_with("Shift")){
-		bindstr = {bindstr.begin()+5,bindstr.end()};
+	if (bindstr.starts_with("C-")||bindstr.starts_with("c-")){
+		bindstr = {bindstr.begin()+2,bindstr.end()};
+		bindstr.remove_prefix(2);
+		return KeyModifier::Ctrl;
+	}
+	
+	if (bindstr.starts_with("shift-")||bindstr.starts_with("SHIFT-")||
+		bindstr.starts_with("Shift-")){
+		bindstr.remove_prefix(6);
 		return KeyModifier::Shift;
 	}
 	
-	if (bindstr.starts_with("alt")||bindstr.starts_with("ALT")||bindstr.starts_with("Alt")){
-		bindstr = {bindstr.begin()+3,bindstr.end()};
+	if (bindstr.starts_with("S-")||bindstr.starts_with("s-")){
+		bindstr.remove_prefix(2);
+		return KeyModifier::Shift;
+	}
+	
+	if (bindstr.starts_with("alt-")||bindstr.starts_with("ALT-")||
+		bindstr.starts_with("Alt-")){
+		bindstr.remove_prefix(4);
+		return KeyModifier::Alt;
+	}
+	
+	if (bindstr.starts_with("A-")||bindstr.starts_with("a-")||
+		bindstr.starts_with("M-")||bindstr.starts_with("m-")){
+		bindstr.remove_prefix(2);
 		return KeyModifier::Alt;
 	}
 	
@@ -530,18 +552,20 @@ inline void SkipWhitespace(std::string_view& str,std::string_view::iterator pos)
 	str = {pos,str.end()};
 }
 
-inline bool ParseKeybind(std::string_view bindstr,KeyEnum& key,KeyModifier& mod){
+inline bool ParseKeybind(std::vector<KeyBind>& binds,std::string_view bindstr){
 	std::string_view::iterator pos;
-	mod = KeyModifier::None;
+	KeyEnum key = KeyEnum::None;
+	KeyModifier mod = KeyModifier::None;
 	
-	KeyModifier t;
+	KeyModifier t = KeyModifier::None;
 	while (true){
 		if (bindstr.size()==0) return false;
 		pos = bindstr.begin();
 		SkipWhitespace(bindstr,pos);
 		t = ParseMod(bindstr);
 		if (t==KeyModifier::None) break;
-		if (bindstr[0]=='-') bindstr = {bindstr.begin()+1,bindstr.end()};
+		if (bindstr[0]=='-') bindstr.remove_prefix(1);
+		
 		mod = (KeyModifier)((s32)mod | (s32)t);
 	}
 	
@@ -549,39 +573,55 @@ inline bool ParseKeybind(std::string_view bindstr,KeyEnum& key,KeyModifier& mod)
 	
 	if (key==KeyEnum::None) return false;
 	
+	binds.emplace_back(key,mod);
+	
 	LOG((char)key << ", " << (s32)key << ", " << (s32)mod);
 	
 	return true;
 }
 
-void ContextEditor::SetConfigBind(std::string_view actionName,const TokenVector& tokens){
-	Action action = GetActionFromName(actionName);
-	if (action==Action::None){
-		errorMessage.Set("Unrecognized action: '"+std::string(actionName)+"'");
+void ContextEditor::SetConfigBind(const std::string& actionStr,const TokenVector& tokens){
+	std::string modeName,actionName;
+	
+	if (!ResolveActionMode(actionStr,modeName)){
+		errorMessage.Set("Unrecognized mode in action: '"+std::string(actionStr)+"'");
 		return;
 	}
 	
-	bool cleared = false;
+	if (!ResolveActionName(actionStr,actionName)){
+		errorMessage.Set("Badly formatted action: '"+std::string(actionStr)+"'");
+		return;
+	}
+	
+	auto bindSet = gBinds.at(modeName);
+	if (!bindSet.nameMap.contains(actionName)){
+		errorMessage.Set("Unrecognized action: '"+std::string(actionStr)+"'");
+		return;
+	}
+	
+	s16 action = bindSet.nameMap.at(actionName);
 	
 	auto bindIt = tokens.begin();
 	++bindIt; ++bindIt; //start after first arg
-	KeyEnum key;
-	KeyModifier mod;
+	std::vector<KeyBind> parsedBinds = {};
+	
 	while (bindIt!=tokens.end()){
-		if (ParseKeybind(bindIt->Stringify(),key,mod)){
-			if (!cleared){
-				cleared = true;
-				gKeyBindings[action].clear();
-			}
-			ADD_BIND(action,key,mod);
-		} else {
+		if (!ParseKeybind(parsedBinds,bindIt->Stringify())){
 			errorMessage.Set("Could not parse keybind '"+bindIt->Stringify()+"'");
 			break;
 		}
 		
 		++bindIt;
 	}
-	UpdateBinds();
+	
+	BindSet& page = gBinds.at(modeName);
+	
+	page.keyMap[action].clear();
+	for (const auto& bind : parsedBinds){
+		AddBind(page,action,bind);
+	}
+	
+	UpdateBinds(page);
 }
 
 bool ParseColor(std::string_view c,Color& color){
@@ -972,58 +1012,8 @@ void ContextEditor::SetPathMode(std::string_view path,size_t index){
 	modes[index]->SetPath(*osInterface,copiedPath);
 }
 
-inline bool SetBool(bool& var,std::string_view val){
-	if (val=="true"||val=="1")
-		var = true;
-	else if (val=="false"||val=="0")
-		var = false;
-	else
-		return false;
-	
-	return true;
-}
-
-inline bool SetMultiMode(MultiMode& var,std::string_view val){
-	if (val=="multi")
-		var = MultiMode::Multi;
-	else if (val=="word")
-		var = MultiMode::Word;
-	else if (val=="pascal")
-		var = MultiMode::PascalWord;
-	else
-		return false;
-	
-	return true;
-}
-
 void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
-	if (!NameIsConfigVar(name)){
-		errorMessage.Set("'"+std::string(name)+"' is not a config var!");
-		return;
-	}
-	
-	if (name=="tabSize"){
-		ssize_t n = strtol(val.data(),NULL,10);
-		if (n>0){
-			gConfig.tabSize = n;
-		} else {
-			errorMessage.Set("tabSize must be a positive integer");
-		}
-	} else if (name=="cursorMoveHeight"){
-		ssize_t n = strtol(val.data(),NULL,10);
-		if (n>=0){
-			gConfig.cursorMoveHeight = n;
-		} else {
-			errorMessage.Set("cursorMoveHeight must be a non-negative integer");
-		}
-	} else if (name=="multiAmount"){
-		ssize_t n = strtol(val.data(),NULL,10);
-		if (n>0){
-			gConfig.multiAmount = n;
-		} else {
-			errorMessage.Set("multiAmount must be a positive integer");
-		}
-	} else if (name=="style"){
+	if (name=="style"){
 		SaveStyle();
 		gConfig.style = val;
 		if (!StyleExists(gConfig.style)){
@@ -1032,43 +1022,12 @@ void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
 		LoadStyle();
 		for (size_t i=0;i<modes.size();++i)
 			modes[i]->UpdateStyle();
-	} else if (name=="displayLineNumbers"){
-		if (!SetBool(gConfig.displayLineNumbers,val)){
-			errorMessage.Set("displayLineNumbers must be a boolean value");
-		}
-	} else if (name=="autoIndent"){
-		if (!SetBool(gConfig.autoIndent,val)){
-			errorMessage.Set("autoIndent must be a boolean value");
-		}
-	} else if (name=="cursorLock"){
-		if (!SetBool(gConfig.cursorLock,val)){
-			errorMessage.Set("cursorLock must be a boolean value");
-		}
-	} else if (name=="cursorWrap"){
-		if (!SetBool(gConfig.cursorWrap,val)){
-			errorMessage.Set("cursorWrap must be a boolean value");
-		}
-	} else if (name=="smartHome"){
-		if (!SetBool(gConfig.smartHome,val)){
-			errorMessage.Set("smartHome must be a boolean value");
-		}
 	} else if (name=="sleepy"){
-		if (!SetBool(gConfig.sleepy,val)){
+		if (!ParseBool(gConfig.sleepy,val)){
 			errorMessage.Set("sleepy must be a boolean value!");
 		}
-	} else if (name=="tabMode"){
-		if (val=="tabs")
-			gConfig.tabMode = TabMode::Tabs;
-		else if (val=="spaces")
-			gConfig.tabMode = TabMode::Spaces;
-		else
-			errorMessage.Set("tabMode must be either 'tabs' or 'spaces'");
-	} else if (name=="moveMode"){
-		if (!SetMultiMode(gConfig.moveMode,val))
-			errorMessage.Set("moveMode must be one of 'multi', 'word', or 'pascal'");
-	} else if (name=="deleteMode"){
-		if (!SetMultiMode(gConfig.deleteMode,val))
-			errorMessage.Set("deleteMode must be one of 'multi', 'word', or 'pascal'");
+	} else {
+		errorMessage.Set("'"+std::string(name)+"' is not a config var!");
 	}
 }
 

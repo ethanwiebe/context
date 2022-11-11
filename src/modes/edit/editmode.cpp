@@ -1,69 +1,69 @@
 #include "editmode.h"
 
-#include "../context.h"
+#include "../../context.h"
 
 EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {}
 
 void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 	switch (a.action){
-		case Action::MoveScreenUpLine:
+		case EditAction::MoveScreenUpLine:
 			MoveScreenUp(1);
 			break;
-		case Action::MoveScreenDownLine:
+		case EditAction::MoveScreenDownLine:
 			MoveScreenDown(1);
 			break;
-		case Action::MoveUpPage:
+		case EditAction::MoveUpPage:
 			MoveVisualCursorUp(cursor,screenHeight-1);
 			break;
-		case Action::MoveDownPage:
+		case EditAction::MoveDownPage:
 			MoveVisualCursorDown(cursor,screenHeight-1);
 			break;
-		case Action::MoveUpLine:
+		case EditAction::MoveUpLine:
 			MoveVisualCursorUp(cursor,a.num);
 			break;
-		case Action::MoveDownLine:
+		case EditAction::MoveDownLine:
 			MoveVisualCursorDown(cursor,a.num);
 			break;
-		case Action::MoveLeftChar:
+		case EditAction::MoveLeftChar:
 			MoveVisualCursorLeft(cursor,1);
 			break;
-		case Action::MoveRightChar:
+		case EditAction::MoveRightChar:
 			MoveVisualCursorRight(cursor,1);
 			break;
-		case Action::MoveLeftMulti:
-			if (gConfig.moveMode==MultiMode::Multi){
+		case EditAction::MoveLeftMulti:
+			if (gEditConfig.moveMode==MultiMode::Multi){
 				MoveVisualCursorLeft(cursor,a.num);
-			} else if (gConfig.moveMode==MultiMode::Word){
+			} else if (gEditConfig.moveMode==MultiMode::Word){
 				MoveVisualCursorLeftWord(cursor);
-			} else if (gConfig.moveMode==MultiMode::PascalWord){
+			} else if (gEditConfig.moveMode==MultiMode::PascalWord){
 				MoveVisualCursorLeftPascalWord(cursor);
 			}
 			break;
-		case Action::MoveRightMulti:
-			if (gConfig.moveMode==MultiMode::Multi){
+		case EditAction::MoveRightMulti:
+			if (gEditConfig.moveMode==MultiMode::Multi){
 				MoveVisualCursorRight(cursor,a.num);
-			} else if (gConfig.moveMode==MultiMode::Word){
+			} else if (gEditConfig.moveMode==MultiMode::Word){
 				MoveVisualCursorRightWord(cursor);
-			} else if (gConfig.moveMode==MultiMode::PascalWord){
+			} else if (gEditConfig.moveMode==MultiMode::PascalWord){
 				MoveVisualCursorRightPascalWord(cursor);
 			}
 			break;
-		case Action::MoveUpMulti:
+		case EditAction::MoveUpMulti:
 			MoveVisualCursorUp(cursor,a.num);
 			break;
-		case Action::MoveDownMulti:
+		case EditAction::MoveDownMulti:
 			MoveVisualCursorDown(cursor,a.num);
 			break;
-		case Action::MoveToLineStart:
+		case EditAction::MoveToLineStart:
 			MoveVisualCursorToLineStart(cursor);
 			break;
-		case Action::MoveToLineEnd:
+		case EditAction::MoveToLineEnd:
 			MoveVisualCursorToLineEnd(cursor);
 			break;
-		case Action::MoveToBufferStart:
+		case EditAction::MoveToBufferStart:
 			MoveVisualCursorToBufferStart(cursor);
 			break;
-		case Action::MoveToBufferEnd:
+		case EditAction::MoveToBufferEnd:
 			MoveVisualCursorToBufferEnd(cursor);
 			break;
 		default:
@@ -71,17 +71,18 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 	}
 }
 
-void EditMode::ProcessTextAction(TextAction a){
+void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
+	TextAction a = GetTextActionFromKey(key,mod);
 	VisualCursor& cursor = cursors[0];
 	ProcessMoveAction(cursor,a);
 	
 	if (finding){
 		switch (a.action){
-			case Action::InsertLine:
-			case Action::Tab:
+			case EditAction::InsertLine:
+			case EditAction::Tab:
 				CursorToNextMatch();
 				return;
-			case Action::Untab:
+			case EditAction::Untab:
 				CursorToPreviousMatch();
 				return;
 		
@@ -94,52 +95,52 @@ void EditMode::ProcessTextAction(TextAction a){
 	
 	if (selecting){
 		switch(a.action){
-			case Action::InsertChar:
-			case Action::InsertLine:
-			case Action::Paste:
-			case Action::PasteLines:
+			case EditAction::InsertChar:
+			case EditAction::InsertLine:
+			case EditAction::Paste:
+			case EditAction::PasteLines:
 				VisualCursorDeleteSelection(cursor);
 				break;
-			case Action::DeleteCurrentChar:
-			case Action::DeletePreviousChar:
-			case Action::DeleteCurrentMulti:
-			case Action::DeletePreviousMulti:
+			case EditAction::DeleteCurrentChar:
+			case EditAction::DeletePreviousChar:
+			case EditAction::DeleteCurrentMulti:
+			case EditAction::DeletePreviousMulti:
 				VisualCursorDeleteSelection(cursor);
 				return;
-			case Action::Cut:
+			case EditAction::Cut:
 				VisualCursorDeleteSelection(cursor,true);
 				ctx->GetClipboard() = copiedText;
 				return;
-			case Action::CutLines:
+			case EditAction::CutLines:
 				CopyLinesInSelection();
 				DeleteLinesInSelection(cursor);
 				ctx->GetClipboard() = copiedText;
 				return;
-			case Action::Copy:
+			case EditAction::Copy:
 				CopySelection();
 				StopSelecting();
 				ctx->GetClipboard() = copiedText;
 				return;
-			case Action::CopyLines:
+			case EditAction::CopyLines:
 				CopyLinesInSelection();
 				StopSelecting();
 				ctx->GetClipboard() = copiedText;
 				return;
-			case Action::Tab:
+			case EditAction::Tab:
 				IndentSelection(cursor);
 				return;
-			case Action::Untab:
+			case EditAction::Untab:
 				DedentSelection(cursor);
 				return;
-			case Action::DeleteLine:
+			case EditAction::DeleteLine:
 				DeleteLinesInSelection(cursor);
 				return;
-			case Action::UndoAction:
-			case Action::RedoAction:
-			case Action::Escape:
+			case EditAction::UndoAction:
+			case EditAction::RedoAction:
+			case EditAction::Escape:
 				StopSelecting();
 				break;
-			case Action::ToggleSelect:
+			case EditAction::ToggleSelect:
 				StopSelecting();
 				return;
 			default:
@@ -148,14 +149,14 @@ void EditMode::ProcessTextAction(TextAction a){
 	}
 	if (!selecting){
 		switch (a.action){
-			case Action::InsertLine:
+			case EditAction::InsertLine:
 				VisualCursorInsertLine(cursor);
 				break;
-			case Action::InsertLineBelow:
+			case EditAction::InsertLineBelow:
 				MoveVisualCursorToLineEnd(cursor);
 				VisualCursorInsertLine(cursor);
 				break;
-			case Action::InsertLineAbove:
+			case EditAction::InsertLineAbove:
 				if (cursor.cursor.line.index==0){
 					MoveVisualCursorToLineStart(cursor);
 					VisualCursorInsertLine(cursor);
@@ -167,101 +168,101 @@ void EditMode::ProcessTextAction(TextAction a){
 				}
 				VisualCursorInsertLine(cursor);
 				break;
-			case Action::DeletePreviousChar:
+			case EditAction::DeletePreviousChar:
 				VisualCursorDeletePreviousChar(cursor,1);
 				break;
-			case Action::DeleteCurrentChar:
+			case EditAction::DeleteCurrentChar:
 				if (cursor.cursor.column==cursor.CurrentLineLen()
 						&&cursor.cursor.line.index==(s32)(textBuffer->size()-1))
 					break;
 	
 				DeleteCharAt(cursor.cursor);
 				break;
-			case Action::DeletePreviousMulti:
-				if (gConfig.deleteMode==MultiMode::Multi){
+			case EditAction::DeletePreviousMulti:
+				if (gEditConfig.deleteMode==MultiMode::Multi){
 					VisualCursorDeletePreviousChar(cursor,a.num);
-				} else if (gConfig.deleteMode==MultiMode::Word){
+				} else if (gEditConfig.deleteMode==MultiMode::Word){
 					VisualCursorDeletePreviousWord(cursor);
-				} else if (gConfig.deleteMode==MultiMode::PascalWord){
+				} else if (gEditConfig.deleteMode==MultiMode::PascalWord){
 					VisualCursorDeletePreviousPascalWord(cursor);
 				}
 				break;
-			case Action::DeleteCurrentMulti:
-				if (gConfig.deleteMode==MultiMode::Multi){
+			case EditAction::DeleteCurrentMulti:
+				if (gEditConfig.deleteMode==MultiMode::Multi){
 					while (--a.num>=0){
 						if (cursor.cursor.column==cursor.CurrentLineLen()&&
 								cursor.cursor.line.index==(s32)(textBuffer->size()-1))
 							break;
 						DeleteCharAt(cursor.cursor);
 					}
-				} else if (gConfig.deleteMode==MultiMode::Word){
+				} else if (gEditConfig.deleteMode==MultiMode::Word){
 					VisualCursorDeleteCurrentWord(cursor);
-				} else if (gConfig.deleteMode==MultiMode::PascalWord){
+				} else if (gEditConfig.deleteMode==MultiMode::PascalWord){
 					VisualCursorDeleteCurrentPascalWord(cursor);
 				}
 				break;
-			case Action::InsertChar:
+			case EditAction::InsertChar:
 				InsertCharAt(cursor.cursor,a.character);
 				MoveVisualCursorRight(cursor,1);
 				break;
-			case Action::Tab:
+			case EditAction::Tab:
 				InsertTab(cursor);
 				break;
-			case Action::Untab:
+			case EditAction::Untab:
 				RemoveTab(cursor);
 				break;
-			case Action::DeleteLine:
+			case EditAction::DeleteLine:
 				VisualCursorDeleteLine(cursor);
 				break;
-			case Action::UndoAction:
+			case EditAction::UndoAction:
 				Undo(cursor);
 				break;
-			case Action::RedoAction:
+			case EditAction::RedoAction:
 				Redo(cursor);
 				break;
-			case Action::ToggleSelect:
+			case EditAction::ToggleSelect:
 				StartSelecting(cursor);
 				break;
-			case Action::SelectAll:
+			case EditAction::SelectAll:
 				selecting = true;
 				selectAnchor = MakeCursorAtBufferStart(*textBuffer);
 				MoveVisualCursorToBufferEnd(cursor);
 				UpdateSelection(cursor);
 				break;
-			case Action::Copy:
-			case Action::CopyLines:
+			case EditAction::Copy:
+			case EditAction::CopyLines:
 				copiedText = *cursor.cursor.line.it;
 				ctx->GetClipboard() = copiedText;
 				break;
-			case Action::Cut:
-			case Action::CutLines:
+			case EditAction::Cut:
+			case EditAction::CutLines:
 				copiedText = *cursor.cursor.line.it;
 				VisualCursorDeleteLine(cursor);
 				ctx->GetClipboard() = copiedText;
 				break;
-			case Action::Paste:
+			case EditAction::Paste:
 				copiedText = ctx->GetClipboard();
 				InsertStringAt(cursor.cursor,copiedText);
 				MoveCursorRight(cursor.cursor,copiedText.size());
 				SetCachedX(cursor);
 				break;
-			case Action::PasteLines:
+			case EditAction::PasteLines:
 				copiedText = ctx->GetClipboard();
 				InsertLinesAt(cursor.cursor,copiedText);
 				break;
-			case Action::Goto:
+			case EditAction::Goto:
 				ctx->BeginCommand("goto ");
 				break;
-			case Action::Find:
+			case EditAction::Find:
 				ctx->BeginCommand("find ");
 				break;
-			case Action::Replace:
+			case EditAction::Replace:
 				ctx->BeginCommand("replace ");
 				break;
-			case Action::Escape:
+			case EditAction::Escape:
 				matches.clear();
 				break;
-			case Action::DebugAction:
+			case EditAction::DebugAction:
 				showDebugInfo = !showDebugInfo;
 				break;
 	

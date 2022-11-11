@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core.h"
-#include "config.h"
 
 #include <string>
 #include <string_view>
@@ -124,11 +123,5 @@ public:
 	inline bool empty() const noexcept {
 		return lines.empty();
 	}
-
-	s32 GetIndentationAt(LineIterator,s32=4);
-	bool IsTabIndented(LineIterator);
 };
 
-void UpdateXI(const std::string&, s32&, s32&, s32);
-s32 GetXPosOfIndex(const std::string&, s32, s32);
-s32 GetIndexOfXPos(const std::string&, s32, s32);

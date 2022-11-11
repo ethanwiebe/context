@@ -60,14 +60,3 @@ enum class Action : u16 {
 
 #undef ACTION
 
-struct TextAction {
-	Action action;
-	
-	union {
-		s32 num;
-		char character;
-		const char* str;
-	};
-};
-
-

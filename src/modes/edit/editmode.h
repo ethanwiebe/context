@@ -2,12 +2,13 @@
 
 #include "core.h"
 #include "linemode.h"
+#include "editbinds.h"
 
 class EditMode : public LineModeBase {
 public:
 	EditMode(ContextEditor*);
 
-	void ProcessTextAction(TextAction) override;
+	void ProcessKeyboardEvent(KeyEnum,KeyModifier) override;
 	void ProcessMoveAction(VisualCursor&,TextAction);
 
 	std::string_view GetModeName() override {return "edit";}

@@ -1,8 +1,8 @@
 #include "linemode.h"
 
-#include "../context.h"
+#include "../../context.h"
 
-#include "../profiler.h"
+#include "../../profiler.h"
 
 #ifdef _WIN32
 inline s32 wcwidth(u32 c){
@@ -46,6 +46,36 @@ std::string GetEventString(KeyboardEvent e){
 	s += (char)e.key;
 	s += " ("+std::to_string(e.key)+")";
 	return s;
+}
+
+s32 GetIndentationAt(LineIterator it,s32 size){
+	s32 count = 0;
+	s32 spaceCount = 0;
+	char first = (*it)[0];
+
+	if (first=='\t'){
+		for (char c : *it){
+			if (c!='\t') break;
+			++count;
+		}
+	} else if (first==' '){
+		for (char c : *it){
+			if (c!=' ') break;
+			++spaceCount;
+			if (spaceCount==size){
+				spaceCount = 0;
+				++count;
+			}
+		}
+	}
+	return count;
+}
+
+bool IsTabIndented(LineIterator it){
+	char first = (*it)[0];
+	if (first=='\t') return true;
+	if (first==' ') return false;
+	return gEditConfig.tabMode==TabMode::Tabs;
 }
 
 s32 TrueLineDistance(LineIndexedIterator,s32,LineIndexedIterator,s32,s32);
@@ -167,7 +197,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	std::scoped_lock lock{colorMutex};
 	
 	// fix color buffer line count
-	size_t cursorColorInsert=cursors.front().cursor.line.index;
+	size_t cursorColorInsert=std::min((size_t)cursors.front().cursor.line.index,colorBuffer.size()-1);
 	if (cursorColorInsert)
 		--cursorColorInsert;
 		
@@ -222,7 +252,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	for (s32 y=0;y<screenHeight;y++){
 		if (it.index<0||it.it==textBuffer->end()){
-			if (gConfig.displayLineNumbers){
+			if (gEditConfig.displayLineNumbers){
 				for (s32 n=0;n<lineNumberWidth;++n){
 					textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 				}
@@ -240,7 +270,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		lineStart = 0;
 		lineLen = it.it->size();
 
-		if (gConfig.displayLineNumbers){ //line numbers
+		if (gEditConfig.displayLineNumbers){ //line numbers
 			for (s32 n=0;n<lineNumberWidth;++n){ //fill in style
 				textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 			}
@@ -324,7 +354,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 				x = 0;
 				if (y>=screenHeight) break;
 
-				if (gConfig.displayLineNumbers){
+				if (gEditConfig.displayLineNumbers){
 					for (s32 n=0;n<lineNumberWidth;++n){
 						textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 					}
@@ -415,7 +445,12 @@ std::string RemoveEscapes(std::string_view token){
 }
 
 bool LineModeBase::ProcessCommand(const TokenVector& tokens){
-	if (tokens[0].Matches("goto")){
+	if (tokens.empty())
+		return false;
+		
+	if (tokens[0].Matches("set")){
+		return SetConfigVar(tokens);
+	} else if (tokens[0].Matches("goto")){
 		if (tokens.size()<2) return true;
 		s32 l = strtol(tokens[1].Stringify().data(),NULL,10);
 		s32 c = 0;
@@ -479,7 +514,6 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			SetModified();
 			highlighterNeedsUpdate = true;
 		}
-		
 		
 		return true;
 	}
@@ -572,7 +606,7 @@ inline void LineModeBase::SetColorLine(){
 void LineModeBase::CalculateScreenData(){
 	lineNumberWidth = std::max(numWidth(std::max(viewLine.index+screenHeight,0))+2,5);
 	lineWidth = screenWidth;
-	if (gConfig.displayLineNumbers)
+	if (gEditConfig.displayLineNumbers)
 		lineWidth -= lineNumberWidth;
 
 	SetColorLine();

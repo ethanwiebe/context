@@ -32,7 +32,7 @@ public:
 		return modeInfoMessage;
 	}
 
-	virtual void ProcessTextAction(TextAction) = 0;
+	virtual void ProcessKeyboardEvent(KeyEnum,KeyModifier) = 0;
 	virtual TextScreen& GetTextScreen(s32,s32) = 0;
 
 	virtual bool ProcessCommand(const TokenVector&){return false;}
@@ -56,7 +56,7 @@ public:
 
 	virtual std::string_view GetModeName() = 0;
 	virtual std::string_view GetStatusBarText(){return {};}
-
+	
 	virtual ~ModeBase() = default;
 };
 

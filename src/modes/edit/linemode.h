@@ -1,14 +1,14 @@
 #pragma once
 
-#include "mode.h"
-#include "../keybind.h"
-#include "../textbuffer.h"
-#include "../logger.h"
-#include "../undo.h"
-#include "../syntaxhighlight.h"
-#include "../cursor.h"
-#include "../find.h"
-#include "config.h"
+#include "../mode.h"
+#include "../../keybind.h"
+#include "../../logger.h"
+#include "../../undo.h"
+#include "../../syntaxhighlight.h"
+#include "../../textbuffer.h"
+#include "find.h"
+#include "cursor.h"
+#include "editconfig.h"
 
 #include <vector>
 #include <wchar.h>
@@ -121,6 +121,9 @@ public:
 	std::string_view GetStatusBarText() override;
 	
 	bool ProcessCommand(const TokenVector&) override;
+	bool SetConfigVar(const TokenVector&);
+	
+	static void RegisterBinds();
 
 	bool OpenAction(const OSInterface& os,std::string_view path) override;
 	bool SaveAction(const OSInterface& os) override;
@@ -228,3 +231,10 @@ inline char GetCharAt(Cursor cursor){
 	if (cursor.column==(s32)cursor.line.it->size()) return '\n';
 	return (*cursor.line.it)[cursor.column];
 }
+
+bool IsTabIndented(LineIterator);
+s32 GetIndentationAt(LineIterator,s32);
+void UpdateXI(const std::string& str,s32& x,s32& i,s32 width);
+s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width);
+s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width);
+

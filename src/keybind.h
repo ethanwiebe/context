@@ -6,12 +6,7 @@
 #include <unordered_map>
 #include <list>
 
-#define ADD_BIND(action,key,mod) { \
-	if (!gKeyBindings.contains((action))){ \
-		gKeyBindings[(action)] = {}; \
-	} \
-	gKeyBindings[(action)].emplace_back((KeyEnum)(key), (KeyModifier)(mod)); \
-}
+#define ACTION_NOT_FOUND (-1)
 
 struct KeyBind {
 	KeyEnum key;
@@ -22,7 +17,6 @@ struct KeyBind {
 	}
 };
 
-
 template <>
 struct std::hash<KeyBind>
 {
@@ -31,14 +25,23 @@ struct std::hash<KeyBind>
 	}
 };			  
 
-
 typedef std::list<KeyBind> BindList;
-typedef std::unordered_map<Action,BindList> KeyMap;
-typedef std::unordered_map<KeyBind,Action> InvKeyMap;
+typedef std::unordered_map<s16,BindList> KeyMap;
+typedef std::unordered_map<KeyBind,s16> InvKeyMap;
+typedef std::unordered_map<std::string,s16> ActionNameMap;
 
-extern KeyMap gKeyBindings;
+struct BindSet {
+	KeyMap keyMap;
+	InvKeyMap boundMap;
+	ActionNameMap nameMap;
+};
 
-void SetKeybinds();
-void UpdateBinds();
-Action FindActionFromKey(KeyEnum,KeyModifier);
-TextAction GetTextActionFromKey(KeyEnum,KeyModifier);
+typedef std::unordered_map<std::string,BindSet> BindDict;
+
+extern BindDict gBinds;
+
+void AddBind(BindSet&,s16 action,KeyBind bind);
+void SetGlobalBinds();
+void UpdateBinds(BindSet&);
+s16 FindActionFromKey(const BindSet&,KeyEnum,KeyModifier);
+

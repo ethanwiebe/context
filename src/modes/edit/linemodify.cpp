@@ -2,17 +2,17 @@
 
 void LineModeBase::VisualCursorInsertLine(VisualCursor& cursor){
 	InsertCharAt(cursor.cursor,'\n');
-	s32 indentLevel = textBuffer->GetIndentationAt(cursor.cursor.line.it,gConfig.tabSize);
-	bool tabs = textBuffer->IsTabIndented(cursor.cursor.line.it);
+	s32 indentLevel = GetIndentationAt(cursor.cursor.line.it,gEditConfig.tabSize);
+	bool tabs = IsTabIndented(cursor.cursor.line.it);
 	MoveCursorRight(cursor.cursor,1);
-	if (gConfig.autoIndent){
+	if (gEditConfig.autoIndent){
 		if (tabs){
 			while (--indentLevel>=0){
 				InsertCharAt(cursor.cursor,'\t');
 				MoveVisualCursorRight(cursor,1);
 			}
 		} else {
-			s32 spaceCount = gConfig.tabSize*indentLevel;
+			s32 spaceCount = gEditConfig.tabSize*indentLevel;
 			while (--spaceCount>=0){
 				InsertCharAt(cursor.cursor,' ');
 				MoveVisualCursorRight(cursor,1);
@@ -295,11 +295,11 @@ void LineModeBase::InsertLinesAt(Cursor cursor,const std::string& s){
 }
 
 void LineModeBase::InsertTab(VisualCursor& cursor){
-	if (textBuffer->IsTabIndented(cursor.cursor.line.it)){
+	if (IsTabIndented(cursor.cursor.line.it)){
 		InsertCharAt(cursor.cursor,'\t');
 		MoveVisualCursorRight(cursor,1);
 	} else {
-		for (ssize_t i=0;i<gConfig.tabSize;++i){
+		for (ssize_t i=0;i<gEditConfig.tabSize;++i){
 			InsertCharAt(cursor.cursor,' ');
 			MoveVisualCursorRight(cursor,1);
 		}
@@ -316,7 +316,7 @@ void LineModeBase::RemoveTab(VisualCursor& cursor){
 	if (c=='\t'){
 		VisualCursorDeletePreviousChar(cursor,1);
 	} else if (c==' '){
-		s64 count = gConfig.tabSize;
+		s64 count = gEditConfig.tabSize;
 		while (--count>=0&&cursor.cursor.column!=0){
 			VisualCursorDeletePreviousChar(cursor,1);
 			temp = cursor.cursor;

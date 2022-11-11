@@ -75,7 +75,7 @@ class ContextEditor {
 
 	void SetStyleOpts(std::string_view,std::string_view,std::string_view,std::string_view);
 	void SetConfigVar(std::string_view,std::string_view);
-	void SetConfigBind(std::string_view,const TokenVector&);
+	void SetConfigBind(const std::string&,const TokenVector&);
 	
 	std::string ConstructModeString(size_t);
 	void DrawStatusBar();
@@ -83,9 +83,9 @@ class ContextEditor {
 	std::string GetTabString(size_t,size_t);
 	void DrawTabsBar();
 
-	bool ProcessKeyboardEvent(TextAction);
-	void ProcessCommandEntry(TextAction);
-	void ProcessYesNoEntry(TextAction);
+	bool ProcessKeyboardEvent(KeyEnum,KeyModifier);
+	void ProcessCommandEntry(KeyEnum,KeyModifier);
+	void ProcessYesNoEntry(KeyEnum,KeyModifier);
 	void Loop();
 	inline void Update();
 	inline void Render();

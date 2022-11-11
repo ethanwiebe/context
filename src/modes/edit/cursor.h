@@ -2,7 +2,7 @@
 
 #include "core.h"
 
-#include "textbuffer.h"
+#include "../../textbuffer.h"
 
 struct Cursor {
 	LineIndexedIterator line;
