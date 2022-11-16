@@ -2,15 +2,15 @@
 
 #include "core.h"
 
-enum class TabMode : u8 {
-	Spaces,
-	Tabs
+enum class TabMode : u64 {
+	Spaces = 0,
+	Tabs = 1
 };
 
-enum class MultiMode : u8 {
-	Multi,
-	Word,
-	PascalWord
+enum class MultiMode : u64 {
+	Multi = 0,
+	Word = 1,
+	PascalWord = 2
 };
 
 struct EditConfig {

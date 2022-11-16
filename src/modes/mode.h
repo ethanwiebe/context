@@ -8,10 +8,36 @@
 #include "../tokenizer.h"
 #include "../interfaces/os.h"
 
+enum class OptionType {
+	Bool = 0,
+	Int,
+	PositiveInt,
+	NonNegativeInt,
+	Float,
+	String,
+	Enum
+};
+
+struct ModeOption {
+	OptionType type;
+	const char* name;
+	
+	union {
+		bool* boolLoc;
+		s64* intLoc;
+		double* floatLoc;
+		std::string* strLoc;
+		u64* enumLoc;
+	};
+	const char** enumValues = NULL;
+};
+
 class ContextEditor;
 
-// modes sit on top of text files and modify them according
-// to the stream of keyboard events they receive
+typedef s32 ModeIndex;
+
+#define MODE_NOT_FOUND (-1)
+
 class ModeBase {
 protected:
 	ContextEditor* ctx;
@@ -59,4 +85,8 @@ public:
 	
 	virtual ~ModeBase() = default;
 };
+
+ModeIndex ModeNameToIndex(const char*);
+const char*  ModeIndexToName(ModeIndex);
+const ModeOption* ModeIndexToOptionArray(ModeIndex i,size_t& size);
 

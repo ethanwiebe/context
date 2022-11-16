@@ -15,99 +15,76 @@ EditConfig gEditConfig = {
 	.deleteMode = MultiMode::Word
 };
 
-inline bool SetMultiMode(MultiMode& var,std::string_view val){
-	if (val=="multi")
-		var = MultiMode::Multi;
-	else if (val=="word")
-		var = MultiMode::Word;
-	else if (val=="pascal")
-		var = MultiMode::PascalWord;
-	else
-		return false;
-	
-	return true;
-}
+const char* tabEnumValues[] = {
+	"spaces",
+	"tabs",
+	NULL
+};
 
-bool LineModeBase::SetConfigVar(const TokenVector& tokens){
-	if (tokens.size()<3) return false;
-	
-	const auto& name = tokens[1];
-	auto val = tokens[2].Stringify();
-	
-	if (name.Matches("tabSize")){
-		ssize_t n = strtol(val.data(),NULL,10);
-		if (n>0){
-			gEditConfig.tabSize = n;
-		} else {
-			modeErrorMessage.Set("tabSize must be a positive integer");
-		}
-		return true;
+const char* multiEnumValues[] = {
+	"multi",
+	"word",
+	"pascal"
+};
+
+ModeOption gEditModeOps[11] = {
+	{
+		.type = OptionType::Bool,
+		.name = "autoIndent",
+		.boolLoc = &gEditConfig.autoIndent	
+	},
+	{
+		.type = OptionType::Bool,
+		.name = "cursorLock",
+		.boolLoc = &gEditConfig.cursorLock
+	},
+	{
+		.type = OptionType::Bool,
+		.name = "displayLineNumbers",
+		.boolLoc = &gEditConfig.displayLineNumbers
+	},
+	{
+		.type = OptionType::Bool,
+		.name = "smartHome",
+		.boolLoc = &gEditConfig.smartHome
+	},
+	{
+		.type = OptionType::Bool,
+		.name = "cursorWrap",
+		.boolLoc = &gEditConfig.cursorWrap
+	},
+	{
+		.type = OptionType::PositiveInt,
+		.name = "tabSize",
+		.intLoc = &gEditConfig.tabSize
+	},
+	{
+		.type = OptionType::NonNegativeInt,
+		.name = "cursorMoveHeight",
+		.intLoc = &gEditConfig.cursorMoveHeight
+	},
+	{
+		.type = OptionType::PositiveInt,
+		.name = "multiAmount",
+		.intLoc = &gEditConfig.multiAmount
+	},
+	{
+		.type = OptionType::Enum,
+		.name = "tabMode",
+		.enumLoc = (u64*)&gEditConfig.tabMode,
+		.enumValues = tabEnumValues
+	},
+	{
+		.type = OptionType::Enum,
+		.name = "moveMode",
+		.enumLoc = (u64*)&gEditConfig.moveMode,
+		.enumValues = multiEnumValues
+	},
+	{
+		.type = OptionType::Enum,
+		.name = "deleteMode",
+		.enumLoc = (u64*)&gEditConfig.deleteMode,
+		.enumValues = multiEnumValues
 	}
-	if (name.Matches("cursorMoveHeight")){
-		ssize_t n = strtol(val.data(),NULL,10);
-		if (n>=0){
-			gEditConfig.cursorMoveHeight = n;
-		} else {
-			modeErrorMessage.Set("cursorMoveHeight must be a non-negative integer");
-		}
-		return true;
-	}
-	if (name.Matches("multiAmount")){
-		ssize_t n = strtol(val.data(),NULL,10);
-		if (n>0){
-			gEditConfig.multiAmount = n;
-		} else {
-			modeErrorMessage.Set("multiAmount must be a positive integer");
-		}
-		return true;
-	}
-	if (name.Matches("displayLineNumbers")){
-		if (!ParseBool(gEditConfig.displayLineNumbers,val)){
-			modeErrorMessage.Set("displayLineNumbers must be a boolean value");
-		}
-		return true;
-	}
-	if (name.Matches("autoIndent")){
-		if (!ParseBool(gEditConfig.autoIndent,val)){
-			modeErrorMessage.Set("autoIndent must be a boolean value");
-		}
-		return true;
-	}
-	if (name.Matches("cursorLock")){
-		if (!ParseBool(gEditConfig.cursorLock,val)){
-			modeErrorMessage.Set("cursorLock must be a boolean value");
-		}
-		return true;
-	}
-	if (name.Matches("cursorWrap")){
-		if (!ParseBool(gEditConfig.cursorWrap,val)){
-			modeErrorMessage.Set("cursorWrap must be a boolean value");
-		}
-		return true;
-	}
-	if (name.Matches("smartHome")){
-		if (!ParseBool(gEditConfig.smartHome,val)){
-			modeErrorMessage.Set("smartHome must be a boolean value");
-		}
-		return true;
-	}
-	if (name.Matches("tabMode")){
-		if (val=="tabs")
-			gEditConfig.tabMode = TabMode::Tabs;
-		else if (val=="spaces")
-			gEditConfig.tabMode = TabMode::Spaces;
-		else
-			modeErrorMessage.Set("tabMode must be either 'tabs' or 'spaces'");
-		return true;
-	}
-	if (name.Matches("moveMode")){
-		if (!SetMultiMode(gEditConfig.moveMode,val))
-			modeErrorMessage.Set("moveMode must be one of 'multi', 'word', or 'pascal'");
-	}
-	if (name.Matches("deleteMode")){
-		if (!SetMultiMode(gEditConfig.deleteMode,val))
-			modeErrorMessage.Set("deleteMode must be one of 'multi', 'word', or 'pascal'");
-		return true;
-	}
-	return false;
-}
+};
+

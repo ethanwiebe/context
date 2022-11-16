@@ -95,7 +95,7 @@ inline void ContextEditor::Update(){
 		if (entryMode==EntryMode::Command){
 			ProcessCommandEntry((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
 		} else if (entryMode==EntryMode::YesNo){
-			ProcessYesNoEntry((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
+			ProcessYesNoEntry((KeyEnum)currentEvent->key);
 		} else {
 			if (!ProcessKeyboardEvent((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod))
 				modes[currentMode]->ProcessKeyboardEvent((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
@@ -137,8 +137,9 @@ void ContextEditor::RunFile(std::string_view path,bool silent){
 				entryString = line;
 				SubmitCommand();
 				if (!errorMessage.Empty()){
-					errorMessage.Set("Error at line "+std::to_string(l)+
-						": "+errorMessage.msg);
+					errorMessage.Set(std::string(path)+":"+
+						std::to_string(l+1)+": "+errorMessage.msg);
+					
 					break;
 				}
 				++l;
@@ -280,7 +281,7 @@ void ContextEditor::ProcessCommandEntry(KeyEnum key,KeyModifier mod){
 	}
 }
 
-void ContextEditor::ProcessYesNoEntry(KeyEnum key,KeyModifier mod){
+void ContextEditor::ProcessYesNoEntry(KeyEnum key){
 	if (key==(KeyEnum)'y'||key==(KeyEnum)'Y'){
 		yesAction();
 		entryMode = EntryMode::None;
@@ -344,8 +345,8 @@ void ContextEditor::SubmitCommand(){
 	
 	TokenVector tokens = GetCommandTokens();
 	
-	if (!modes[currentMode]->ProcessCommand(tokens)){
-		if (!ProcessCommand(tokens)){
+	if (!ProcessCommand(tokens)){
+		if (!modes[currentMode]->ProcessCommand(tokens)){
 			errorMessage.Set("Unrecognized command '"+tokens[0].Stringify()+"'");
 		}
 	}
@@ -372,6 +373,7 @@ std::string ParsePath(std::string_view path,const OSInterface& os){
 
 bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	if (!tokens.size()) return true;
+	
 #ifndef NDEBUG
 	LogTokens(tokens);
 #endif
@@ -399,13 +401,10 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		SaveAsMode(parsedPath,currentMode);
 		return true;
 	} else if (tokens[0].Matches("set")){
-		std::string varName = tokens[1].Stringify();
-		std::string val = tokens[2].Stringify();
-		SetConfigVar(varName,val);
+		SetConfigVar(tokens);
 		return true;
 	} else if (tokens[0].Matches("bind")){
-		std::string actionName = tokens[1].Stringify();
-		SetConfigBind(actionName,tokens);
+		SetConfigBind(tokens);
 		return true;
 	} else if (tokens[0].Matches("style")){
 		std::string styleName = tokens[1].Stringify();
@@ -456,7 +455,7 @@ const std::map<std::string,KeyEnum> keyNameMap = {
 	{"Ins",KeyEnum::Insert},
 };
 
-inline bool ResolveActionMode(const std::string& name,std::string& modeOut){
+inline bool ResolveArgumentMode(const std::string& name,std::string& modeOut){
 	auto index = name.find('.');
 	
 	if (index==std::string::npos||index==0) return false;
@@ -465,11 +464,11 @@ inline bool ResolveActionMode(const std::string& name,std::string& modeOut){
 	return true;
 }
 
-inline bool ResolveActionName(const std::string& name,std::string& actionOut){
+inline bool ResolveArgumentName(const std::string& name,std::string& argOut){
 	auto index = name.find('.');
 	if (index==name.size()-1) return false;
 	
-	actionOut = name.substr(index+1);
+	argOut = name.substr(index+1);
 	return true;
 }
 
@@ -580,22 +579,23 @@ inline bool ParseKeybind(std::vector<KeyBind>& binds,std::string_view bindstr){
 	return true;
 }
 
-void ContextEditor::SetConfigBind(const std::string& actionStr,const TokenVector& tokens){
+void ContextEditor::SetConfigBind(const TokenVector& tokens){
+	std::string actionStr = tokens[1].Stringify();
 	std::string modeName,actionName;
 	
-	if (!ResolveActionMode(actionStr,modeName)){
-		errorMessage.Set("Unrecognized mode in action: '"+std::string(actionStr)+"'");
+	if (!ResolveArgumentMode(actionStr,modeName)){
+		errorMessage.Set("Unrecognized mode in action: '"+actionStr+"'");
 		return;
 	}
 	
-	if (!ResolveActionName(actionStr,actionName)){
-		errorMessage.Set("Badly formatted action: '"+std::string(actionStr)+"'");
+	if (!ResolveArgumentName(actionStr,actionName)){
+		errorMessage.Set("Badly formatted action: '"+actionStr+"'");
 		return;
 	}
 	
 	auto bindSet = gBinds.at(modeName);
 	if (!bindSet.nameMap.contains(actionName)){
-		errorMessage.Set("Unrecognized action: '"+std::string(actionStr)+"'");
+		errorMessage.Set("Unrecognized action: '"+actionStr+"'");
 		return;
 	}
 	
@@ -763,7 +763,7 @@ void ContextEditor::DrawStatusBar(){
 	}
 }
 
-const size_t tabBarWidth = 16;
+//const size_t tabBarWidth = 16;
 
 inline std::string_view BaseName(std::string_view s){
 	auto index = s.find_last_of('/');
@@ -802,6 +802,7 @@ std::string ContextEditor::GetTabString(size_t index,size_t tabW){
 }
 
 void ContextEditor::DrawTabsBar(){
+	const s64 tabBarWidth = std::max(gConfig.tabBarWidth,(s64)6);
 	// how many tabs per page (minus 3 for ' ...')
 	size_t tabCount = (screen.GetWidth()-4)/tabBarWidth;
 	size_t sansSymbolTabCount = (screen.GetWidth())/tabBarWidth;
@@ -1012,22 +1013,50 @@ void ContextEditor::SetPathMode(std::string_view path,size_t index){
 	modes[index]->SetPath(*osInterface,copiedPath);
 }
 
-void ContextEditor::SetConfigVar(std::string_view name,std::string_view val){
-	if (name=="style"){
-		SaveStyle();
-		gConfig.style = val;
-		if (!StyleExists(gConfig.style)){
-			infoMessage.Set("New style '"+gConfig.style+"' created.");
-		}
-		LoadStyle();
-		for (size_t i=0;i<modes.size();++i)
-			modes[i]->UpdateStyle();
-	} else if (name=="sleepy"){
-		if (!ParseBool(gConfig.sleepy,val)){
-			errorMessage.Set("sleepy must be a boolean value!");
+void ContextEditor::SetConfigVar(const TokenVector& tokens){
+	std::string modeName,varName;
+	
+	std::string varStr = tokens[1].Stringify();
+	
+	if (!ResolveArgumentMode(varStr,modeName)){
+		errorMessage.Set("Unrecognized mode in var: '"+varStr+"'");
+		return;
+	}
+	
+	if (!ResolveArgumentName(varStr,varName)){
+		errorMessage.Set("Badly formatted var: '"+varStr+"'");
+		return;
+	}
+	
+	if (modeName=="ctx"){
+		if (varName=="style"){
+			SaveStyle();
+			gConfig.style = tokens[2].Stringify();
+			if (!StyleExists(gConfig.style)){
+				infoMessage.Set("New style '"+gConfig.style+"' created.");
+			}
+			LoadStyle();
+			for (size_t i=0;i<modes.size();++i)
+				modes[i]->UpdateStyle();
+		} else if (varName=="sleepy"){
+			if (!ParseBool(gConfig.sleepy,tokens[2].Stringify())){
+				errorMessage.Set("sleepy must be a boolean value!");
+			}
+		} else if (varName=="tabBarWidth"){
+			if (!ParsePositiveInt(gConfig.tabBarWidth,tokens[2].Stringify())){
+				errorMessage.Set("tabBarWidth must be a positive int!");
+			}
+		} else {
+			errorMessage.Set("'"+varName+"' is not a config var!");
 		}
 	} else {
-		errorMessage.Set("'"+std::string(name)+"' is not a config var!");
+		ModeIndex index = ModeNameToIndex(modeName.c_str());
+		if (index==MODE_NOT_FOUND){
+			errorMessage.Set("Unrecognized mode '"+modeName+"'");
+			return;
+		}
+		
+		FindAndSetConfigVar(index,varName,tokens,errorMessage);
 	}
 }
 

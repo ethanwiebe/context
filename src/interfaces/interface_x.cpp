@@ -1,7 +1,7 @@
 #ifdef __linux__
 
 #include "interface_curses.h"
-#include "config.h"
+#include "../config.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

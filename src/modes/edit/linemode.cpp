@@ -448,9 +448,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 	if (tokens.empty())
 		return false;
 		
-	if (tokens[0].Matches("set")){
-		return SetConfigVar(tokens);
-	} else if (tokens[0].Matches("goto")){
+	if (tokens[0].Matches("goto")){
 		if (tokens.size()<2) return true;
 		s32 l = strtol(tokens[1].Stringify().data(),NULL,10);
 		s32 c = 0;

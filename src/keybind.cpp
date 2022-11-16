@@ -16,19 +16,19 @@ void SetGlobalBinds(){
 	ADD_BIND(Action::Entry,               'e',                 KeyModifier::Ctrl);
 	
 	ADD_BIND(Action::CloseMode,           'q',                 KeyModifier::Ctrl);
-	ADD_BIND(Action::NewMode,             'n',                 KeyModifier::Ctrl|KeyModifier::Shift);
+	ADD_BIND(Action::NewMode,             'n',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::NextMode,            KeyEnum::PageDown,   KeyModifier::Ctrl);
 	ADD_BIND(Action::PreviousMode,        KeyEnum::PageUp,     KeyModifier::Ctrl);
-	ADD_BIND(Action::NextMode,            'm',                 KeyModifier::Ctrl);
-	ADD_BIND(Action::PreviousMode,        'n',                 KeyModifier::Ctrl);
+	ADD_BIND(Action::NextMode,            '\'',                KeyModifier::Ctrl);
+	ADD_BIND(Action::PreviousMode,        ';',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::OpenMode,            'o',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::SaveMode,            's',                 KeyModifier::Ctrl);
 	ADD_BIND(Action::RenameMode,          KeyEnum::F2,         KeyModifier::None);
 	
 	ADD_BIND(Action::MoveModeToNext,      KeyEnum::PageDown,   KeyModifier::Ctrl|KeyModifier::Alt);
 	ADD_BIND(Action::MoveModeToPrevious,  KeyEnum::PageUp,     KeyModifier::Ctrl|KeyModifier::Alt);
-	ADD_BIND(Action::MoveModeToNext,      'm',                 KeyModifier::Ctrl|KeyModifier::Alt);
-	ADD_BIND(Action::MoveModeToPrevious,  'n',                 KeyModifier::Ctrl|KeyModifier::Alt);
+	ADD_BIND(Action::MoveModeToNext,      '\'',                KeyModifier::Ctrl|KeyModifier::Alt);
+	ADD_BIND(Action::MoveModeToPrevious,  ';',                 KeyModifier::Ctrl|KeyModifier::Alt);
 	
 	ADD_BIND(Action::Mode1,               '1',                 KeyModifier::Alt);
 	ADD_BIND(Action::Mode2,               '2',                 KeyModifier::Alt);

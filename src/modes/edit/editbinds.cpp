@@ -38,13 +38,12 @@ void LineModeBase::RegisterBinds(){
 	ADD_BIND(EditAction::MoveUpPage,          KeyEnum::PageUp,     KeyModifier::None);
 	ADD_BIND(EditAction::MoveDownPage,        KeyEnum::PageDown,   KeyModifier::None);
 	
-	ADD_BIND(EditAction::MoveUpPage,          'm',                 KeyModifier::Alt);
-	ADD_BIND(EditAction::MoveDownPage,        'n',                 KeyModifier::Alt);
+	ADD_BIND(EditAction::MoveUpPage,          '\'',                KeyModifier::Alt);
+	ADD_BIND(EditAction::MoveDownPage,        ';',                 KeyModifier::Alt);
 
 	ADD_BIND(EditAction::InsertLine,          KeyEnum::Enter,      KeyModifier::None);
 	ADD_BIND(EditAction::InsertLine,          KeyEnum::Enter,      KeyModifier::Shift);
 	ADD_BIND(EditAction::InsertLine,          'j',                 KeyModifier::Ctrl);
-	ADD_BIND(EditAction::InsertLine,          'm',                 KeyModifier::Ctrl|KeyModifier::Alt);
 	
 	ADD_BIND(EditAction::InsertLineBelow,     'p',                 KeyModifier::Alt);
 	ADD_BIND(EditAction::InsertLineAbove,     'p',                 KeyModifier::Ctrl|KeyModifier::Alt);

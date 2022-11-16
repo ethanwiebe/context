@@ -121,7 +121,6 @@ public:
 	std::string_view GetStatusBarText() override;
 	
 	bool ProcessCommand(const TokenVector&) override;
-	bool SetConfigVar(const TokenVector&);
 	
 	static void RegisterBinds();
 
