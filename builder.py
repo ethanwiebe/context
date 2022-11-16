@@ -130,6 +130,7 @@ class Builder:
         self.failLock = threading.Lock()
         self.printLock = threading.Lock()
         self.dispatchLock = threading.Lock()
+        self.pathLock = threading.Lock()
 
     def DebugPrint(self,msg,end='\n'):
         if self.debug:
@@ -210,7 +211,7 @@ class Builder:
         return self.invdict
 
     def HeaderFileCascade(self,mode,headerFile,cascadeSet=None,checkedHeadersSet=None): #return all source files affected by a header file
-        if cascadeSet == None:
+        if cascadeSet is None:
             cascadeSet = set()
             checkedHeadersSet = set()
 
@@ -494,10 +495,10 @@ class Builder:
                 
             src,obj,cmd,index = req[0],req[1],req[2],req[3]
             objDir = os.path.dirname(obj)
-            if not os.path.exists(objDir):
-                if self.debug:
-                    self.ThreadedPrint(f"{TextColor(MAGENTA)}Created build path {objDir}{RESET()}")
-                MakePathSub(objDir)
+            with self.pathLock:
+                if not os.path.exists(objDir):
+                    MakePathSub(objDir)
+                    self.DebugPrint(f"{TextColor(MAGENTA)}Created build path {objDir}{RESET()}")
                 
             if self.debug:
                 self.ThreadedPrint(f"{TextColor(BLUE)}{cmd}{RESET()}")
@@ -990,7 +991,7 @@ def GetOptionsFromFile(file):
 def main():    
     global noColor
     name = 'builder'
-    builderVersion = '0.1.1'
+    builderVersion = '0.1.2'
     
     os.system('')
 
