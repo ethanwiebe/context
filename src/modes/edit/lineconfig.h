@@ -13,7 +13,7 @@ enum class MultiMode : u64 {
 	PascalWord = 2
 };
 
-struct EditConfig {
+struct LineConfig {
 	s64 tabSize;
 	s64 cursorMoveHeight;
 	s64 multiAmount;
@@ -27,5 +27,3 @@ struct EditConfig {
 	MultiMode moveMode;
 	MultiMode deleteMode;
 };
-
-extern EditConfig gEditConfig;

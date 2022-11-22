@@ -2,17 +2,17 @@
 
 void LineModeBase::VisualCursorInsertLine(VisualCursor& cursor){
 	InsertCharAt(cursor.cursor,'\n');
-	s32 indentLevel = GetIndentationAt(cursor.cursor.line.it,gEditConfig.tabSize);
+	s32 indentLevel = GetIndentationAt(cursor.cursor.line.it,config.tabSize);
 	bool tabs = IsTabIndented(cursor.cursor.line.it);
 	MoveCursorRight(cursor.cursor,1);
-	if (gEditConfig.autoIndent){
+	if (config.autoIndent){
 		if (tabs){
 			while (--indentLevel>=0){
 				InsertCharAt(cursor.cursor,'\t');
 				MoveVisualCursorRight(cursor,1);
 			}
 		} else {
-			s32 spaceCount = gEditConfig.tabSize*indentLevel;
+			s32 spaceCount = config.tabSize*indentLevel;
 			while (--spaceCount>=0){
 				InsertCharAt(cursor.cursor,' ');
 				MoveVisualCursorRight(cursor,1);
@@ -299,7 +299,7 @@ void LineModeBase::InsertTab(VisualCursor& cursor){
 		InsertCharAt(cursor.cursor,'\t');
 		MoveVisualCursorRight(cursor,1);
 	} else {
-		for (ssize_t i=0;i<gEditConfig.tabSize;++i){
+		for (ssize_t i=0;i<config.tabSize;++i){
 			InsertCharAt(cursor.cursor,' ');
 			MoveVisualCursorRight(cursor,1);
 		}
@@ -316,7 +316,7 @@ void LineModeBase::RemoveTab(VisualCursor& cursor){
 	if (c=='\t'){
 		VisualCursorDeletePreviousChar(cursor,1);
 	} else if (c==' '){
-		s64 count = gEditConfig.tabSize;
+		s64 count = config.tabSize;
 		while (--count>=0&&cursor.cursor.column!=0){
 			VisualCursorDeletePreviousChar(cursor,1);
 			temp = cursor.cursor;

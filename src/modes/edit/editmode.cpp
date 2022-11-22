@@ -31,20 +31,20 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 			MoveVisualCursorRight(cursor,1);
 			break;
 		case EditAction::MoveLeftMulti:
-			if (gEditConfig.moveMode==MultiMode::Multi){
+			if (config.moveMode==MultiMode::Multi){
 				MoveVisualCursorLeft(cursor,a.num);
-			} else if (gEditConfig.moveMode==MultiMode::Word){
+			} else if (config.moveMode==MultiMode::Word){
 				MoveVisualCursorLeftWord(cursor);
-			} else if (gEditConfig.moveMode==MultiMode::PascalWord){
+			} else if (config.moveMode==MultiMode::PascalWord){
 				MoveVisualCursorLeftPascalWord(cursor);
 			}
 			break;
 		case EditAction::MoveRightMulti:
-			if (gEditConfig.moveMode==MultiMode::Multi){
+			if (config.moveMode==MultiMode::Multi){
 				MoveVisualCursorRight(cursor,a.num);
-			} else if (gEditConfig.moveMode==MultiMode::Word){
+			} else if (config.moveMode==MultiMode::Word){
 				MoveVisualCursorRightWord(cursor);
-			} else if (gEditConfig.moveMode==MultiMode::PascalWord){
+			} else if (config.moveMode==MultiMode::PascalWord){
 				MoveVisualCursorRightPascalWord(cursor);
 			}
 			break;
@@ -72,7 +72,7 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 }
 
 void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
-	TextAction a = GetTextActionFromKey(key,mod);
+	TextAction a = GetTextActionFromKey(key,mod,config.multiAmount);
 	VisualCursor& cursor = cursors[0];
 	ProcessMoveAction(cursor,a);
 	
@@ -179,25 +179,25 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 				DeleteCharAt(cursor.cursor);
 				break;
 			case EditAction::DeletePreviousMulti:
-				if (gEditConfig.deleteMode==MultiMode::Multi){
+				if (config.deleteMode==MultiMode::Multi){
 					VisualCursorDeletePreviousChar(cursor,a.num);
-				} else if (gEditConfig.deleteMode==MultiMode::Word){
+				} else if (config.deleteMode==MultiMode::Word){
 					VisualCursorDeletePreviousWord(cursor);
-				} else if (gEditConfig.deleteMode==MultiMode::PascalWord){
+				} else if (config.deleteMode==MultiMode::PascalWord){
 					VisualCursorDeletePreviousPascalWord(cursor);
 				}
 				break;
 			case EditAction::DeleteCurrentMulti:
-				if (gEditConfig.deleteMode==MultiMode::Multi){
+				if (config.deleteMode==MultiMode::Multi){
 					while (--a.num>=0){
 						if (cursor.cursor.column==cursor.CurrentLineLen()&&
 								cursor.cursor.line.index==(s32)(textBuffer->size()-1))
 							break;
 						DeleteCharAt(cursor.cursor);
 					}
-				} else if (gEditConfig.deleteMode==MultiMode::Word){
+				} else if (config.deleteMode==MultiMode::Word){
 					VisualCursorDeleteCurrentWord(cursor);
-				} else if (gEditConfig.deleteMode==MultiMode::PascalWord){
+				} else if (config.deleteMode==MultiMode::PascalWord){
 					VisualCursorDeleteCurrentPascalWord(cursor);
 				}
 				break;
@@ -283,3 +283,6 @@ void EditMode::SetHelp(Ref<TextBuffer> buf){
 	*textBuffer = *buf;
 }
 
+ModeBase* CreateEditMode(ContextEditor* ctx){
+	return new EditMode(ctx);
+}

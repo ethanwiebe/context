@@ -15,3 +15,5 @@ public:
 	
 	void SetHelp(Ref<TextBuffer>);
 };
+
+ModeBase* CreateEditMode(ContextEditor*);

@@ -8,30 +8,6 @@
 #include "../tokenizer.h"
 #include "../interfaces/os.h"
 
-enum class OptionType {
-	Bool = 0,
-	Int,
-	PositiveInt,
-	NonNegativeInt,
-	Float,
-	String,
-	Enum
-};
-
-struct ModeOption {
-	OptionType type;
-	const char* name;
-	
-	union {
-		bool* boolLoc;
-		s64* intLoc;
-		double* floatLoc;
-		std::string* strLoc;
-		u64* enumLoc;
-	};
-	const char** enumValues = NULL;
-};
-
 class ContextEditor;
 
 typedef s32 ModeIndex;
@@ -43,18 +19,18 @@ protected:
 	ContextEditor* ctx;
 
 	s32 screenWidth,screenHeight;
-	Message modeErrorMessage,modeInfoMessage;
+	MessageQueue modeErrorMessage,modeInfoMessage;
 
 public:
 	ModeBase(ContextEditor* c) : ctx(c){}
 	ModeBase(const ModeBase&) = delete;
 	ModeBase& operator=(const ModeBase&) = delete;
 
-	Message& GetErrorMessage(){
+	MessageQueue& GetErrorMessage(){
 		return modeErrorMessage;
 	}
 	
-	Message& GetInfoMessage(){
+	MessageQueue& GetInfoMessage(){
 		return modeInfoMessage;
 	}
 
@@ -62,6 +38,7 @@ public:
 	virtual TextScreen& GetTextScreen(s32,s32) = 0;
 
 	virtual bool ProcessCommand(const TokenVector&){return false;}
+	virtual bool SetConfigVar(const TokenVector&){return false;}
 
 	virtual bool SaveAction(const OSInterface&){return true;}
 	virtual bool OpenAction(const OSInterface&,std::string_view){return true;}
@@ -88,5 +65,5 @@ public:
 
 ModeIndex ModeNameToIndex(const char*);
 const char*  ModeIndexToName(ModeIndex);
-const ModeOption* ModeIndexToOptionArray(ModeIndex i,size_t& size);
+ModeBase* CreateMode(ModeIndex,ContextEditor*);
 

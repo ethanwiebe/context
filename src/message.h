@@ -3,26 +3,31 @@
 #include "core.h"
 
 #include <string>
+#include <deque>
 
-struct Message {
-	std::string msg;
-	bool displayed;
+struct MessageQueue {
+	std::deque<std::string> msgs;
 	
-	inline void Set(std::string&& s){
-		msg = s;
-		displayed = false;
+	inline void Push(std::string&& s){
+		msgs.push_back(s);
 	}
 	
-	inline void Mark(){
-		displayed = true;
+	inline std::string Front() const {
+		if (!Empty()) return msgs.front();
+		return {};
+	}
+	
+	inline std::string Pop(){
+		std::string top = Front();
+		msgs.pop_front();
+		return top;
 	}
 	
 	inline void Clear(){
-		if (displayed)
-			msg.clear();
+		msgs.clear();
 	}
 	
 	inline bool Empty() const {
-		return msg.empty();
+		return msgs.empty();
 	}
 };

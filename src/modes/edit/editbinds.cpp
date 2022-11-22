@@ -1,5 +1,5 @@
 #include "editbinds.h"
-#include "editconfig.h"
+#include "lineconfig.h"
 #include "../../util.h"
 #include "linemode.h"
 
@@ -106,7 +106,7 @@ void LineModeBase::RegisterBinds(){
 	gBinds["edit"] = edit;
 }
 
-TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
+TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod,s64 multiAmount){
 	TextAction textAction;
 
 	if (IsPrintable((s32)key,mod)){
@@ -132,7 +132,7 @@ TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod){
 			case EditAction::MoveDownMulti:
 			case EditAction::DeletePreviousMulti:
 			case EditAction::DeleteCurrentMulti:
-				textAction.num = gEditConfig.multiAmount;
+				textAction.num = multiAmount;
 				break;
 			
 			default:

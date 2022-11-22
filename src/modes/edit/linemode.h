@@ -8,7 +8,7 @@
 #include "../../textbuffer.h"
 #include "find.h"
 #include "cursor.h"
-#include "editconfig.h"
+#include "lineconfig.h"
 
 #include <vector>
 #include <wchar.h>
@@ -26,7 +26,7 @@ struct VisualCursor {
 		return (*cursor.line).size();
 	}
 
-	void SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h);
+	void SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h,s32 tabSize);
 };
 
 enum class BufferActionType {
@@ -107,6 +107,8 @@ protected:
 
 	bool readonly,modified;
 	
+	LineConfig config;
+	
 	void UpdateHighlighterTask();
 public:
 	LineModeBase(ContextEditor* ctx);
@@ -115,12 +117,15 @@ public:
 	inline void SetColorLine();
 
 	void SetCachedX(VisualCursor&);
+	
+	bool IsTabIndented(LineIterator) const;
 
 	TextScreen& GetTextScreen(s32,s32) override;
 	TextStyle GetTextStyleAt(ColorIterator,s32);
 	std::string_view GetStatusBarText() override;
 	
 	bool ProcessCommand(const TokenVector&) override;
+	bool SetConfigVar(const TokenVector&) override;
 	
 	static void RegisterBinds();
 
@@ -231,9 +236,8 @@ inline char GetCharAt(Cursor cursor){
 	return (*cursor.line.it)[cursor.column];
 }
 
-bool IsTabIndented(LineIterator);
 s32 GetIndentationAt(LineIterator,s32);
-void UpdateXI(const std::string& str,s32& x,s32& i,s32 width);
-s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width);
-s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width);
+void UpdateXI(const std::string& str,s32& x,s32& i,s32 width,s32 tabSize);
+s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width,s32 tabSize);
+s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width,s32 tabSize);
 

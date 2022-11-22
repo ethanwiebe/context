@@ -3,25 +3,16 @@
 #include <assert.h>
 #include <string.h>
 
-#define MODE_DEF(name,x,y) #name,
+// setting up mode names
+#define MODE_DEF(i,name,x) #name,
 const char* modeNameArray[] = {
 	#include "modelist.h"
 };
 #undef MODE_DEF
 
-#define MODE_DEF(name,opArray,arraySize) extern ModeOption opArray[arraySize];
+// forward declare all mode classes
+#define MODE_DEF(i,name,funcName) extern ModeBase* funcName(ContextEditor*);
 #include "modelist.h"
-#undef MODE_DEF
-
-struct ModeOptionEntry {
-	ModeOption* modeOption;
-	size_t size;
-};
-
-#define MODE_DEF(name,opArray,arraySize) {opArray,arraySize},
-const ModeOptionEntry modeOptionArray[] = {
-	#include "modelist.h"
-};
 #undef MODE_DEF
 
 ModeIndex ModeNameToIndex(const char* name){
@@ -40,8 +31,14 @@ const char* ModeIndexToName(ModeIndex index){
 	return modeNameArray[index];
 }
 
-const ModeOption* ModeIndexToOptionArray(ModeIndex i,size_t& size){
-	size = modeOptionArray[i].size;
-	return modeOptionArray[i].modeOption;
+// mode creation
+#define MODE_DEF(index,name,funcName) case index: return funcName(ctx);
+ModeBase* CreateMode(ModeIndex i,ContextEditor* ctx){
+	switch(i){
+		#include "modelist.h"
+	}
+	
+	return nullptr;
 }
+#undef MODE_DEF
 

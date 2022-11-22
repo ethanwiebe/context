@@ -71,22 +71,36 @@ s32 GetIndentationAt(LineIterator it,s32 size){
 	return count;
 }
 
-bool IsTabIndented(LineIterator it){
+bool LineModeBase::IsTabIndented(LineIterator it) const {
 	char first = (*it)[0];
 	if (first=='\t') return true;
 	if (first==' ') return false;
-	return gEditConfig.tabMode==TabMode::Tabs;
+	return config.tabMode==TabMode::Tabs;
 }
 
-s32 TrueLineDistance(LineIndexedIterator,s32,LineIndexedIterator,s32,s32);
+s32 TrueLineDistance(LineIndexedIterator,s32,LineIndexedIterator,s32,s32,s32);
 
 LineModeBase::LineModeBase(ContextEditor* ctx) : 
 		ModeBase(ctx),
 		screenSubline(0),
 		currentAction(BufferActionType::TextInsertion,0,0)
 {		
+	config = {
+		.tabSize = 4,
+		.cursorMoveHeight = 3,
+		.multiAmount = 4,
+		.displayLineNumbers = true,
+		.autoIndent = true,
+		.cursorLock = false,
+		.cursorWrap = false,
+		.smartHome = true,
+		.tabMode = TabMode::Tabs,
+		.moveMode = MultiMode::Multi,
+		.deleteMode = MultiMode::Word
+	};
+	
 	textBuffer = MakeRef<TextBuffer>();
-	textBuffer->InsertLine(textBuffer->begin(),"");
+	textBuffer->InsertLine(textBuffer->begin(),{});
 	colorBuffer = {};
 	colorBuffer.assign(textBuffer->size(),{});
 	altColorBuffer = {};
@@ -248,11 +262,11 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	s32 i = 0;
 
 	if (it.index>=0&&it.it!=textBuffer->end())
-		i = GetIndexOfXPos(*it.it,screenSubline*lineWidth,lineWidth);
+		i = GetIndexOfXPos(*it.it,screenSubline*lineWidth,lineWidth,config.tabSize);
 
 	for (s32 y=0;y<screenHeight;y++){
 		if (it.index<0||it.it==textBuffer->end()){
-			if (gEditConfig.displayLineNumbers){
+			if (config.displayLineNumbers){
 				for (s32 n=0;n<lineNumberWidth;++n){
 					textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 				}
@@ -270,7 +284,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		lineStart = 0;
 		lineLen = it.it->size();
 
-		if (gEditConfig.displayLineNumbers){ //line numbers
+		if (config.displayLineNumbers){ //line numbers
 			for (s32 n=0;n<lineNumberWidth;++n){ //fill in style
 				textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 			}
@@ -340,7 +354,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 			if (i>=lineLen) break;
 
 			oldX = x;
-			UpdateXI(*it.it,x,i,lineWidth);
+			UpdateXI(*it.it,x,i,lineWidth,config.tabSize);
 			xDiff = x-oldX;
 
 			if (inSelection){
@@ -354,7 +368,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 				x = 0;
 				if (y>=screenHeight) break;
 
-				if (gEditConfig.displayLineNumbers){
+				if (config.displayLineNumbers){
 					for (s32 n=0;n<lineNumberWidth;++n){
 						textScreen[y*w+n] = TextCell(' ',lineNumberStyle);
 					}
@@ -368,7 +382,9 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 	s32 loc;
 	for (const auto& cursor : cursors){
-		loc = (cursor.visualLine)*w + GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth)%lineWidth + lineStart;
+		loc = (cursor.visualLine)*w + 
+			GetXPosOfIndex(*cursor.cursor.line.it,cursor.cursor.column,lineWidth,config.tabSize)%lineWidth + lineStart;
+			
 		if (loc>=0&&loc<screenWidth*screenHeight)
 			textScreen[loc].style = cursorStyle;
 	}
@@ -393,10 +409,12 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		locString += ", CVL: " + std::to_string(cursors[0].visualLine);
 		locString += ", CSL: " + std::to_string(cursors[0].subline);
 		locString += ", CC: " + std::to_string(cursors[0].cursor.column);
-		locString += ", CX: " + std::to_string(GetXPosOfIndex(*cursors[0].cursor.line,cursors[0].cursor.column,lineWidth));
+		locString += ", CX: " + 
+			std::to_string(GetXPosOfIndex(*cursors[0].cursor.line,cursors[0].cursor.column,lineWidth,config.tabSize));
 		textScreen.RenderString(w-locString.size()-1,h-2,locString);
 	
-		s32 lineDiff = TrueLineDistance(cursors[0].cursor.line,cursors[0].subline,viewLine,screenSubline,lineWidth);
+		s32 lineDiff = 
+			TrueLineDistance(cursors[0].cursor.line,cursors[0].subline,viewLine,screenSubline,lineWidth,config.tabSize);
 
 		locString = "";
 		locString += "DL: " + std::to_string(lineDiff);
@@ -459,13 +477,13 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		return true;
 	} else if (tokens[0].Matches("find")){
 		if (tokens.size()<2){
-			modeErrorMessage.Set( "Expected 2 arguments, got "+
+			modeErrorMessage.Push( "Expected 2 arguments, got "+
 				std::to_string(tokens.size()) );
 			return true;
 		}
 		std::string search = tokens[1].Stringify();
 		if (search.empty()){
-			modeErrorMessage.Set("'' is not a valid search string!");
+			modeErrorMessage.Push("'' is not a valid search string!");
 			return true;
 		}
 		
@@ -473,7 +491,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		
 		FindTextInBuffer(fixedToken);
 		if (!matches.size()){
-			modeErrorMessage.Set("No matches for '"+findText+"'");
+			modeErrorMessage.Push("No matches for '"+findText+"'");
 		} else {
 			finding = true;
 			CursorToNextMatch();
@@ -481,13 +499,13 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		return true;
 	} else if (tokens[0].Matches("replace")){
 		if (tokens.size()<2){
-			modeErrorMessage.Set( "Expected at least 2 arguments, got "+
+			modeErrorMessage.Push( "Expected at least 2 arguments, got "+
 				std::to_string(tokens.size()) );
 			return true;
 		}
 		std::string search = tokens[1].Stringify();
 		if (search.empty()){
-			modeErrorMessage.Set("'' is not a valid search string!");
+			modeErrorMessage.Push("'' is not a valid search string!");
 			return true;
 		}
 		std::string find = RemoveEscapes(search);
@@ -503,11 +521,11 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		
 		size_t replaceCount = ReplaceAll(*textBuffer,find,replace,diffs);
 		if (replaceCount==0){
-			modeErrorMessage.Set("No matches for '"+find+"'");
+			modeErrorMessage.Push("No matches for '"+find+"'");
 		} else {
 			PushLineReplacementAction(std::move(diffs));
 			
-			modeInfoMessage.Set("Replaced "+std::to_string(replaceCount)+
+			modeInfoMessage.Push("Replaced "+std::to_string(replaceCount)+
 				" occurences of '"+find+"'");
 			SetModified();
 			highlighterNeedsUpdate = true;
@@ -527,7 +545,7 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	bufferPath.clear();
 	bufferPath += path;
 	if (textBuffer->empty()){
-		textBuffer->InsertLine(textBuffer->end(),{});
+		textBuffer->InsertLine(textBuffer->begin(),{});
 	}
 
 	colorBuffer = {};
@@ -536,7 +554,7 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	GetSyntaxHighlighter(bufferPath);
 	highlighterNeedsUpdate = true;
 	InitIterators();
-
+	
 	return true;
 }
 
@@ -551,7 +569,7 @@ bool LineModeBase::SaveAction(const OSInterface& os){
 
 	ForceFinishAction();
 	modified = false;
-	modeInfoMessage.Set("Saved successfully.");
+	modeInfoMessage.Push("Saved successfully.");
 	undoStack.SetSaveHeight();
 
 	return true;
@@ -604,7 +622,7 @@ inline void LineModeBase::SetColorLine(){
 void LineModeBase::CalculateScreenData(){
 	lineNumberWidth = std::max(numWidth(std::max(viewLine.index+screenHeight,0))+2,5);
 	lineWidth = screenWidth;
-	if (gEditConfig.displayLineNumbers)
+	if (config.displayLineNumbers)
 		lineWidth -= lineNumberWidth;
 
 	SetColorLine();

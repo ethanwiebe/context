@@ -8,11 +8,13 @@
 #include <string>
 #include <string_view>
 #include <errno.h>
+#include <vector>
 
 struct Config {
 	std::string style;
 	bool sleepy;
 	s64 tabBarWidth;
+	s64 multiAmount;
 };
 
 extern Config gConfig;
@@ -67,6 +69,4 @@ inline bool ParseNonNegativeInt(s64& var,std::string_view val){
 	var = n;
 	return true;
 }
-
-bool FindAndSetConfigVar(ModeIndex modeIndex,const std::string& name,const TokenVector& tokens,Message& error);
 

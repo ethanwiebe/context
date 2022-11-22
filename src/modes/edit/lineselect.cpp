@@ -117,7 +117,7 @@ void LineModeBase::IndentSelection(VisualCursor& cursor){
 			InsertCharAt(end,'\t');
 			++diff;
 		} else {
-			for (ssize_t i=0;i<gEditConfig.tabSize;++i){
+			for (ssize_t i=0;i<config.tabSize;++i){
 				++diff;
 				InsertCharAt(end,' ');
 			}
@@ -150,7 +150,7 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 				DeleteCharAt(end);
 			}
 		} else {
-			for (ssize_t i=0;i<gEditConfig.tabSize;++i){
+			for (ssize_t i=0;i<config.tabSize;++i){
 				if (GetCharAt(end)!=' ') break;
 				DeleteCharAt(end);
 				++diff;

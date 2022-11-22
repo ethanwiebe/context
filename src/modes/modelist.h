@@ -1,2 +1,1 @@
-MODE_DEF(ctx,gCtxOps,2)
-MODE_DEF(edit,gEditModeOps,11)
+MODE_DEF(0,edit,CreateEditMode)

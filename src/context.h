@@ -10,17 +10,28 @@
 #include "modes/mode.h"
 #include "interfaces/os.h"
 #include "interfaces/interface.h"
+#include "logger.h"
 
 #include <vector>
 #include <string>
 #include <string_view>
 #include <functional>
 #include <mutex>
+#include <map>
+
 
 enum class EntryMode {
 	None,
 	Command,
-	YesNo
+	YesNo,
+	Proc
+};
+
+typedef std::vector<std::string> Procedure;
+
+struct ExtData {
+	ModeIndex mode;
+	std::string proc;
 };
 
 class ContextEditor {
@@ -40,16 +51,27 @@ class ContextEditor {
 	
 	bool willUpdate;
 	bool silentUpdate;
+	
+	size_t runFileDepth = 0;
+	size_t procDepth = 0;
 
 	bool quit;
 	EntryMode entryMode;
 	TextBuffer commandBuffer;
 	std::string entryString;
 	std::string yesNoMessage;
-	Message errorMessage;
-	Message infoMessage;
+	MessageQueue errorMessage;
+	MessageQueue infoMessage;
+	bool error = false;
 	
 	ssize_t entryPos;
+	
+	std::map<std::string,Procedure> procs;
+	std::map<std::string,ExtData> extData;
+	std::map<ModeIndex,std::string> modeHooks;
+	
+	std::string currentProcName;
+	Procedure currentProc;
 
 	std::function<void()> yesAction,noAction;
 	
@@ -58,11 +80,26 @@ class ContextEditor {
 	std::mutex asyncMutex,updateMutex;
 	size_t asyncIndex;
 	std::vector<AsyncData> asyncState;
+	
+	inline void PushError(std::string&& msg){
+		LOG("ERROR: (" << (s64)errorMessage.msgs.size()<<") "<<msg<<"\n");
+		errorMessage.Push(std::move(msg));
+		error = true;
+	}
+	
+	inline void ModeNotFoundError(const std::string& name){
+		PushError("Unrecognized mode '"+name+"'!");
+	}
+	
+	inline void ProcNotFoundError(const std::string& name){
+		PushError("No proc named '"+name+"' found!");
+	}
 
 	bool WriteFileChecks(std::string_view);
 	bool ReadFileChecks(std::string_view);
 	
 	void RunFile(std::string_view,bool = false);
+	void RunProc(const std::string&);
 	
 	void MoveEntryPosLeft(size_t);
 	void MoveEntryPosRight(size_t);
@@ -75,7 +112,12 @@ class ContextEditor {
 
 	void SetStyleOpts(std::string_view,std::string_view,std::string_view,std::string_view);
 	void SetConfigVar(const TokenVector&);
+	void SetModeConfigVar(const TokenVector&);
 	void SetConfigBind(const TokenVector&);
+	
+	void SetExtensionData(const std::string& ext,ModeIndex mode,const std::string& proc);
+	
+	void ProcessExtension(const std::string& path,ModeIndex&,std::string&);
 	
 	std::string ConstructModeString(size_t);
 	void DrawStatusBar();

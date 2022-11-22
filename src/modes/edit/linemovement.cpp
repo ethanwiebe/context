@@ -5,10 +5,10 @@ s32 ToNextMultiple(s32 x,s32 d,s32 w){
 	return x + (d-xproper%d);
 }
 
-void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
+void UpdateXI(const std::string& str,s32& x,s32& i,s32 width,s32 tabSize){
 	u8 c = str[i];
 	if (c=='\t'){
-		x = std::min(ToNextMultiple(x,gEditConfig.tabSize,width),ToNextMultiple(x,width,width));
+		x = std::min(ToNextMultiple(x,tabSize,width),ToNextMultiple(x,width,width));
 		++i;
 	} else if (c&128){ //utf8 handling
 		if ((c>>5)==6){
@@ -30,11 +30,11 @@ void UpdateXI(const std::string& str,s32& x,s32& i,s32 width){
 	}
 }
 
-s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width){
+s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width,s32 tabSize){
 	s32 x = 0;
 	s32 strLen = str.size();
 	for (s32 i=0;i<index;){
-		UpdateXI(str,x,i,width);
+		UpdateXI(str,x,i,width,tabSize);
 
 		if (i>=strLen) break;
 	}
@@ -42,11 +42,11 @@ s32 GetXPosOfIndex(const std::string& str,s32 index,s32 width){
 	return x;
 }
 
-s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width){
+s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width,s32 tabSize){
 	s32 index = 0;
 	s32 strLen = str.size();
 	for (s32 i=0;i<x;){
-		UpdateXI(str,i,index,width);
+		UpdateXI(str,i,index,width,tabSize);
 
 		if (index>=strLen) break;
 	}
@@ -54,7 +54,8 @@ s32 GetIndexOfXPos(const std::string& str,s32 x,s32 width){
 	return std::min(index,strLen);
 }
 
-void UpdateSublineUpwards(LineIndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false){
+void UpdateSublineUpwards(LineIndexedIterator& line,s32& subline,s32& column,
+		s32 width,s32 num,s32 tabSize,bool constrain=false){
 	s32 lineSize;
 	while (--num>=0){
 		if (constrain&&line.index==0&&subline==0) return;
@@ -64,20 +65,21 @@ void UpdateSublineUpwards(LineIndexedIterator& line,s32& subline,s32& column,s32
 			column -= width;
 		} else {
 			--line;
-			lineSize = GetXPosOfIndex(*line,(*line).size(),width);
+			lineSize = GetXPosOfIndex(*line,(*line).size(),width,tabSize);
 			subline = lineSize/width;
 			column += subline*width;
 		}
 	}
 }
 
-void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,s32 width,s32 num,bool constrain=false,s32 lineCount=0){
+void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,
+		s32 width,s32 num,s32 tabSize,bool constrain=false,s32 lineCount=0){
 	s32 lineSize;
 	while (--num>=0){
 		if (line.index>=lineCount)
 			lineSize = 0;
 		else
-			lineSize = GetXPosOfIndex(*line,(*line).size(),width);
+			lineSize = GetXPosOfIndex(*line,(*line).size(),width,tabSize);
 
 		if (constrain&&line.index==lineCount-1&&subline==lineSize/width) return;
 		if (lineSize>=(subline+1)*width){
@@ -93,15 +95,15 @@ void UpdateSublineDownwards(LineIndexedIterator& line,s32& subline,s32& column,s
 
 void LineModeBase::MoveScreenDown(s32 num,bool constrain){
 	s32 dummy;
-	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,constrain,textBuffer->size());
-	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
+	UpdateSublineDownwards(viewLine,screenSubline,dummy,lineWidth,num,config.tabSize,constrain,textBuffer->size());
+	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight,config.tabSize);
 	CalculateScreenData();
 }
 
 void LineModeBase::MoveScreenUp(s32 num,bool constrain){
 	s32 dummy;
-	UpdateSublineUpwards(viewLine,screenSubline,dummy,lineWidth,num,constrain);
-	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
+	UpdateSublineUpwards(viewLine,screenSubline,dummy,lineWidth,num,config.tabSize,constrain);
+	cursors[0].SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight,config.tabSize);
 	CalculateScreenData();
 }
 
@@ -113,7 +115,7 @@ void LineModeBase::LockScreenToVisualCursor(VisualCursor& cursor,bool constrain)
 }
 
 s32 TrueLineDistance(LineIndexedIterator start,s32 sublineStart,
-		LineIndexedIterator end,s32 sublineEnd,s32 lineWidth){
+		LineIndexedIterator end,s32 sublineEnd,s32 lineWidth,s32 tabSize){
 	s32 dist = 0;
 	s32 dummy;
 	
@@ -124,50 +126,50 @@ s32 TrueLineDistance(LineIndexedIterator start,s32 sublineStart,
 	}
 	
 	while (start!=end||sublineStart!=sublineEnd){
-		UpdateSublineUpwards(end,sublineEnd,dummy,lineWidth,1);
+		UpdateSublineUpwards(end,sublineEnd,dummy,lineWidth,1,tabSize);
 		++dist;
 	}
 	return dist;
 }
 
 void LineModeBase::MoveScreenToVisualCursor(VisualCursor& cursor){
-	if (gEditConfig.cursorLock){
+	if (config.cursorLock){
 		LineModeBase::LockScreenToVisualCursor(cursor);
 		return;
 	}
 
-	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
-	if (cursor.visualLine > gEditConfig.cursorMoveHeight && 
-			cursor.visualLine < screenHeight-1-gEditConfig.cursorMoveHeight) return;
+	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight,config.tabSize);
+	if (cursor.visualLine > config.cursorMoveHeight && 
+			cursor.visualLine < screenHeight-1-config.cursorMoveHeight) return;
 
-	s32 lineDiff = TrueLineDistance(cursor.cursor.line,cursor.subline,viewLine,screenSubline,lineWidth);
+	s32 lineDiff = TrueLineDistance(cursor.cursor.line,cursor.subline,viewLine,screenSubline,lineWidth,config.tabSize);
 		
 	viewLine = cursor.cursor.line;
 	screenSubline = cursor.subline;
 
 	if (lineDiff>screenHeight/2)
-		MoveScreenUp(screenHeight-1-gEditConfig.cursorMoveHeight,true);
+		MoveScreenUp(screenHeight-1-config.cursorMoveHeight,true);
 	else
-		MoveScreenUp(gEditConfig.cursorMoveHeight,true);
+		MoveScreenUp(config.cursorMoveHeight,true);
 	
-	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight);
+	cursor.SetVisualLineFromLine(viewLine,screenSubline,lineWidth,screenHeight,config.tabSize);
 	CalculateScreenData();
 }
 
 void LineModeBase::MoveVisualCursorDown(VisualCursor& cursor,s32 num){
 	UpdateSublineDownwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,
-			lineWidth,num,true,textBuffer->size());
+			lineWidth,num,config.tabSize,true,textBuffer->size());
 			
-	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
+	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth,config.tabSize);
 	s32 maxLine = cursor.CurrentLineLen();
 	cursor.cursor.column = std::min(newCursorX,maxLine);
 }
 
 void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 	UpdateSublineUpwards(cursor.cursor.line,cursor.subline,cursor.cursor.column,
-			lineWidth,num,true);
+			lineWidth,num,config.tabSize,true);
 			
-	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth);
+	s32 newCursorX = GetIndexOfXPos(*cursor.cursor.line,cursor.cachedX+cursor.subline*lineWidth,lineWidth,config.tabSize);
 	s32 maxLine = cursor.CurrentLineLen();
 	cursor.cursor.column = std::min(newCursorX,maxLine);
 }
@@ -175,7 +177,7 @@ void LineModeBase::MoveVisualCursorUp(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column-num;
 	
-	if (gEditConfig.cursorWrap){	
+	if (config.cursorWrap){	
 		while (newCol<0){ //move cursor up lines until only horiz adjust is left
 			if (cursor.cursor.line.index==0){
 				SetVisualCursorColumn(cursor,0);
@@ -197,7 +199,7 @@ void LineModeBase::MoveVisualCursorLeft(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 	s32 newCol = cursor.cursor.column+num;
 
-	if (gEditConfig.cursorWrap){
+	if (config.cursorWrap){
 		while (newCol>cursor.CurrentLineLen()){
 			if (cursor.cursor.line.index==(s32)textBuffer->size()-1){
 				SetVisualCursorColumn(cursor,cursor.CurrentLineLen());
@@ -219,7 +221,7 @@ void LineModeBase::MoveVisualCursorRight(VisualCursor& cursor,s32 num){
 void LineModeBase::MoveVisualCursorLeftWord(VisualCursor& cursor){
 	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
 	if (cursor.cursor.column==0){
-		if (gEditConfig.cursorWrap)
+		if (config.cursorWrap)
 			return MoveCursorLeft(cursor.cursor,1);
 		return;
 	}
@@ -252,7 +254,7 @@ void LineModeBase::MoveVisualCursorRightWord(VisualCursor& cursor){
 	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
 			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
 	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()){
-		if (gEditConfig.cursorWrap)
+		if (config.cursorWrap)
 			return MoveCursorRight(cursor.cursor,1);
 		return;
 	}
@@ -282,7 +284,7 @@ void LineModeBase::MoveVisualCursorRightWord(VisualCursor& cursor){
 void LineModeBase::MoveVisualCursorLeftPascalWord(VisualCursor& cursor){
 	if (cursor.cursor.column==0&&cursor.cursor.line.index==0) return;
 	if (cursor.cursor.column==0){
-		if (gEditConfig.cursorWrap)
+		if (config.cursorWrap)
 			return MoveCursorLeft(cursor.cursor,1);
 		return;
 	}
@@ -343,7 +345,7 @@ void LineModeBase::MoveVisualCursorRightPascalWord(VisualCursor& cursor){
 	if (cursor.cursor.line.index==(s64)textBuffer->size()-1&&
 			cursor.cursor.column==(s64)cursor.cursor.line.it->size()) return;
 	if (cursor.cursor.column==(s64)cursor.cursor.line.it->size()){
-		if (gEditConfig.cursorWrap)
+		if (config.cursorWrap)
 			return MoveCursorRight(cursor.cursor,1);
 		return;
 	}
@@ -432,7 +434,7 @@ void LineModeBase::MoveCursorRight(Cursor& cursor,s32 num) const {
 void LineModeBase::MoveVisualCursorToLineStart(VisualCursor& cursor){
 	s32 col = cursor.cursor.column;
 	SetVisualCursorColumn(cursor,0);
-	if (gEditConfig.smartHome){
+	if (config.smartHome){
 		while (GetCharAt(cursor.cursor)==' '||GetCharAt(cursor.cursor)=='\t')
 			MoveVisualCursorRight(cursor,1);
 		
@@ -461,14 +463,14 @@ void LineModeBase::MoveVisualCursorToBufferEnd(VisualCursor& cursor){
 
 void LineModeBase::SetVisualCursorColumn(VisualCursor& cursor,s32 col){
 	cursor.cursor.column = col;
-	cursor.subline = GetXPosOfIndex(*cursor.cursor.line,col,lineWidth)/lineWidth;
+	cursor.subline = GetXPosOfIndex(*cursor.cursor.line,col,lineWidth,config.tabSize)/lineWidth;
 }
 
 void LineModeBase::SetCachedX(VisualCursor& cursor){
-	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth)%lineWidth;
+	cursor.cachedX = GetXPosOfIndex(*cursor.cursor.line,cursor.cursor.column,lineWidth,config.tabSize)%lineWidth;
 }
 
-void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h){
+void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screenSubline,s32 w,s32 h,s32 tabSize){
 	s32 count = 0;
 
 	if (cursor.line.index<viewLine.index){
@@ -489,7 +491,7 @@ void VisualCursor::SetVisualLineFromLine(LineIndexedIterator viewLine,s32 screen
 	s32 lineSize;
 
 	while (viewLine.index!=cursor.line.index||screenSubline!=subline){
-		lineSize = GetXPosOfIndex(*viewLine,(*viewLine).size(),w);
+		lineSize = GetXPosOfIndex(*viewLine,(*viewLine).size(),w,tabSize);
 		if (lineSize >= (screenSubline+1)*w){
 			++screenSubline;
 		} else {

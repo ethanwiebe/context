@@ -14,9 +14,16 @@
 #include <mutex>
 #include <assert.h>
 
-ContextEditor::ContextEditor(const std::string& file){
+ContextEditor::ContextEditor(const std::string& file) : modes(){
 	screen = {};
 	screen.SetSize(1,1);
+	
+	extData = {};
+	procs = {};
+	modeHooks = {};
+	currentProcName = {};
+	
+	SetExtensionData("default",ModeNameToIndex("edit"),"");
 
 	SetGlobalBinds();
 	UpdateBinds(gBinds.at("ctx"));
@@ -40,8 +47,8 @@ ContextEditor::ContextEditor(const std::string& file){
 	entryMode = EntryMode::None;
 	entryPos = 0;
 	
-	errorMessage = {"",false};
-	infoMessage = {"",false};
+	errorMessage = {};
+	infoMessage = {};
 	
 	helpBuffer = MakeRef<TextBuffer>();
 
@@ -49,6 +56,10 @@ ContextEditor::ContextEditor(const std::string& file){
 	osInterface = Handle<OSInterface>(new CONTEXT_OS_INTERFACE());
 	
 	currentMode = 0;
+	
+	std::string configPath = osInterface->GetHomePath() + "/.ctxcfg";
+	RunFile(configPath,true);
+	
 	if (!file.empty()){
 		if (osInterface->PathExists(file)){
 			OpenMode(file);
@@ -61,10 +72,6 @@ ContextEditor::ContextEditor(const std::string& file){
 	} else {
 		NewMode();
 	}
-	
-	std::string configPath = osInterface->GetHomePath() + "/.ctxcfg";
-	LOG(configPath);
-	RunFile(configPath,true);
 	
 	Loop();
 }
@@ -92,7 +99,7 @@ inline void ContextEditor::Update(){
 	if ((currentEvent = interface->GetKeyboardEvent())){
 		willUpdate = true;
 		
-		if (entryMode==EntryMode::Command){
+		if (entryMode==EntryMode::Command||entryMode==EntryMode::Proc){
 			ProcessCommandEntry((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
 		} else if (entryMode==EntryMode::YesNo){
 			ProcessYesNoEntry((KeyEnum)currentEvent->key);
@@ -123,36 +130,71 @@ void ContextEditor::Loop(){
 	}
 }
 
-void ContextEditor::RunFile(std::string_view path,bool silent){
+void ContextEditor::RunProc(const std::string& name){
+	++procDepth;
+	if (procDepth>750){
+		PushError("Exceeded max proc depth!");
+		--procDepth;
+		return;
+	}
+	error = false;
+	Procedure& proc = procs.at(name);
+	entryMode = EntryMode::Command;
+	for (const auto& line : proc){
+		entryString = line;
+		SubmitCommand();
+		if (error){
+			PushError("Proc '"+name+"': "+errorMessage.Pop());
+			break;
+		}
+	}
+	
+	entryMode = EntryMode::None;
+	
+	infoMessage.Clear();
+	--procDepth;
+}
+
+void ContextEditor::RunFile(std::string_view path,bool silentFileChecks){
+	++runFileDepth;
+	if (runFileDepth>500){
+		PushError("Exceeded max source depth!");
+		--runFileDepth;
+		return;
+	}
+	
 	if (ReadFileChecks(path)){
 		size_t l = 0;
 		auto settings = MakeRef<TextBuffer>();
 		if (osInterface->ReadFileIntoTextBuffer(path,settings)){
+			error = false;
+			entryMode = EntryMode::Command;
 			for (const auto& line : *settings){
 				if (line.empty()){
 					++l;
 					continue;
 				}
-					
 				entryString = line;
 				SubmitCommand();
-				if (!errorMessage.Empty()){
-					errorMessage.Set(std::string(path)+":"+
-						std::to_string(l+1)+": "+errorMessage.msg);
-					
+				if (error){
+					PushError(std::string(path)+":"+
+						std::to_string(l+1)+": "+errorMessage.Pop());
 					break;
 				}
 				++l;
 			}
+			if (entryMode==EntryMode::Proc){
+				PushError("Proc '"+currentProcName+"' was never ended!");
+			}
+			entryMode = EntryMode::None;
 		}
 	} else {
-		if (silent){
-			errorMessage.Clear();
-			errorMessage.msg.clear();
+		if (silentFileChecks){
+			errorMessage.Pop();
 		}
 	}
 	infoMessage.Clear();
-	infoMessage.msg.clear();
+	--runFileDepth;
 }
 
 void ContextEditor::MoveEntryPosLeft(size_t count){
@@ -231,7 +273,7 @@ bool ContextEditor::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 }
 
 void ContextEditor::ProcessCommandEntry(KeyEnum key,KeyModifier mod){
-	TextAction textAction = GetTextActionFromKey(key,mod);
+	TextAction textAction = GetTextActionFromKey(key,mod,gConfig.multiAmount);
 	switch (textAction.action){
 		case EditAction::InsertChar:
 			entryString.insert(entryPos,1,textAction.character);
@@ -250,6 +292,8 @@ void ContextEditor::ProcessCommandEntry(KeyEnum key,KeyModifier mod){
 			break;
 		case EditAction::InsertLine:
 			SubmitCommand();
+			if (entryMode!=EntryMode::Proc)
+				entryMode = EntryMode::None;
 			break;
 		case EditAction::Escape:
 			CancelCommand();
@@ -341,14 +385,36 @@ void ContextEditor::CancelCommand(){
 }
 
 void ContextEditor::SubmitCommand(){
-	entryMode = EntryMode::None;
-	
-	TokenVector tokens = GetCommandTokens();
-	
-	if (!ProcessCommand(tokens)){
-		if (!modes[currentMode]->ProcessCommand(tokens)){
-			errorMessage.Set("Unrecognized command '"+tokens[0].Stringify()+"'");
+	if (entryMode==EntryMode::Command){
+		TokenVector tokens = GetCommandTokens();
+		
+		if (!ProcessCommand(tokens)){
+			if (modes.empty()||!modes[currentMode]->ProcessCommand(tokens)){
+				PushError("Unrecognized command '"+tokens[0].Stringify()+"'");
+				entryMode = EntryMode::None;
+			}
 		}
+	} else { // EntryMode::Proc
+		std::string clipped = {};
+		size_t start = entryString.find_first_not_of(" \t");
+		if (start==std::string::npos) start = 0;
+		clipped = entryString.substr(start);
+		
+		if (clipped.size()==3&&clipped=="end"){
+			procs[currentProcName] = currentProc;
+			entryMode = EntryMode::Command;
+			return;
+		} else if (clipped.size()>3&&
+				clipped.starts_with("end")&&
+				(clipped[3]==' '||clipped[3]=='\t')){
+			procs[currentProcName] = currentProc;
+			entryMode = EntryMode::Command;
+			return;
+		}
+		
+		currentProc.push_back(entryString);
+		entryString = {};
+		entryPos = 0;
 	}
 }
 
@@ -385,7 +451,7 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	
 	auto count = GetReqArgCount(*cmd);
 	if (count>tokens.size()-1){
-		errorMessage.Set( "Expected "+std::to_string(count)+" args, got "+
+		PushError( "Expected "+std::to_string(count)+" args, got "+
 			std::to_string(tokens.size()-1) );
 		return true;
 	}
@@ -395,13 +461,35 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		std::string parsedPath = ParsePath(path,*osInterface);
 		OpenMode(parsedPath);
 		return true;
+	} else if (tokens[0].Matches("save")){
+		if (modes.empty()){
+			PushError("Cannot save without a mode!");
+			return true;
+		}
+		
+		SaveMode(currentMode);
+		return true;
 	} else if (tokens[0].Matches("saveas")){
+		if (modes.empty()){
+			PushError("Cannot save without a mode!");
+			return true;
+		}
+		
 		std::string path = tokens[1].Stringify();
 		std::string parsedPath = ParsePath(path,*osInterface);
 		SaveAsMode(parsedPath,currentMode);
 		return true;
-	} else if (tokens[0].Matches("set")){
+	} else if (tokens[0].Matches("var")){
 		SetConfigVar(tokens);
+		return true;
+	} else if (tokens[0].Matches("modevar")){
+		if (modes.empty()){
+			PushError("No mode to configure!");
+			LOG("NO MODE ERROR!");
+			return true;
+		}
+		
+		SetModeConfigVar(tokens);
 		return true;
 	} else if (tokens[0].Matches("bind")){
 		SetConfigBind(tokens);
@@ -423,9 +511,74 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		std::string parsedPath = ParsePath(path,*osInterface);
 		RunFile(parsedPath);
 		return true;
+	} else if (tokens[0].Matches("proc")){
+		if (procDepth){
+			PushError("Cannot define a proc inside of a proc!");
+			return true;
+		}
+		currentProcName = tokens[1].Stringify();
+		currentProc = {};
+		entryMode = EntryMode::Proc;
+		entryString.clear();
+		entryPos = 0;
+		return true;
+	} else if (tokens[0].Matches("end")){
+		PushError("Cannot 'end' while not in proc!");
+		return true;
+	} else if (tokens[0].Matches("run")){
+		std::string procName = tokens[1].Stringify();
+		if (!procs.contains(procName)){
+			PushError("'"+procName+"' is not a proc!");
+			return true;
+		}
+		
+		RunProc(procName);
+		return true;
+	} else if (tokens[0].Matches("ext")){
+		std::string extName = tokens[1].Stringify();
+		std::string modeName = tokens[2].Stringify();
+		ModeIndex index = ModeNameToIndex(modeName.c_str());
+		
+		if (index==MODE_NOT_FOUND){
+			ModeNotFoundError(modeName);
+			return true;
+		}
+		
+		std::string procName = "";
+		if (tokens.size()>=3)
+			procName = tokens[3].Stringify();
+		
+		SetExtensionData(extName,index,procName);
+		return true;
+	} else if (tokens[0].Matches("modehook")){
+		std::string modeName = tokens[1].Stringify();
+		std::string procName = tokens[2].Stringify();
+		ModeIndex index = ModeNameToIndex(modeName.c_str());
+		
+		if (index==MODE_NOT_FOUND){
+			ModeNotFoundError(modeName);
+			return true;
+		}
+		
+		if (!procs.contains(procName)){
+			ProcNotFoundError(procName);
+			return true;
+		}
+		
+		modeHooks[index] = procName;
+		return true;
 	}
 	
 	return false;
+}
+
+void ContextEditor::SetExtensionData(const std::string& ext,ModeIndex mode,const std::string& proc){
+	if (!proc.empty()&&!procs.contains(proc)){
+		ProcNotFoundError(proc);
+		return;
+	}
+	
+	extData[ext] = {mode,proc};
 }
 
 #define STYLE(x) {#x, x##Style},
@@ -583,19 +736,20 @@ void ContextEditor::SetConfigBind(const TokenVector& tokens){
 	std::string actionStr = tokens[1].Stringify();
 	std::string modeName,actionName;
 	
-	if (!ResolveArgumentMode(actionStr,modeName)){
-		errorMessage.Set("Unrecognized mode in action: '"+actionStr+"'");
+	if (!ResolveArgumentMode(actionStr,modeName)||
+		!gBinds.contains(modeName)){
+		PushError("Unrecognized mode in action: '"+actionStr+"'");
 		return;
 	}
 	
 	if (!ResolveArgumentName(actionStr,actionName)){
-		errorMessage.Set("Badly formatted action: '"+actionStr+"'");
+		PushError("Badly formatted action: '"+actionStr+"'");
 		return;
 	}
 	
 	auto bindSet = gBinds.at(modeName);
 	if (!bindSet.nameMap.contains(actionName)){
-		errorMessage.Set("Unrecognized action: '"+actionStr+"'");
+		PushError("Unrecognized action: '"+actionStr+"'");
 		return;
 	}
 	
@@ -607,7 +761,7 @@ void ContextEditor::SetConfigBind(const TokenVector& tokens){
 	
 	while (bindIt!=tokens.end()){
 		if (!ParseKeybind(parsedBinds,bindIt->Stringify())){
-			errorMessage.Set("Could not parse keybind '"+bindIt->Stringify()+"'");
+			PushError("Could not parse keybind '"+bindIt->Stringify()+"'");
 			break;
 		}
 		
@@ -646,7 +800,7 @@ void ContextEditor::SetStyleOpts(std::string_view styleName,
 		std::string_view opts){
 	std::string copied = std::string(styleName);
 	if (!styleNameMap.contains(copied)){
-		errorMessage.Set("Unrecognized style name '"+copied+"'!");
+		PushError("Unrecognized style name '"+copied+"'!");
 		return;
 	}
 	
@@ -654,12 +808,12 @@ void ContextEditor::SetStyleOpts(std::string_view styleName,
 	
 	Color fg,bg;
 	if (!ParseColor(fgStr,fg)){
-		errorMessage.Set("Cannot convert '"+std::string(fgStr)+"' into a color!");
+		PushError("Cannot convert '"+std::string(fgStr)+"' into a color!");
 		return;
 	}
 	
 	if (!ParseColor(bgStr,bg)){
-		errorMessage.Set("Cannot convert '"+std::string(bgStr)+"' into a color!");
+		PushError("Cannot convert '"+std::string(bgStr)+"' into a color!");
 		return;
 	}
 	
@@ -674,7 +828,7 @@ void ContextEditor::SetStyleOpts(std::string_view styleName,
 			else {
 				std::string cs = {};
 				cs += c;
-				errorMessage.Set("Unrecognized style option '"+cs+"'!");
+				PushError("Unrecognized style option '"+cs+"'!");
 				return;
 			}
 		}
@@ -709,11 +863,15 @@ void ContextEditor::DrawStatusBar(){
 	std::string modeStr = ConstructModeString(currentMode);
 	std::string modeStatusBar = {};
 	modeStatusBar += modes[currentMode]->GetStatusBarText();
+	
+	std::string errorStr,infoStr,modeErrorStr = {},modeInfoStr = {};
+	errorStr = errorMessage.Front();
+	infoStr = infoMessage.Front();
 
 	for (s32 x=0;x<w;++x)
 		screen.SetAt(x,h-1,TextCell(' ',barStyle));
 	
-	if (entryMode==EntryMode::Command){
+	if (entryMode==EntryMode::Command||entryMode==EntryMode::Proc){
 		screen.RenderString(0,h-1,entryPrefix + entryString,barStyle);
 		auto x = entryPrefix.size()+entryPos;
 		auto cell = screen.GetAt(x,h-1);
@@ -722,39 +880,37 @@ void ContextEditor::DrawStatusBar(){
 	} else if (entryMode==EntryMode::YesNo){
 		screen.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
-		Message& modeError = modes[currentMode]->GetErrorMessage();
-		Message& modeInfo = modes[currentMode]->GetInfoMessage();
+		MessageQueue& modeErrorMessage = modes[currentMode]->GetErrorMessage();
+		modeErrorStr = modeErrorMessage.Front();
+		MessageQueue& modeInfoMessage = modes[currentMode]->GetInfoMessage();
+		modeInfoStr = modeInfoMessage.Front();
 		if (!silentUpdate){
 			if (!errorMessage.Empty())
-				errorMessage.Clear();
-			else if (!modeError.Empty())
-				modeError.Clear();
+				errorStr = errorMessage.Pop();
+			else if (!modeErrorMessage.Empty())
+				modeErrorStr = modeErrorMessage.Pop();
 			else if (!infoMessage.Empty())
-				infoMessage.Clear();
-			else if (!modeInfo.Empty())
-				modeInfo.Clear();
+				infoStr = infoMessage.Pop();
+			else if (!modeInfoMessage.Empty())
+				modeInfoStr = modeInfoMessage.Pop();
 		}
 	
-		if (!errorMessage.Empty()){
-			screen.RenderString(0,h-1,errorMessage.msg,errorStyle);
-			errorMessage.Mark();
-		} else if (!modeError.Empty()){
+		if (!errorStr.empty()){
+			screen.RenderString(0,h-1,errorStr,errorStyle);
+		} else if (!modeErrorStr.empty()){
 			std::string formattedError = {};
 			formattedError += modes[currentMode]->GetModeName();
 			formattedError += ": ";
-			formattedError += modeError.msg;
+			formattedError += modeErrorStr;
 			screen.RenderString(0,h-1,formattedError,errorStyle);
-			modeError.Mark();
-		} else if (!infoMessage.Empty()){
-			screen.RenderString(0,h-1,infoMessage.msg,barStyle);
-			infoMessage.Mark();
-		} else if (!modeInfo.Empty()){
+		} else if (!infoStr.empty()){
+			screen.RenderString(0,h-1,infoStr,barStyle);
+		} else if (!modeInfoStr.empty()){
 			std::string formattedInfo = {};
 			formattedInfo += modes[currentMode]->GetModeName();
 			formattedInfo += ": ";
-			formattedInfo += modeInfo.msg;
+			formattedInfo += modeInfoStr;
 			screen.RenderString(0,h-1,formattedInfo,barStyle);
-			modeInfo.Mark();
 		} else if (!modeStatusBar.empty()){
 			screen.RenderString(0,h-1,modeStatusBar,barStyle);
 		}
@@ -762,8 +918,6 @@ void ContextEditor::DrawStatusBar(){
 		screen.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);
 	}
 }
-
-//const size_t tabBarWidth = 16;
 
 inline std::string_view BaseName(std::string_view s){
 	auto index = s.find_last_of('/');
@@ -882,9 +1036,9 @@ void ContextEditor::SaveMode(size_t index){
 	if (modes[index]->Modified()){
 		if (!modes[index]->SaveAction(*osInterface)){
 			if (modes[index]->Readonly()){
-				errorMessage.Set("File is readonly!");
+				PushError("File is readonly!");
 			} else {
-				errorMessage.Set("Could not save!");
+				PushError("Could not save!");
 			}
 		}
 	}
@@ -903,7 +1057,7 @@ void ContextEditor::MoveMode(size_t index,size_t newIndex){
 
 bool ContextEditor::WriteFileChecks(std::string_view path){
 	if (!osInterface->FileIsWritable(path)){
-		errorMessage.Set("File "+std::string(path)+" is not writable!");
+		PushError("File "+std::string(path)+" is not writable!");
 		return false;
 	}
 
@@ -912,15 +1066,15 @@ bool ContextEditor::WriteFileChecks(std::string_view path){
 
 bool ContextEditor::ReadFileChecks(std::string_view path){
 	if (!osInterface->PathExists(path)){
-		errorMessage.Set("File '"+std::string(path)+"' does not exist!");
+		PushError("File '"+std::string(path)+"' does not exist!");
 		return false;
 	}
 	if (!osInterface->PathIsFile(path)){
-		errorMessage.Set("Path '"+std::string(path)+"' is not a file!");
+		PushError("Path '"+std::string(path)+"' is not a file!");
 		return false;
 	}
 	if (!osInterface->FileIsReadable(path)){
-		errorMessage.Set("File '"+std::string(path)+"' is not readable!");
+		PushError("File '"+std::string(path)+"' is not readable!");
 		return false;
 	}
 	
@@ -928,12 +1082,37 @@ bool ContextEditor::ReadFileChecks(std::string_view path){
 }
 
 void ContextEditor::NewMode(){
-	if (modes.size()!=0){
-		modes.insert(modes.begin()+currentMode+1,Handle<ModeBase>(new EditMode(this)));
-		++currentMode;
-	} else {
+	if (modes.empty()){
 		modes.push_back(Handle<ModeBase>(new EditMode(this)));
 		currentMode = 0;
+	} else {
+		modes.insert(modes.begin()+currentMode+1,Handle<ModeBase>(new EditMode(this)));
+		++currentMode;
+	}
+	
+	ModeIndex index = ModeNameToIndex("edit");
+	if (modeHooks.contains(index)){
+		RunProc(modeHooks.at(index));
+	}
+}
+
+void ContextEditor::ProcessExtension(const std::string& path,ModeIndex& modeIndex,std::string& procName){
+	std::string ext = {};
+	auto index = path.rfind('.');
+	if (index!=std::string::npos){
+		ext = path.substr(index+1);
+	}
+	
+	modeIndex = 0;
+	procName = {};
+	
+	if (extData.contains(ext)){
+		modeIndex = extData.at(ext).mode;
+		procName = extData.at(ext).proc;
+		LOG("NAME: " << procName << "\n");
+	} else {
+		modeIndex = extData.at("default").mode;
+		procName = extData.at("default").proc;
 	}
 }
 
@@ -954,17 +1133,28 @@ void ContextEditor::OpenMode(std::string_view path){
 	if (!ReadFileChecks(copiedPath))
 		return;
 
-	Handle<ModeBase> openedMode = Handle<ModeBase>(new EditMode(this));
+	ModeIndex mode;
+	std::string procName;
+	ProcessExtension(copiedPath,mode,procName);
+	
+	Handle<ModeBase> openedMode = Handle<ModeBase>(CreateMode(mode,this));
 	if (openedMode->OpenAction(*osInterface,copiedPath)){
-		if (!modes.size()){
+		if (modes.empty()){
 			modes.push_back(std::move(openedMode));
 			currentMode = 0;
 		} else {
 			modes.insert(modes.begin()+currentMode+1,std::move(openedMode));
 			++currentMode;
 		}
+		
+		if (modeHooks.contains(mode)){
+			RunProc(modeHooks.at(mode));
+		}
+		if (!procName.empty()){
+			RunProc(procName);
+		}
 	} else {
-		errorMessage.Set("Could not open '"+copiedPath+"'!");
+		PushError("Could not open '"+copiedPath+"'!");
 	}
 }
 
@@ -1014,49 +1204,38 @@ void ContextEditor::SetPathMode(std::string_view path,size_t index){
 }
 
 void ContextEditor::SetConfigVar(const TokenVector& tokens){
-	std::string modeName,varName;
+	std::string varName = tokens[1].Stringify();
 	
-	std::string varStr = tokens[1].Stringify();
-	
-	if (!ResolveArgumentMode(varStr,modeName)){
-		errorMessage.Set("Unrecognized mode in var: '"+varStr+"'");
-		return;
-	}
-	
-	if (!ResolveArgumentName(varStr,varName)){
-		errorMessage.Set("Badly formatted var: '"+varStr+"'");
-		return;
-	}
-	
-	if (modeName=="ctx"){
-		if (varName=="style"){
-			SaveStyle();
-			gConfig.style = tokens[2].Stringify();
-			if (!StyleExists(gConfig.style)){
-				infoMessage.Set("New style '"+gConfig.style+"' created.");
-			}
-			LoadStyle();
-			for (size_t i=0;i<modes.size();++i)
-				modes[i]->UpdateStyle();
-		} else if (varName=="sleepy"){
-			if (!ParseBool(gConfig.sleepy,tokens[2].Stringify())){
-				errorMessage.Set("sleepy must be a boolean value!");
-			}
-		} else if (varName=="tabBarWidth"){
-			if (!ParsePositiveInt(gConfig.tabBarWidth,tokens[2].Stringify())){
-				errorMessage.Set("tabBarWidth must be a positive int!");
-			}
-		} else {
-			errorMessage.Set("'"+varName+"' is not a config var!");
+	if (varName=="style"){
+		SaveStyle();
+		gConfig.style = tokens[2].Stringify();
+		if (!StyleExists(gConfig.style)){
+			infoMessage.Push("New style '"+gConfig.style+"' created.");
+		}
+		LoadStyle();
+		for (size_t i=0;i<modes.size();++i)
+			modes[i]->UpdateStyle();
+	} else if (varName=="sleepy"){
+		if (!ParseBool(gConfig.sleepy,tokens[2].Stringify())){
+			PushError("sleepy must be a boolean value!");
+		}
+	} else if (varName=="tabBarWidth"){
+		if (!ParsePositiveInt(gConfig.tabBarWidth,tokens[2].Stringify())){
+			PushError("tabBarWidth must be a positive int!");
+		}
+	} else if (varName=="multiAmount"){
+		if (!ParsePositiveInt(gConfig.multiAmount,tokens[2].Stringify())){
+			PushError("multiAmount must be a positive int!");
 		}
 	} else {
-		ModeIndex index = ModeNameToIndex(modeName.c_str());
-		if (index==MODE_NOT_FOUND){
-			errorMessage.Set("Unrecognized mode '"+modeName+"'");
-			return;
-		}
-		
-		FindAndSetConfigVar(index,varName,tokens,errorMessage);
+		PushError("'"+varName+"' is not a config var!");
+	}
+	
+}
+
+void ContextEditor::SetModeConfigVar(const TokenVector& tokens){
+	if (!modes[currentMode]->SetConfigVar(tokens)){
+		PushError("Mode config var could not be set!");
 	}
 }
 
