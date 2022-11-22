@@ -88,12 +88,25 @@ def AddExtension(filename,ext):
 def GetPrefixAndName(path):
 	return os.path.dirname(path),os.path.basename(path)
 
-def CPPExtractIncludeFile(line):
+def CPPExtractQuoteIncludeFile(line):
     start = line.find('"')
     end = line.find('"',start+1)
     return line[start+1:end]
+    
+def CPPExtractIncludeFile(line):
+    start = line.find('<')
+    end = line.find('>',start+1)
+    return line[start+1:end]
+    
+def CPPGetIncludePath(dep,includes):
+    for include in includes:
+        testPath = os.path.join(include,dep)
+        if os.path.exists(testPath):
+            return os.path.normpath(testPath)
+    
+    return ''
 
-def CPPDeps(path,includeDir=''):
+def CPPDeps(path,includeDirs):
     deps = set()
     prefix,filename = GetPrefixAndName(path)
 
@@ -104,12 +117,19 @@ def CPPDeps(path,includeDir=''):
                 continue
             line = line[1:].lstrip(' \t')
             if line.startswith('include') and '"' in line:
+                dep = CPPExtractQuoteIncludeFile(line)
+                test = os.path.join(prefix,dep)
+                if os.path.exists(test):
+                    deps.add(os.path.normpath(test))
+                    continue
+                test = CPPGetIncludePath(dep,includeDirs)
+                if test != '':
+                    deps.add(test)
+            elif line.startswith('include') and '<' in line:
                 dep = CPPExtractIncludeFile(line)
-                depprefix = os.path.join(prefix,dep)
-                if not os.path.exists(depprefix) and includeDir!='':
-                    depprefix = os.path.join(includeDir,dep)
-                deps.add(os.path.normpath(depprefix))
-
+                test = CPPGetIncludePath(dep,includeDirs)
+                if test != '':
+                    deps.add(test)
     return deps
 
 class Builder:
@@ -145,17 +165,11 @@ class Builder:
             self.InfoPrint(msg,end)
     
     def GetSourceExts(self,mode):
-        exts = GetModeVar(self.options,mode,'sourceExt')
-        if type(exts)==str:
-            exts = [exts]
-        
+        exts = GetModeVar(self.options,mode,'srcExts')
         return exts
     
     def GetHeaderExts(self,mode):
-        exts = GetModeVar(self.options,mode,'headerExt')
-        if type(exts)==str:
-            exts = [exts]
-        
+        exts = GetModeVar(self.options,mode,'headerExts')
         return exts
 
     def RemoveObjects(self,path,ext):
@@ -183,23 +197,23 @@ class Builder:
         return False
     
     def DirContainsObjects(self,mode):
-        path = self.GetPath(mode,'objectDir')
-        ext = GetModeVar(self.options,mode,'objectExt')
+        path = self.GetPath(mode,'objDir')
+        ext = GetModeVar(self.options,mode,'objExt')
         
         if not os.path.exists(path):
             return False
         
         return self.DirContainsObjectsSub(path,ext)
 
-    def FindFileDependencies(self,path,includeDir=''):
+    def FindFileDependencies(self,path,includeDirs):
         if not os.path.exists(path):
             return
 		
-        deps = self.depExtractFunc(path,includeDir)
+        deps = self.depExtractFunc(path,includeDirs)
         self.depdict[path] = deps
         for d in deps:
             if d not in self.depdict: #if dependency not tracked, add it and recursively search for more deps
-                self.FindFileDependencies(d,includeDir)
+                self.FindFileDependencies(d,includeDirs)
     
     def InvertDependencies(self):
         self.invdict = {}
@@ -229,23 +243,25 @@ class Builder:
 
         return cascadeSet
         
-    def CollectCompilables(self,srcDir,srcExts,includeDir=''):
+    def CollectCompilables(self,srcDir,srcExts,includeDirs):
         files = os.listdir(srcDir)
         for file in files:
             path = os.path.join(srcDir,file)
             if os.path.isdir(path):
-                self.CollectCompilables(path,srcExts,includeDir)
+                self.CollectCompilables(path,srcExts,includeDirs)
             elif GetExtension(file) in srcExts:
                 self.compileFiles.add(path)
-                self.FindFileDependencies(path,includeDir)
+                self.FindFileDependencies(path,includeDirs)
     
-    def CollectAllCompilables(self,mode,srcDir,srcExts):
+    def CollectAllCompilables(self,mode,srcDirs,srcExts):
         self.compileFiles = set()
         self.depdict = {}
         self.invdict = {}
         self.rebuildList = []
-        includeDir = self.GetPath(mode,'includeDir')
-        self.CollectCompilables(srcDir,srcExts,includeDir)
+        
+        includeDirs = self.GetPaths(mode,'includeDirs')
+        for src in srcDirs:
+            self.CollectCompilables(src,srcExts,includeDirs)
         self.DebugPrint(f"Found {len(self.compileFiles)} source files.")
         self.DebugPrint(f"Tracked {len(self.depdict)} total dependencies.")
 
@@ -262,14 +278,14 @@ class Builder:
         outputAge = GetFileTime(outputPath)
         self.DebugPrint(f'Output ({outputPath}) has age {outputAge}')
         
-        includeDir = GetModeVar(self.options,mode,'includeDir')
-        if includeDir!=None:
-            includeDir = self.GetPath(mode,'includeDir')
+        includeDirs = self.GetPaths(mode,'includeDirs')
 
         for headerFile in self.invdict:
             headerAge = GetFileTime(headerFile)
-            if headerAge==0 and includeDir!=None:
-                headerAge = GetFileTime(os.path.join(includeDir,headerFile))
+            for include in includeDirs:
+                if headerAge!=0:
+                    break
+                headerAge = GetFileTime(os.path.join(include,headerFile))
             
             if headerAge>=outputAge:
                 self.DebugPrint(f'Cascading {headerFile}...')
@@ -284,19 +300,31 @@ class Builder:
 
         self.rebuildList = list(self.rebuildSet)
         SortByFileTimesIP(self.rebuildList)
+        
+    def CollectObjectsSub(self,path,l,objExt):
+        for entry in os.listdir(path):
+            real = os.path.join(path,entry)
+            if os.path.isdir(real):
+                self.CollectObjectsSub(real,l,objExt)
+            elif os.path.isfile(real):
+                if GetExtension(real)==objExt:
+                    l.append(real)
 
     def GetObjectPaths(self,mode):
-        d = self.GetPath(mode,'objectDir')
+        d = self.GetPath(mode,'objDir')
+        ext = GetModeVar(self.options,mode,'objExt')
+        objs = []
+        self.CollectObjectsSub(d,objs,ext)
+        
         s = ''
-        for file in self.compileFiles:
-            p = self.GetObjectFromSource(mode,file)
-            s += p+' '
+        for file in objs:
+            s += file+' '
             
         return s[:-1]
-
+        
     def GetObjectFromSource(self,mode,src):
-        d = self.GetPath(mode,'objectDir')
-        return os.path.join(d,AddExtension(src,GetModeVar(self.options,mode,'objectExt')))
+        d = self.GetPath(mode,'objDir')
+        return os.path.join(d,AddExtension(src,GetModeVar(self.options,mode,'objExt')))
 
     def GetOutputPath(self,mode):
         d = self.GetPath(mode,'outputDir')
@@ -318,13 +346,14 @@ class Builder:
                     MakePath(test)
             
             if GetModeVar(self.options,real,'compileCmd'):
-                test = self.GetPath(real,'objectDir')
+                test = self.GetPath(real,'objDir')
                 if not os.path.exists(test):
                     MakePath(test)
             
-            test = self.GetPath(real,'sourceDir')
-            if not os.path.exists(test):
-                MakePath(test)
+            test = self.GetPaths(real,'srcDirs')
+            for path in test:
+                if not os.path.exists(path):
+                    MakePath(path)
                 
     def GetPath(self,mode,name):
         var = GetModeVar(self.options,mode,name)
@@ -333,6 +362,19 @@ class Builder:
             var = self.FlagListPreprocess(properMode,name,var)
         
         return self.ResolvePath(mode,var)
+    
+    def GetPaths(self,mode,name):
+        var = GetModeVar(self.options,mode,name)
+        properMode = GetModeMode(self.options,mode,name)
+        newList = []
+        processed = self.FlagListPreprocess(properMode,name,var)
+        for path in processed:
+            if type(path) is list:
+                newList.append(self.ResolvePath(mode,path))
+            else:
+                newList.append(path)
+        
+        return newList
     
     def GetCommand(self,mode,name,infile='%in',outfile='%out'):
         var = GetModeVar(self.options,mode,name)
@@ -345,7 +387,7 @@ class Builder:
     def FlagListPreprocess(self,mode,name,flagList):
         newList = []
         for flag in flagList:
-            if flag[1:]==name:
+            if type(flag) is str and flag[1:]==name:
                 v = GetModeVar(self.options,mode[:-1],name)
                 higher = GetModeMode(self.options,mode[:-1],name)
                 if v is None:
@@ -457,7 +499,12 @@ class Builder:
 
     def GetCompileCommand(self,mode,file):
         objVersion = self.GetObjectFromSource(mode,file)
-        return self.GetCommand(mode,'compileCmd',file,objVersion)
+        command = self.GetCommand(mode,'compileCmd',file,objVersion)
+        includes = self.GetPaths(mode,'includeDirs')
+        flag = GetModeVar(self.options,mode,'includeFlag')
+        for include in includes:
+            command += ' '+flag+' '+include
+        return command
 
     def GetLinkCommand(self,mode):
         inputFiles = self.GetObjectPaths(mode)
@@ -471,8 +518,8 @@ class Builder:
     def Scan(self,mode):
         if GetModeVar(self.options,mode,'compileCmd') or GetModeVar(self.options,mode,'linkCmd'):
             self.GetDepExtractFunc(mode)
-            srcDir = self.GetPath(mode,'sourceDir')
-            self.CollectAllCompilables(mode,srcDir,self.GetSourceExts(mode))
+            srcDirs = self.GetPaths(mode,'srcDirs')
+            self.CollectAllCompilables(mode,srcDirs,self.GetSourceExts(mode))
             self.InvertDependencies()
             self.GetRebuildSet(mode)
             
@@ -601,12 +648,12 @@ class Builder:
     def GetDepExtractFunc(self,mode):
         self.depExtractFunc = CPPDeps
         
-    def PruneObjectsSub(self,path,ext):
+    def PruneObjectsSub(self,path,ext,srcExts):
         files = os.listdir(path)
         for file in files:
             p = os.path.join(path,file)
             if os.path.isdir(p):
-                self.PruneObjectsSub(p,ext)
+                self.PruneObjectsSub(p,ext,srcExts)
             elif os.path.isfile(p):
                 if GetExtension(file)==ext:
                     prune = False
@@ -615,6 +662,9 @@ class Builder:
                         self.DebugPrint(f"Pruned zero-size object: {p}")
                     else:
                         src = os.path.splitext(p)[0]
+                        # ignore if it wasn't built by this mode
+                        if GetExtension(src) not in srcExts:
+                            continue
                         found = False
                         for srcFile in self.compileFiles:
                             if src.endswith(srcFile):
@@ -631,10 +681,11 @@ class Builder:
         
     def PruneObjects(self,mode):
         self.pruned = False
-        objDir = self.GetPath(mode,'objectDir')
-        objExt = GetModeVar(self.options,mode,'objectExt')
+        objDir = self.GetPath(mode,'objDir')
+        objExt = GetModeVar(self.options,mode,'objExt')
+        srcExts = GetModeVar(self.options,mode,'srcExts')
         
-        self.PruneObjectsSub(objDir,objExt)
+        self.PruneObjectsSub(objDir,objExt,srcExts)
         
         if self.pruned:
             self.Scan(mode)
@@ -712,7 +763,7 @@ class Builder:
             if self.debug:
                 self.InfoPrint(f'{TextColor(BLUE)}{cmd}{RESET()}')
             else:
-                src = os.path.normpath(self.GetPath(mode,'objectDir'))
+                src = os.path.normpath(self.GetPath(mode,'objDir'))
                 dest = self.GetOutputPath(mode)
                 self.InfoPrint(f'{TextColor(GREEN)}Linking: {TextColor(BLUE)}{src} {TextColor(WHITE,1)}-> {TextColor(GREEN,1)}{dest}{RESET()}')
             code = self.RunCommand(cmd)
@@ -722,7 +773,7 @@ class Builder:
                 ErrorExit()
 
         for command in postCmds:
-            self.InfoPrint(f"{TextColor(MAGENTA)}{command}{RESET()}")
+            self.DebugPrint(f"{TextColor(MAGENTA)}{command}{RESET()}")
             code = self.RunCommand(command)
             if code!=0:
                 ErrorExit()
@@ -748,12 +799,12 @@ class Builder:
             subs = [m]
             
         for mode in subs:
-            ext = GetModeVar(self.options,mode,'objectExt')
+            ext = GetModeVar(self.options,mode,'objExt')
             if self.NeedsCleaning(mode):
                 self.InfoPrint(f"{TextColor(WHITE,1)}Using mode {MODE()}{ModeStr(mode)}{RESET()}")
                 self.InfoPrint(f"{TextColor(WHITE,1)}Cleaning up...{TextColor(YELLOW)}")
                 if self.DirContainsObjects(mode):
-                    path = self.GetPath(mode,'objectDir')
+                    path = self.GetPath(mode,'objDir')
                     self.InfoPrint(f"{TextColor(YELLOW)}Removing objects in {path}")
                     self.RemoveObjects(path,ext)
                 
@@ -835,19 +886,6 @@ def GetModeVar(options,mode,varName): # return a mode var, falling back to the r
         curr = curr[submode]['modes']
     return best
 
-def FixDirs(options):
-    dirs = ['sourceDir','objectDir','outputDir']
-
-    for d in dirs:
-        modes = options['modes']
-        for mode in modes:
-            if d in modes[mode]:
-                if modes[mode][d]=='':
-                    modes[mode][d] = '.'
-        if d in options:
-            if options[d]=='':
-                options[d] = '.'
-                
 def GetAllSubModes(modeDict,mode):
     l = []
     for name,submode in modeDict.items():
@@ -975,14 +1013,12 @@ def GetOptionsFromFile(file):
     CreateSubModeDicts(modes)
 
     defaults = [('compileCmd',''),('linkCmd',''),('outputName','a'),
-            ('defaultMode',list(op['modes'].keys())[0]),('sourceExt',['c','cpp','c++']),
-            ('headerExt',['h','hpp','h++']),('objectExt','o'),('sourceDir','.'),('includeDir',''),
-            ('objectDir','.'),('outputDir','.'),('preCmds',[]),('postCmds',[])]
+            ('defaultMode',list(op['modes'].keys())[0]),('srcExts',['c','cpp','c++']),
+            ('headerExts',['h','hpp','h++']),('objExt','o'),('srcDirs',[]),('includeDirs',[]),
+            ('objDir','.'),('outputDir','.'),('includeFlag','-I'),('preCmds',[]),('postCmds',[])]
 
     SetDefaults(op,defaults)
     
-    FixDirs(op)
-
     if error:
         ErrorExit()
 
@@ -991,7 +1027,7 @@ def GetOptionsFromFile(file):
 def main():    
     global noColor
     name = 'builder'
-    builderVersion = '0.1.2'
+    builderVersion = '0.1.4'
     
     os.system('')
 

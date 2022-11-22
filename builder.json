@@ -1,13 +1,13 @@
 {
-	"sourceDir":"src",
-	"includeDir":"include",
+	"srcDirs":["src"],
+	"includeDirs":["include","src"],
 	"outputName":"ctx",
 	"defaultMode":"%platform",
 	"outputDir":[
 		"bin",
 		"%modeLast"
 	],
-	"objectDir":[
+	"objDir":[
 		"build",
 		"%modeLast"
 	],
@@ -28,8 +28,6 @@
 		"-fno-exceptions",
 		"-fno-rtti",
 		"-pedantic",
-		"-I",
-		"#%includeDir",
 		"%in"
 	],
 	"linkFlags":[
