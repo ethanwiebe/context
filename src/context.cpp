@@ -855,6 +855,20 @@ std::string ContextEditor::ConstructModeString(size_t index){
 	return modeStr;
 }
 
+std::string BarClipStringEnd(const std::string& str,size_t w){
+	if (str.size()<=w){
+		return str;
+	}
+	
+	std::string n = str.substr(str.size()-w);
+	if (w>3){
+		n[0] = '.';
+		n[1] = '.';
+		n[2] = '.';
+	}
+	return n;
+}
+
 void ContextEditor::DrawStatusBar(){
 	s32 w,h;
 	w = screen.GetWidth();
@@ -872,14 +886,27 @@ void ContextEditor::DrawStatusBar(){
 		screen.SetAt(x,h-1,TextCell(' ',barStyle));
 	
 	if (entryMode==EntryMode::Command||entryMode==EntryMode::Proc){
-		screen.RenderString(0,h-1,entryPrefix + entryString,barStyle);
-		auto x = entryPrefix.size()+entryPos;
+		size_t strl = entryPrefix.size()+entryString.size();
+		std::string clipped = BarClipStringEnd(entryPrefix+entryString,w-2);
+		screen.RenderString(0,h-1,clipped,barStyle);
+		ssize_t x = entryPrefix.size()+entryPos;
+		ssize_t start = std::max((ssize_t)0,(ssize_t)(strl)-(w-2));
+		x -= start;
+		x = std::max(x,(ssize_t)0);
+		if ((s32)strl<=w-2||x>=3){
+			auto cell = screen.GetAt(x,h-1);
+			cell.style = cursorStyle;
+			screen.SetAt(x,h-1,cell);
+		}
+	} else if (entryMode==EntryMode::YesNo){
+		std::string clipped = BarClipStringEnd(yesNoMessage+" Y/N ",w-1);
+		screen.RenderString(0,h-1,clipped,barStyle);
+		auto x = clipped.size();
 		auto cell = screen.GetAt(x,h-1);
 		cell.style = cursorStyle;
 		screen.SetAt(x,h-1,cell);
-	} else if (entryMode==EntryMode::YesNo){
-		screen.RenderString(0,h-1,yesNoMessage + " Y/N ",barStyle);
 	} else {
+		size_t maxW = std::max(w-2-modeStr.size(),(size_t)3);
 		MessageQueue& modeErrorMessage = modes[currentMode]->GetErrorMessage();
 		modeErrorStr = modeErrorMessage.Front();
 		MessageQueue& modeInfoMessage = modes[currentMode]->GetInfoMessage();
@@ -896,23 +923,23 @@ void ContextEditor::DrawStatusBar(){
 		}
 	
 		if (!errorStr.empty()){
-			screen.RenderString(0,h-1,errorStr,errorStyle);
+			screen.RenderString(0,h-1,BarClipStringEnd(errorStr,maxW),errorStyle);
 		} else if (!modeErrorStr.empty()){
 			std::string formattedError = {};
 			formattedError += modes[currentMode]->GetModeName();
 			formattedError += ": ";
 			formattedError += modeErrorStr;
-			screen.RenderString(0,h-1,formattedError,errorStyle);
+			screen.RenderString(0,h-1,BarClipStringEnd(formattedError,maxW),errorStyle);
 		} else if (!infoStr.empty()){
-			screen.RenderString(0,h-1,infoStr,barStyle);
+			screen.RenderString(0,h-1,BarClipStringEnd(infoStr,maxW),barStyle);
 		} else if (!modeInfoStr.empty()){
 			std::string formattedInfo = {};
 			formattedInfo += modes[currentMode]->GetModeName();
 			formattedInfo += ": ";
 			formattedInfo += modeInfoStr;
-			screen.RenderString(0,h-1,formattedInfo,barStyle);
+			screen.RenderString(0,h-1,BarClipStringEnd(formattedInfo,maxW),barStyle);
 		} else if (!modeStatusBar.empty()){
-			screen.RenderString(0,h-1,modeStatusBar,barStyle);
+			screen.RenderString(0,h-1,BarClipStringEnd(modeStatusBar,maxW),barStyle);
 		}
 
 		screen.RenderString(w-1-modeStr.size(),h-1,modeStr,barStyle);
