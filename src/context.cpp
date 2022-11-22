@@ -147,6 +147,8 @@ void ContextEditor::RunProc(const std::string& name){
 			PushError("Proc '"+name+"': "+errorMessage.Pop());
 			break;
 		}
+		if (entryMode==EntryMode::None)
+			entryMode = EntryMode::Command;
 	}
 	
 	entryMode = EntryMode::None;
@@ -182,10 +184,12 @@ void ContextEditor::RunFile(std::string_view path,bool silentFileChecks){
 					break;
 				}
 				++l;
+				if (entryMode==EntryMode::None)
+					entryMode = EntryMode::Command;
 			}
-			if (entryMode==EntryMode::Proc){
+			if (entryMode==EntryMode::Proc)
 				PushError("Proc '"+currentProcName+"' was never ended!");
-			}
+			
 			entryMode = EntryMode::None;
 		}
 	} else {
@@ -291,9 +295,9 @@ void ContextEditor::ProcessCommandEntry(KeyEnum key,KeyModifier mod){
 			}
 			break;
 		case EditAction::InsertLine:
-			SubmitCommand();
 			if (entryMode!=EntryMode::Proc)
 				entryMode = EntryMode::None;
+			SubmitCommand();
 			break;
 		case EditAction::Escape:
 			CancelCommand();
@@ -385,7 +389,7 @@ void ContextEditor::CancelCommand(){
 }
 
 void ContextEditor::SubmitCommand(){
-	if (entryMode==EntryMode::Command){
+	if (entryMode==EntryMode::Command||entryMode==EntryMode::None){
 		TokenVector tokens = GetCommandTokens();
 		
 		if (!ProcessCommand(tokens)){
@@ -402,13 +406,13 @@ void ContextEditor::SubmitCommand(){
 		
 		if (clipped.size()==3&&clipped=="end"){
 			procs[currentProcName] = currentProc;
-			entryMode = EntryMode::Command;
+			entryMode = EntryMode::None;
 			return;
 		} else if (clipped.size()>3&&
 				clipped.starts_with("end")&&
 				(clipped[3]==' '||clipped[3]=='\t')){
 			procs[currentProcName] = currentProc;
-			entryMode = EntryMode::Command;
+			entryMode = EntryMode::None;
 			return;
 		}
 		
