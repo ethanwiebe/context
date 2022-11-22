@@ -367,7 +367,10 @@ TokenVector ContextEditor::GetCommandTokens(){
 void ContextEditor::AutocompleteCommand(){
 	TokenVector tokens = GetCommandTokens();
 	
-	if ((tokens[0].Matches("open")||tokens[0].Matches("saveas"))&&tokens.size()>1){
+	if ((tokens[0].Matches("open")||
+		 tokens[0].Matches("saveas")||
+		 tokens[0].Matches("source"))&&
+			tokens.size()>1){
 		std::string sub = entryString.substr(GetTokenCol(tokens[1]),
 											GetTokenSize(tokens[1]));
 		osInterface->AutocompletePath(sub);

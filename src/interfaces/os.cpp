@@ -25,7 +25,20 @@ void ChooseBestPrefix(
 	}
 }
 
+void CrunchHomePrefix(std::string& path,const std::string& homePrefix){
+	if (!path.starts_with(homePrefix)) return;
+	path = '~'+path.substr(homePrefix.size());
+}
+
 void OSInterface::AutocompletePath(std::string& path) const {
+	std::string home = GetHomePath();
+	
+	bool crunch = false;
+	if (path.starts_with("~/")){
+		path = home+path.substr(1);
+		crunch = true;
+	}
+	
 	std::vector<std::string> entries = {};
 	std::string pathPrefix;
 	
@@ -54,6 +67,10 @@ void OSInterface::AutocompletePath(std::string& path) const {
 	ChooseBestPrefix(validPrefixes,closest);
 	if (!closest.empty())
 		path = closest;
+		
+	if (crunch){
+		CrunchHomePrefix(path,home);
+	}
 }
 
 #include <thread>
