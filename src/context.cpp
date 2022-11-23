@@ -20,6 +20,7 @@ ContextEditor::ContextEditor(const std::string& file) : modes(){
 	
 	extData = {};
 	procs = {};
+	procBinds = {};
 	modeHooks = {};
 	currentProcName = {};
 	
@@ -98,14 +99,20 @@ inline void ContextEditor::Render(){
 inline void ContextEditor::Update(){
 	if ((currentEvent = interface->GetKeyboardEvent())){
 		willUpdate = true;
+		KeyEnum key = (KeyEnum)currentEvent->key;
+		KeyModifier mod = (KeyModifier)currentEvent->mod;
 		
 		if (entryMode==EntryMode::Command||entryMode==EntryMode::Proc){
-			ProcessCommandEntry((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
+			ProcessCommandEntry(key,mod);
 		} else if (entryMode==EntryMode::YesNo){
-			ProcessYesNoEntry((KeyEnum)currentEvent->key);
+			ProcessYesNoEntry(key);
 		} else {
-			if (!ProcessKeyboardEvent((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod))
-				modes[currentMode]->ProcessKeyboardEvent((KeyEnum)currentEvent->key,(KeyModifier)currentEvent->mod);
+			std::string procName = {};
+			if (FindProcBind({key,mod},procName)){
+				RunProc(procName);
+			} else if (!ProcessKeyboardEvent(key,mod)){
+				modes[currentMode]->ProcessKeyboardEvent(key,mod);
+			}
 		}
 	}
 	
@@ -519,10 +526,6 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		RunFile(parsedPath);
 		return true;
 	} else if (tokens[0].Matches("proc")){
-		if (procDepth){
-			PushError("Cannot define a proc inside of a proc!");
-			return true;
-		}
 		currentProcName = tokens[1].Stringify();
 		currentProc = {};
 		entryMode = EntryMode::Proc;
@@ -640,7 +643,6 @@ inline KeyModifier ParseMod(std::string_view& bindstr){
 	}
 	
 	if (bindstr.starts_with("C-")||bindstr.starts_with("c-")){
-		bindstr = {bindstr.begin()+2,bindstr.end()};
 		bindstr.remove_prefix(2);
 		return KeyModifier::Ctrl;
 	}
@@ -711,7 +713,7 @@ inline void SkipWhitespace(std::string_view& str,std::string_view::iterator pos)
 	str = {pos,str.end()};
 }
 
-inline bool ParseKeybind(std::vector<KeyBind>& binds,std::string_view bindstr){
+inline bool ParseKeybind(BindVec& binds,std::string_view bindstr){
 	std::string_view::iterator pos;
 	KeyEnum key = KeyEnum::None;
 	KeyModifier mod = KeyModifier::None;
@@ -739,9 +741,39 @@ inline bool ParseKeybind(std::vector<KeyBind>& binds,std::string_view bindstr){
 	return true;
 }
 
+bool ContextEditor::FindProcBind(const KeyBind& bind,std::string& name){
+	if (!procBinds.invMap.contains(bind)) return false;
+	name = procBinds.invMap.at(bind);
+	return true;
+}
+
+void ContextEditor::SetProcBind(const std::string& procName,const TokenVector& tokens){
+	auto bindIt = tokens.begin()+2;
+	BindVec parsedBinds = {};
+	
+	while (bindIt!=tokens.end()){
+		if (!ParseKeybind(parsedBinds,bindIt->Stringify())){
+			PushError("Could not parse keybind '"+bindIt->Stringify()+"'");
+			break;
+		}
+		
+		++bindIt;
+	}
+	
+	procBinds.SetBinds(procName,parsedBinds);
+}
+
 void ContextEditor::SetConfigBind(const TokenVector& tokens){
 	std::string actionStr = tokens[1].Stringify();
 	std::string modeName,actionName;
+	
+	if (actionStr.find('.')==std::string::npos){
+		if (!procs.contains(actionStr)){
+			PushError("'"+actionStr+"' is not a valid proc!");
+			return;
+		}
+		return SetProcBind(actionStr,tokens);
+	}
 	
 	if (!ResolveArgumentMode(actionStr,modeName)||
 		!gBinds.contains(modeName)){
@@ -762,8 +794,7 @@ void ContextEditor::SetConfigBind(const TokenVector& tokens){
 	
 	s16 action = bindSet.nameMap.at(actionName);
 	
-	auto bindIt = tokens.begin();
-	++bindIt; ++bindIt; //start after first arg
+	auto bindIt = tokens.begin()+2;
 	std::vector<KeyBind> parsedBinds = {};
 	
 	while (bindIt!=tokens.end()){

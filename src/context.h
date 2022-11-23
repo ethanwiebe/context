@@ -67,6 +67,7 @@ class ContextEditor {
 	ssize_t entryPos;
 	
 	std::map<std::string,Procedure> procs;
+	ProcBindSet procBinds;
 	std::map<std::string,ExtData> extData;
 	std::map<ModeIndex,std::string> modeHooks;
 	
@@ -114,6 +115,8 @@ class ContextEditor {
 	void SetConfigVar(const TokenVector&);
 	void SetModeConfigVar(const TokenVector&);
 	void SetConfigBind(const TokenVector&);
+	void SetProcBind(const std::string&,const TokenVector&);
+	bool FindProcBind(const KeyBind&,std::string&);
 	
 	void SetExtensionData(const std::string& ext,ModeIndex mode,const std::string& proc);
 	
