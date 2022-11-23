@@ -129,12 +129,22 @@ Here are the commands:
 
 open path
 	Opens file at 'path'.
+	
+save path
+	Saves current file.
 
 saveas path
 	Renames file to 'path'.
 
-set modeName.configVar value
-	Sets 'configVar' in 'modeName' to be 'value'.
+var varName value
+	Sets the global config var 'varName' to be 'value'.
+	
+modevar varName value
+	Sets the mode-specific config var 'varName' to be 'value'
+	
+proc procName
+	Starts the definition of a procedure named 'procName'.
+	Definition ends when 'end' is encountered.
 
 bind modeName.actionName keybinds...
 	Binds the action of 'actionName' in 'modeName' to all of the
@@ -142,6 +152,18 @@ bind modeName.actionName keybinds...
 	For a full list of action names, go to:
 		github.com/ethanwiebe/context/blob/master/include/actions.h
 		github.com/ethanwiebe/context/blob/master/src/modes/edit/editactions.h
+
+bind procName keybinds...
+	Binds the procedure 'procName' to run when any of the
+	keybinds in 'keybinds...' are pressed.
+	
+ext extName modeName [procName]
+	Any files of type 'extName' will be opened in mode 'modeName' and
+	optionally the procedure 'procName' will be run after opening.
+
+modehook modeName procName
+	Whenever the mode 'modeName' is opened the procedure 
+	'procName' will be run.
 
 style styleName fg bg [opts]
 	Sets the style of 'styleName' at the current style
@@ -159,19 +181,15 @@ and if it exists all lines in the file will be executed
 as commands.
 
 
-How to use 'set':
-	set modeName.configVar value
+Variables of 'var' and 'modevar':
+	var varName value
 	
-	'modeName' can be one of:
-		ctx                   - context global settings
-		edit                  - edit mode settings
-	
-	ctx config vars:
+	'varName' can be:
 		style                 - style name to set/create
 		sleepy                - whether to sleep or busy loop while waiting
 		tabBarWidth           - width of tabs on top of the screen
-	
-	edit config vars:
+		
+	In edit mode 'modevar' can be:
 		tabSize               - tab size in spaces
 		multiAmount           - amount of chars to move in 'multi' movements
 		displayLineNumbers    - whether to display line numbers or not
@@ -182,10 +200,17 @@ How to use 'set':
 		tabMode               - 'spaces' or 'tabs'
 		moveMode              - 'multi', 'word', or 'pascal'
 		deleteMode            - 'multi', 'word', or 'pascal'
+		syntaxHighlighter     - set the syntax highlighter to use
 	
-	Move/delete modes:
-		'word' means skip over blocks of characters/whitespace in one step
-		'pascal' is same as above but separates word with capitalization
-		'multi' moves a fixed amount each time
+		Move/delete modes:
+			'word' means skip over blocks of characters/whitespace in one step
+			'pascal' is same as above but separates word with capitalization
+			'multi' moves a fixed amount each time
+			
+		Syntax highlighters:
+			cpp
+			python
+			glsl
+			terse
 
 )---"
