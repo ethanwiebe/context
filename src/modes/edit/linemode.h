@@ -1,11 +1,11 @@
 #pragma once
 
 #include "../mode.h"
-#include "../../keybind.h"
-#include "../../logger.h"
-#include "../../undo.h"
-#include "../../syntaxhighlight.h"
-#include "../../textbuffer.h"
+#include <keybind.h>
+#include <logger.h>
+#include <undo.h>
+#include <textbuffer.h>
+#include "syntaxhighlight.h"
 #include "find.h"
 #include "cursor.h"
 #include "lineconfig.h"
@@ -140,7 +140,7 @@ public:
 	std::string_view GetPath(const OSInterface&) override;
 	void SetPath(const OSInterface&,std::string_view) override;
 	
-	void GetSyntaxHighlighter(std::string_view);
+	void SetSyntaxHighlighter(const std::string&);
 	
 	bool HasPath() override;
 

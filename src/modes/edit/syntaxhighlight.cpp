@@ -195,39 +195,57 @@ static std::vector<std::string> terseKeywords = {"def","axiom","theorem","lemma"
 static std::vector<std::string> terseDefs = {"true","false"};
 static std::vector<std::string> terseFuncs = {"&"};
 
-SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer& buffer,std::string_view ext){
-	if (ext.empty())
-		return nullptr;
-
-	if (ext=="cpp"||ext=="hpp"||ext=="c"||ext=="h"||ext=="c++"||ext=="h++"||ext=="cc"||ext=="hh"){
-		return new CPPSyntaxHighlighter(buffer);
-	} else if (ext=="pyc"||ext=="pyw"||ext=="py"){
-		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);
-		sh->AddKeywords(pythonKeywords,&statementStyle);
-		sh->AddKeywords(pythonFuncs,&funcStyle);
-		sh->AddKeywords(pythonTypes,&typeStyle);
-		sh->SetComment("#");
-		sh->SetMultiLineComment("","");
-		return sh;
-	} else if (ext=="vert"||ext=="frag"||ext=="glsl"||ext=="vs"||ext=="fs"||ext=="geom"||ext=="gs"){
-		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);
-		sh->AddKeywords(glslKeywords,&statementStyle);
-		sh->AddKeywords(glslFuncs,&funcStyle);
-		sh->AddKeywords(glslTypes,&typeStyle);
-		sh->SetComment("//");
-		sh->SetAltComment("#");
-		sh->SetMultiLineComment("/*","*/");
-		return sh;
-	} else if (ext=="trs"||ext=="thm"||ext=="axm"){
-		ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buffer);
-		sh->AddKeywords(terseKeywords,&statementStyle);
-		sh->AddKeywords(terseDefs,&typeStyle);
-		sh->AddKeywords(terseFuncs,&funcStyle);
-		sh->SetComment("//");
-		sh->SetAltComment("#");
-		sh->SetMultiLineComment("/*","*/");
-		return sh;
-	}
-
-	return nullptr;
+inline SyntaxHighlighter* MakeCPPHighlighter(TextBuffer& buf){
+	return new CPPSyntaxHighlighter(buf);
 }
+
+inline SyntaxHighlighter* MakePythonHighlighter(TextBuffer& buf){
+	ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buf);
+	sh->AddKeywords(pythonKeywords,&statementStyle);
+	sh->AddKeywords(pythonFuncs,&funcStyle);
+	sh->AddKeywords(pythonTypes,&typeStyle);
+	sh->SetComment("#");
+	sh->SetMultiLineComment("","");
+	return sh;
+}
+
+inline SyntaxHighlighter* MakeGLSLHighlighter(TextBuffer& buf){
+	ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buf);
+	sh->AddKeywords(glslKeywords,&statementStyle);
+	sh->AddKeywords(glslFuncs,&funcStyle);
+	sh->AddKeywords(glslTypes,&typeStyle);
+	sh->SetComment("//");
+	sh->SetAltComment("#");
+	sh->SetMultiLineComment("/*","*/");
+	return sh;
+}
+
+inline SyntaxHighlighter* MakeTerseHighlighter(TextBuffer& buf){
+	ConfigurableSyntaxHighlighter* sh = new ConfigurableSyntaxHighlighter(buf);
+	sh->AddKeywords(terseKeywords,&statementStyle);
+	sh->AddKeywords(terseDefs,&typeStyle);
+	sh->AddKeywords(terseFuncs,&funcStyle);
+	sh->SetComment("//");
+	sh->SetAltComment("#");
+	sh->SetMultiLineComment("/*","*/");
+	return sh;
+}
+
+SHMap gSyntaxHighlighters = {
+	{
+		"cpp",
+		&MakeCPPHighlighter
+	},
+	{
+		"python",
+		&MakePythonHighlighter
+	},
+	{
+		"glsl",
+		&MakeGLSLHighlighter
+	},
+	{
+		"terse",
+		&MakeTerseHighlighter
+	}
+};

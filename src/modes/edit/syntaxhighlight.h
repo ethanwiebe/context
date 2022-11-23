@@ -89,4 +89,7 @@ public:
 	Tokenizer* GetTokenizer() const override;
 };
 
-SyntaxHighlighter* GetSyntaxHighlighterFromExtension(TextBuffer&,std::string_view extension);
+typedef SyntaxHighlighter* (*SHFunc)(TextBuffer&);
+typedef std::map<std::string,SHFunc> SHMap;
+
+extern SHMap gSyntaxHighlighters;

@@ -68,7 +68,7 @@ ContextEditor::ContextEditor(const std::string& file) : modes(){
 				NewMode();
 		} else {
 			NewMode();
-			modes[0]->SetPath(*osInterface,file);
+			SetPathMode(file,0);
 		}
 	} else {
 		NewMode();
@@ -1265,7 +1265,17 @@ void ContextEditor::SetPathMode(std::string_view path,size_t index){
 	FixWindowsPath(copiedPath);
 #endif
 	
+	ModeIndex mode;
+	std::string procName;
+	ProcessExtension(copiedPath,mode,procName);
+	
 	modes[index]->SetPath(*osInterface,copiedPath);
+	
+	// TODO: check if mode index matches the current mode
+	// before running the proc
+	if (!procName.empty()){
+		RunProc(procName);
+	}
 }
 
 void ContextEditor::SetConfigVar(const TokenVector& tokens){

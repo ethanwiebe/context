@@ -551,8 +551,6 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	colorBuffer = {};
 	colorBuffer.assign(textBuffer->size(),{});
 
-	GetSyntaxHighlighter(bufferPath);
-	highlighterNeedsUpdate = true;
 	InitIterators();
 	
 	return true;
@@ -587,21 +585,17 @@ void LineModeBase::SetPath(const OSInterface& os,std::string_view path){
 	bufferPath.clear();
 	bufferPath += path;
 	readonly = !os.FileIsWritable(bufferPath);
-	GetSyntaxHighlighter(bufferPath);
 	SetModified();
 }
 
-void LineModeBase::GetSyntaxHighlighter(std::string_view path){
-	size_t start = path.find_last_of('.');
-	if (start==std::string_view::npos||start==path.size()-1){
+void LineModeBase::SetSyntaxHighlighter(const std::string& name){
+	if (!gSyntaxHighlighters.contains(name)){
 		syntaxHighlighter = nullptr;
 		return;
 	}
-
-	std::string_view extension = path.substr(start+1);
-
+	
 	syntaxHighlighter = Handle<SyntaxHighlighter>(
-		GetSyntaxHighlighterFromExtension(*textBuffer,extension)
+		gSyntaxHighlighters.at(name)(*textBuffer)
 	);
 }
 

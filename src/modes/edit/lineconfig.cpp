@@ -94,6 +94,16 @@ bool LineModeBase::SetConfigVar(const TokenVector& tokens){
 		if (!SetMultiMode(config.deleteMode,val))
 			modeErrorMessage.Push("deleteMode must be one of 'multi', 'word', or 'pascal'");
 		return true;
+	} if (name.Matches("syntaxHighlighter")){
+		if (val!="none"&&!gSyntaxHighlighters.contains(val)){
+			modeErrorMessage.Push("Unrecognized syntax highlighter '"+val+"'!");
+			return true;
+		}
+		
+		SetSyntaxHighlighter(val);
+		highlighterNeedsUpdate = true;
+		
+		return true;
 	}
 	return false;
 }
