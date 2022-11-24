@@ -217,6 +217,7 @@ public:
 	void UpdateSelection(const VisualCursor&);
 	Cursor GetSelectStartPos() const;
 	Cursor GetSelectEndPos() const;
+	void SelectEndCursorFix(Cursor&) const;
 	void VisualCursorDeleteSelection(VisualCursor&,bool=false);
 	void CopySelection();
 	void CopyLinesInSelection();

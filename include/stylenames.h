@@ -1,5 +1,6 @@
 STYLE(text)
 STYLE(cursor)
+STYLE(select)
 STYLE(lineNumber)
 STYLE(emptyLine)
 STYLE(error)

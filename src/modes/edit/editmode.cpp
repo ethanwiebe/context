@@ -4,6 +4,29 @@
 
 EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {}
 
+bool IsMoveAction(TextAction a){
+	switch (a.action){
+		case EditAction::MoveUpPage:
+		case EditAction::MoveDownPage:
+		case EditAction::MoveUpLine:
+		case EditAction::MoveDownLine:
+		case EditAction::MoveLeftChar:
+		case EditAction::MoveRightChar:
+		case EditAction::MoveLeftMulti:
+		case EditAction::MoveRightMulti:
+		case EditAction::MoveUpMulti:
+		case EditAction::MoveDownMulti:
+		case EditAction::MoveToLineStart:
+		case EditAction::MoveToLineEnd:
+		case EditAction::MoveToBufferStart:
+		case EditAction::MoveToBufferEnd:
+			return true;
+		default:
+			return false;
+	}
+	return false;
+}
+
 bool EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 	switch (a.action){
 		case EditAction::MoveScreenUpLine:
@@ -81,11 +104,14 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 	
 	TextAction a = GetTextActionFromKey(key,mod,config.multiAmount,shiftSelect);
 	VisualCursor& cursor = cursors[0];
-	if (!selecting&&shiftSelect&&a.action!=EditAction::InsertChar&&a.action!=EditAction::InsertLine)
-		StartSelecting(cursor);
-	if (ProcessMoveAction(cursor,a)){
-		if (selecting&&!shiftSelect)
-			StopSelecting();
+	bool isMove = IsMoveAction(a);
+	if (isMove){
+		if (!selecting&&shiftSelect)
+			StartSelecting(cursor);
+		if (ProcessMoveAction(cursor,a)){
+			if (selecting&&!shiftSelect)
+				StopSelecting();
+		}
 	}
 	
 	if (finding){

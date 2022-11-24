@@ -244,7 +244,11 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 	if (selecting){
 		startSelect = GetSelectStartPos();
 		endSelect = GetSelectEndPos();
-		inSelection = selecting && viewLine.index > startSelect.line.index; //TODO: handle sublines here
+		s32 selectStartSubline = 
+			GetXPosOfIndex(*startSelect.line.it,startSelect.column,lineWidth,config.tabSize)/lineWidth;
+		inSelection = selecting && 
+			(viewLine.index > startSelect.line.index || 
+				(viewLine.index==startSelect.line.index && screenSubline > selectStartSubline));
 	}
 	s32 findCount = 0;
 	s32 findIndex = 0;
@@ -344,7 +348,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 			else if (c&128) HandleUTF8(it,c,i);
 
 			TextStyle usedStyle = GetTextStyleAt(colorLineIt,i);
-			if (inSelection) std::swap(usedStyle.bg,usedStyle.fg);
+			if (inSelection) usedStyle.bg = selectStyle.bg;
 			if (findCount){
 				if (cursorFind) usedStyle = highlightSelectStyle;
 				else usedStyle = highlightStyle;
@@ -359,8 +363,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 
 			if (inSelection){
 				while (--xDiff>0) //draw selection over tabs
-					std::swap(textScreen[y*w+x-xDiff+lineStart].style.fg,
-							textScreen[y*w+x-xDiff+lineStart].style.bg);
+					textScreen[y*w+x-xDiff+lineStart].style.bg = selectStyle.bg;
 			}
 
 			if (x >= w-lineStart){

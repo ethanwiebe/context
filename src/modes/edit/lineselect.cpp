@@ -16,31 +16,31 @@ void LineModeBase::UpdateSelection(const VisualCursor& cursor){
 }
 
 Cursor LineModeBase::GetSelectStartPos() const {
-	if (selectAnchor.line.index>selectCursor.line.index){
-		Cursor copy = selectCursor;
-		MoveCursorRight(copy,1);
-		return copy;
-	}
+	if (selectAnchor.line.index>selectCursor.line.index)
+		return selectCursor;
 	if (selectAnchor.line.index<selectCursor.line.index)
 		return selectAnchor;
-	if (selectAnchor.column>selectCursor.column){
-		Cursor copy = selectCursor;
-		MoveCursorRight(copy,1);
-		return copy;
-	}
+	if (selectAnchor.column>selectCursor.column)
+		return selectCursor;
 	return selectAnchor;
 }
 
 Cursor LineModeBase::GetSelectEndPos() const {
-	if (selectAnchor.line.index>selectCursor.line.index)
-		return selectAnchor;
+	if (selectAnchor.line.index>selectCursor.line.index){
+		Cursor copy = selectAnchor;
+		MoveCursorLeft(copy,1);
+		return copy;
+	}
 	if (selectAnchor.line.index<selectCursor.line.index){
 		Cursor copy = selectCursor;
 		MoveCursorLeft(copy,1);
 		return copy;
 	}
-	if (selectAnchor.column>selectCursor.column)
-		return selectAnchor;
+	if (selectAnchor.column>selectCursor.column){
+		Cursor copy = selectAnchor;
+		MoveCursorLeft(copy,1);
+		return copy;
+	}
 	Cursor copy = selectCursor;
 	MoveCursorLeft(copy,1);
 	return copy;
@@ -87,9 +87,18 @@ void LineModeBase::CopySelection(){
 	copiedText.insert(copiedText.begin(),GetCharAt(end));
 }
 
+// fixes not grabbing the last line in selection if
+// the selection column happens to be column 0
+void LineModeBase::SelectEndCursorFix(Cursor& end) const {
+	if (end.column==(s32)end.line.it->size()&&end.line.index!=(s32)(textBuffer->size()-1)){
+		MoveCursorRight(end,1);
+	}
+}
+
 void LineModeBase::CopyLinesInSelection(){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
+	SelectEndCursorFix(end);
 	
 	copiedText.clear();
 	
@@ -106,6 +115,8 @@ void LineModeBase::CopyLinesInSelection(){
 void LineModeBase::IndentSelection(VisualCursor& cursor){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
+	SelectEndCursorFix(end);
+	
 	Cursor& affected = cursor.cursor;
 	
 	end.column = 0;
@@ -137,6 +148,8 @@ void LineModeBase::IndentSelection(VisualCursor& cursor){
 void LineModeBase::DedentSelection(VisualCursor& cursor){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
+	SelectEndCursorFix(end);
+	
 	Cursor& affected = cursor.cursor;
 	
 	end.column = 0;
@@ -172,6 +185,8 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 void LineModeBase::DeleteLinesInSelection(VisualCursor& cursor){
 	Cursor start = GetSelectStartPos();
 	Cursor end = GetSelectEndPos();
+	SelectEndCursorFix(end);
+	
 	Cursor cached;
 	
 	s32 count = end.line.index-start.line.index+1;
