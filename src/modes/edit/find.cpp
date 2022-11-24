@@ -42,33 +42,59 @@ inline size_t FindInStringUncased(std::string_view searchStr,std::string_view st
 	return std::string::npos;
 }
 
-void FindAllMatches(TextBuffer& tb,FoundList& matches,std::string_view s){
+void FindAllMatches(TextBuffer& tb,FoundList& matches,std::string_view s,Cursor start,Cursor end){
 	matches.clear();
-	size_t loc;
-	LineIndexedIterator currLine = {tb.begin()};
-	while (currLine.it!=tb.end()){
-		loc = FindInString(s,*currLine.it,0);
+	if (start==end) return;
+	size_t loc = start.column;
+	LineIndexedIterator currLine = start.line;
+	auto endIt = end.line.it;
+	while (currLine.it!=endIt){
+		if (currLine.it!=start.line.it) loc = 0;
+		
+		loc = FindInString(s,*currLine.it,loc);
 		while (loc!=std::string::npos){
 			matches.emplace_back(currLine,loc);
 			loc = FindInString(s,*currLine.it,loc+s.size());
 		}
-		
 		++currLine;
+	}
+	
+	// search on last line (if it exists)
+	if (endIt!=tb.end()){
+		loc = FindInString(s,*endIt,0);
+		while (loc<=(size_t)end.column){
+			// currLine.it is endIt
+			matches.emplace_back(currLine,loc);
+			loc = FindInString(s,*endIt,loc+s.size());
+		}
 	}
 }
 
-void FindAllMatchesUncased(TextBuffer& tb,FoundList& matches,std::string_view s){
+void FindAllMatchesUncased(TextBuffer& tb,FoundList& matches,std::string_view s,Cursor start,Cursor end){
 	matches.clear();
-	size_t loc;
-	LineIndexedIterator currLine = {tb.begin()};
-	while (currLine.it!=tb.end()){
-		loc = FindInStringUncased(s,*currLine.it,0);
+	if (start==end) return;
+	size_t loc = start.column;
+	LineIndexedIterator currLine = start.line;
+	auto endIt = end.line.it;
+	while (currLine.it!=endIt){
+		if (currLine.it!=start.line.it) loc = 0;
+		
+		loc = FindInStringUncased(s,*currLine.it,loc);
 		while (loc!=std::string::npos){
 			matches.emplace_back(currLine,loc);
 			loc = FindInStringUncased(s,*currLine.it,loc+s.size());
 		}
-		
 		++currLine;
+	}
+	
+	// search on last line (if it exists)
+	if (endIt!=tb.end()){
+		loc = FindInString(s,*endIt,0);
+		while (loc<=(size_t)end.column){
+			// currLine.it is endIt
+			matches.emplace_back(currLine,loc);
+			loc = FindInStringUncased(s,*endIt,loc+s.size());
+		}
 	}
 }
 

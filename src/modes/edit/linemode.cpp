@@ -674,10 +674,18 @@ void LineModeBase::UpdateStyle(){
 
 void LineModeBase::FindTextInBuffer(std::string_view text,bool cased){
 	findText = text;
+	Cursor start,end;
+	if (!selecting){
+		start = {{textBuffer->begin(),0},0};
+		end = {{textBuffer->end(),(s32)textBuffer->size()},0};
+	} else {
+		start = GetSelectStartPos();
+		end = GetSelectEndPos();
+	}
 	if (cased)
-		FindAllMatches(*textBuffer,matches,text);
+		FindAllMatches(*textBuffer,matches,text,start,end);
 	else
-		FindAllMatchesUncased(*textBuffer,matches,text);
+		FindAllMatchesUncased(*textBuffer,matches,text,start,end);
 }
 
 void LineModeBase::CursorToNextMatch(){

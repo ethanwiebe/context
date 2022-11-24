@@ -136,8 +136,10 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 			case EditAction::InsertChar:
 			case EditAction::InsertLine:
 			case EditAction::Paste:
-			case EditAction::PasteLines:
 				VisualCursorDeleteSelection(cursor);
+				break;
+			case EditAction::PasteLines:
+				DeleteLinesInSelection(cursor);
 				break;
 			case EditAction::DeleteCurrentChar:
 			case EditAction::DeletePreviousChar:

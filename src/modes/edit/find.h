@@ -17,8 +17,8 @@ struct LineDiff {
 
 typedef std::vector<LineDiff> LineDiffInfo;
 
-void FindAllMatches(TextBuffer&,FoundList&,std::string_view);
-void FindAllMatchesUncased(TextBuffer&,FoundList&,std::string_view);
+void FindAllMatches(TextBuffer&,FoundList&,std::string_view,Cursor start,Cursor end);
+void FindAllMatchesUncased(TextBuffer&,FoundList&,std::string_view,Cursor start,Cursor end);
 
 //returns number of successful replaces
 size_t ReplaceAll(TextBuffer&,std::string_view,std::string_view,LineDiffInfo&);
