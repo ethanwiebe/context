@@ -99,7 +99,9 @@ void LineModeBase::RegisterBinds(){
 	
 	ADD_BIND(EditAction::Goto,                'g',                 KeyModifier::Ctrl);
 	ADD_BIND(EditAction::Find,                'f',                 KeyModifier::Ctrl);
+	ADD_BIND(EditAction::FindCase,            'f',                 KeyModifier::Alt);
 	ADD_BIND(EditAction::Replace,             'r',                 KeyModifier::Ctrl);
+	ADD_BIND(EditAction::ReplaceCase,         'r',                 KeyModifier::Alt);
 
 	ADD_BIND(EditAction::DebugAction,         KeyEnum::F11,        KeyModifier::Ctrl);
 	

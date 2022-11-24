@@ -254,10 +254,16 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 				ctx->BeginCommand("goto ");
 				break;
 			case EditAction::Find:
-				ctx->BeginCommand("find ");
+				ctx->BeginCommand("find '");
+				break;
+			case EditAction::FindCase:
+				ctx->BeginCommand("findcase '");
 				break;
 			case EditAction::Replace:
-				ctx->BeginCommand("replace ");
+				ctx->BeginCommand("replace '");
+				break;
+			case EditAction::ReplaceCase:
+				ctx->BeginCommand("replacecase '");
 				break;
 			case EditAction::Escape:
 				matches.clear();

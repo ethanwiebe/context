@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core.h"
+#include <core.h>
 
-#include "../../textbuffer.h"
+#include <textbuffer.h>
 #include "cursor.h"
 
 #include <vector>
@@ -18,5 +18,8 @@ struct LineDiff {
 typedef std::vector<LineDiff> LineDiffInfo;
 
 void FindAllMatches(TextBuffer&,FoundList&,std::string_view);
-size_t ReplaceAll(TextBuffer&,std::string_view,std::string_view,LineDiffInfo&);
+void FindAllMatchesUncased(TextBuffer&,FoundList&,std::string_view);
+
 //returns number of successful replaces
+size_t ReplaceAll(TextBuffer&,std::string_view,std::string_view,LineDiffInfo&);
+size_t ReplaceAllUncased(TextBuffer&,std::string_view,std::string_view,LineDiffInfo&);

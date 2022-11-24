@@ -226,7 +226,7 @@ public:
 
 	void UpdateHighlighter();
 	
-	void FindTextInBuffer(std::string_view);
+	void FindTextInBuffer(std::string_view,bool);
 	void CursorToNextMatch();
 	void CursorToPreviousMatch();
 };

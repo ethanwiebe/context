@@ -55,6 +55,8 @@ ACTION(Escape)
 
 ACTION(Goto)
 ACTION(Find)
+ACTION(FindCase)
 ACTION(Replace)
+ACTION(ReplaceCase)
 ACTION(DebugAction)
 

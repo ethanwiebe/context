@@ -475,7 +475,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		c = std::max(c-1,0);
 		cursors.front().cursor = MakeCursor(l,c);
 		return true;
-	} else if (tokens[0].Matches("find")){
+	} else if (tokens[0].Matches("find")||tokens[0].Matches("findcase")){
 		if (tokens.size()<2){
 			modeErrorMessage.Push( "Expected 2 arguments, got "+
 				std::to_string(tokens.size()) );
@@ -489,7 +489,8 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		
 		std::string fixedToken = RemoveEscapes(search);
 		
-		FindTextInBuffer(fixedToken);
+		bool cased = tokens[0].Matches("findcase");
+		FindTextInBuffer(fixedToken,cased);
 		if (!matches.size()){
 			modeErrorMessage.Push("No matches for '"+findText+"'");
 		} else {
@@ -497,7 +498,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			CursorToNextMatch();
 		}
 		return true;
-	} else if (tokens[0].Matches("replace")){
+	} else if (tokens[0].Matches("replace")||tokens[0].Matches("replacecase")){
 		if (tokens.size()<2){
 			modeErrorMessage.Push( "Expected at least 2 arguments, got "+
 				std::to_string(tokens.size()) );
@@ -508,8 +509,8 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			modeErrorMessage.Push("'' is not a valid search string!");
 			return true;
 		}
-		std::string find = RemoveEscapes(search);
 		
+		std::string find = RemoveEscapes(search);
 		std::string replace;
 		if (tokens.size()<3)
 			replace = {};
@@ -519,7 +520,12 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		
 		LineDiffInfo diffs = {};
 		
-		size_t replaceCount = ReplaceAll(*textBuffer,find,replace,diffs);
+		size_t replaceCount;
+		if (tokens[0].Matches("replacecase"))
+			replaceCount = ReplaceAll(*textBuffer,find,replace,diffs);
+		else
+			replaceCount = ReplaceAllUncased(*textBuffer,find,replace,diffs);
+		
 		if (replaceCount==0){
 			modeErrorMessage.Push("No matches for '"+find+"'");
 		} else {
@@ -658,9 +664,12 @@ void LineModeBase::UpdateStyle(){
 	highlighterNeedsUpdate = true;
 }
 
-void LineModeBase::FindTextInBuffer(std::string_view text){
+void LineModeBase::FindTextInBuffer(std::string_view text,bool cased){
 	findText = text;
-	FindAllMatches(*textBuffer,matches,text);
+	if (cased)
+		FindAllMatches(*textBuffer,matches,text);
+	else
+		FindAllMatchesUncased(*textBuffer,matches,text);
 }
 
 void LineModeBase::CursorToNextMatch(){
