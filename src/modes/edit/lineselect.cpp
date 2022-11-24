@@ -119,19 +119,22 @@ void LineModeBase::IndentSelection(VisualCursor& cursor){
 	
 	Cursor& affected = cursor.cursor;
 	
+	LineDiffInfo info = {};
+	LineDiff lineDiff = {};
+	
 	end.column = 0;
 	size_t diff;
 	while (end.line.index>=start.line.index){
-		bool tab = IsTabIndented(end.line.it);
+		lineDiff.location = end.line;
+		lineDiff.before = *end.line.it;
 		diff = 0;
+		bool tab = IsTabIndented(end.line.it);
 		if (tab){
-			InsertCharAt(end,'\t');
-			++diff;
+			diff = 1;
+			end.line.it->insert(0,1,'\t');
 		} else {
-			for (ssize_t i=0;i<config.tabSize;++i){
-				++diff;
-				InsertCharAt(end,' ');
-			}
+			diff = config.tabSize;
+			end.line.it->insert(0,config.tabSize,' ');
 		}
 		if (end.line.index==selectAnchor.line.index)
 			selectAnchor.column += diff;
@@ -139,9 +142,14 @@ void LineModeBase::IndentSelection(VisualCursor& cursor){
 			selectCursor.column += diff;
 		if (end.line.index==affected.line.index)
 			affected.column += diff;
+		lineDiff.after = *end.line.it;
+		info.push_back(lineDiff);
 		--end.line;
 	}
 	
+	PushLineReplacementAction(std::move(info));
+	SetModified();
+	highlighterNeedsUpdate = true;
 	SetCachedX(cursor);
 }
 
@@ -152,20 +160,32 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 	
 	Cursor& affected = cursor.cursor;
 	
+	LineDiffInfo info = {};
+	LineDiff lineDiff = {};
+	
 	end.column = 0;
 	s32 diff;
 	while (end.line.index>=start.line.index){
-		bool tab = IsTabIndented(end.line.it);
+		if (end.line.it->empty()){
+			--end.line;
+			continue;
+		}
+		char front = end.line.it->front();
+		if (front!=' '&&front!='\t'){
+			--end.line;
+			continue;
+		}
+		
+		lineDiff.location = end.line;
+		lineDiff.before = *end.line.it;
 		diff = 0;
-		if (tab){
-			if (GetCharAt(end)=='\t'){
-				++diff;
-				DeleteCharAt(end);
-			}
+		if (front=='\t'){
+			diff = 1;
+			end.line.it->erase(0,1);
 		} else {
 			for (ssize_t i=0;i<config.tabSize;++i){
-				if (GetCharAt(end)!=' ') break;
-				DeleteCharAt(end);
+				if (end.line.it->front()!=' ') break;
+				end.line.it->erase(0,1);
 				++diff;
 			}
 		}
@@ -176,9 +196,16 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 		if (end.line.index==affected.line.index)
 			affected.column = std::max(affected.column-diff,0);
 		
+		lineDiff.after = *end.line.it;
+		info.push_back(lineDiff);
 		--end.line;
 	}
 	
+	if (!info.empty()){
+		PushLineReplacementAction(std::move(info));
+		SetModified();
+		highlighterNeedsUpdate = true;
+	}
 	SetCachedX(cursor);
 }
 

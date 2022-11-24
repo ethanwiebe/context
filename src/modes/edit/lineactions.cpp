@@ -130,8 +130,8 @@ void LineModeBase::PushDeletionAction(Cursor cursor,char c){
 
 void LineModeBase::PushLineReplacementAction(LineDiffInfo&& diffs){
 	ForceFinishAction(BufferActionType::LineReplacement);
-	
 	currentAction.lineDiffs = diffs;
+	currentAction.redo = false;
 }
 
 void LineModeBase::ForceFinishAction(BufferActionType type){
