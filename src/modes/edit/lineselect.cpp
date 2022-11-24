@@ -153,7 +153,7 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 	Cursor& affected = cursor.cursor;
 	
 	end.column = 0;
-	size_t diff;
+	s32 diff;
 	while (end.line.index>=start.line.index){
 		bool tab = IsTabIndented(end.line.it);
 		diff = 0;
@@ -170,11 +170,11 @@ void LineModeBase::DedentSelection(VisualCursor& cursor){
 			}
 		}
 		if (end.line.index==selectAnchor.line.index)
-			selectAnchor.column -= diff;
+			selectAnchor.column = std::max(selectAnchor.column-diff,0);
 		if (end.line.index==selectCursor.line.index)
-			selectCursor.column -= diff;
+			selectCursor.column = std::max(selectCursor.column-diff,0);
 		if (end.line.index==affected.line.index)
-			affected.column -= diff;
+			affected.column = std::max(affected.column-diff,0);
 		
 		--end.line;
 	}

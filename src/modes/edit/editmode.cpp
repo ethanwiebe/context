@@ -182,6 +182,37 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 				break;
 		}
 	}
+	
+	// selecting or not selecting
+	switch (a.action){
+		case EditAction::Goto:
+			ctx->BeginCommand("goto ");
+			break;
+		case EditAction::Find:
+			ctx->BeginCommand("find '");
+			break;
+		case EditAction::FindCase:
+			ctx->BeginCommand("findcase '");
+			break;
+		case EditAction::Replace:
+			ctx->BeginCommand("replace '");
+			break;
+		case EditAction::ReplaceCase:
+			ctx->BeginCommand("replacecase '");
+			break;
+		case EditAction::DebugAction:
+			showDebugInfo = !showDebugInfo;
+			break;
+		case EditAction::SelectAll:
+			selecting = true;
+			selectAnchor = MakeCursorAtBufferStart(*textBuffer);
+			MoveVisualCursorToBufferEnd(cursor);
+			UpdateSelection(cursor);
+			break;
+		default:
+			break;
+	}
+	
 	if (!selecting){
 		switch (a.action){
 			case EditAction::InsertLine:
@@ -255,12 +286,6 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 			case EditAction::RedoAction:
 				Redo(cursor);
 				break;
-			case EditAction::SelectAll:
-				selecting = true;
-				selectAnchor = MakeCursorAtBufferStart(*textBuffer);
-				MoveVisualCursorToBufferEnd(cursor);
-				UpdateSelection(cursor);
-				break;
 			case EditAction::Copy:
 			case EditAction::CopyLines:
 				copiedText = *cursor.cursor.line.it;
@@ -282,26 +307,8 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 				copiedText = ctx->GetClipboard();
 				InsertLinesAt(cursor.cursor,copiedText);
 				break;
-			case EditAction::Goto:
-				ctx->BeginCommand("goto ");
-				break;
-			case EditAction::Find:
-				ctx->BeginCommand("find '");
-				break;
-			case EditAction::FindCase:
-				ctx->BeginCommand("findcase '");
-				break;
-			case EditAction::Replace:
-				ctx->BeginCommand("replace '");
-				break;
-			case EditAction::ReplaceCase:
-				ctx->BeginCommand("replacecase '");
-				break;
 			case EditAction::Escape:
 				matches.clear();
-				break;
-			case EditAction::DebugAction:
-				showDebugInfo = !showDebugInfo;
 				break;
 	
 			default:

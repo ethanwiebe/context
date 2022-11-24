@@ -403,8 +403,9 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		textScreen.RenderString(w-profileString.size()-1,h-4,profileString);
 		
 		KeyboardEvent* e = ctx->GetCurrentEvent();
-
-		std::string evString = GetEventString(*e);
+		std::string evString = {};
+		if (e)
+			evString = GetEventString(*e);
 		
 		textScreen.RenderString(w-evString.size()-1,h-3,evString);
 		
@@ -426,6 +427,7 @@ TextScreen& LineModeBase::GetTextScreen(s32 w,s32 h){
 		locString += ", UH: " + std::to_string(undoStack.UndoHeight());
 		locString += ", RH: " + std::to_string(undoStack.RedoHeight());
 		locString += ", FC: " + std::to_string(matches.size());
+		locString += ", S: " + std::to_string(selecting);
 		textScreen.RenderString(w-locString.size()-1,h-1,locString);
 	}
 
@@ -477,6 +479,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		l = std::min(std::max(l-1,0),(s32)textBuffer->size()-1);
 		c = std::max(c-1,0);
 		cursors.front().cursor = MakeCursor(l,c);
+		if (selecting) UpdateSelection(cursors.front());
 		return true;
 	} else if (tokens[0].Matches("find")||tokens[0].Matches("findcase")){
 		if (tokens.size()<2){
@@ -500,6 +503,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			finding = true;
 			CursorToNextMatch();
 		}
+		StopSelecting();
 		return true;
 	} else if (tokens[0].Matches("replace")||tokens[0].Matches("replacecase")){
 		if (tokens.size()<2){
@@ -540,6 +544,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 			highlighterNeedsUpdate = true;
 		}
 		
+		StopSelecting();
 		return true;
 	}
 	return false;
