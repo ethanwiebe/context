@@ -23,5 +23,5 @@ struct TextAction {
 	};
 };
 
-TextAction GetTextActionFromKey(KeyEnum,KeyModifier,s64);
+TextAction GetTextActionFromKey(KeyEnum,KeyModifier,s64,bool);
 

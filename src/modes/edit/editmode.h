@@ -9,7 +9,7 @@ public:
 	EditMode(ContextEditor*);
 
 	void ProcessKeyboardEvent(KeyEnum,KeyModifier) override;
-	void ProcessMoveAction(VisualCursor&,TextAction);
+	bool ProcessMoveAction(VisualCursor&,TextAction);
 
 	std::string_view GetModeName() override {return "edit";}
 	

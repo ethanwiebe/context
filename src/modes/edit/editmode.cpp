@@ -4,32 +4,32 @@
 
 EditMode::EditMode(ContextEditor* ctx) : LineModeBase(ctx) {}
 
-void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
+bool EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 	switch (a.action){
 		case EditAction::MoveScreenUpLine:
 			MoveScreenUp(1);
-			break;
+			return true;
 		case EditAction::MoveScreenDownLine:
 			MoveScreenDown(1);
-			break;
+			return true;
 		case EditAction::MoveUpPage:
 			MoveVisualCursorUp(cursor,screenHeight-1);
-			break;
+			return true;
 		case EditAction::MoveDownPage:
 			MoveVisualCursorDown(cursor,screenHeight-1);
-			break;
+			return true;
 		case EditAction::MoveUpLine:
 			MoveVisualCursorUp(cursor,a.num);
-			break;
+			return true;
 		case EditAction::MoveDownLine:
 			MoveVisualCursorDown(cursor,a.num);
-			break;
+			return true;
 		case EditAction::MoveLeftChar:
 			MoveVisualCursorLeft(cursor,1);
-			break;
+			return true;
 		case EditAction::MoveRightChar:
 			MoveVisualCursorRight(cursor,1);
-			break;
+			return true;
 		case EditAction::MoveLeftMulti:
 			if (config.moveMode==MultiMode::Multi){
 				MoveVisualCursorLeft(cursor,a.num);
@@ -38,7 +38,7 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 			} else if (config.moveMode==MultiMode::PascalWord){
 				MoveVisualCursorLeftPascalWord(cursor);
 			}
-			break;
+			return true;
 		case EditAction::MoveRightMulti:
 			if (config.moveMode==MultiMode::Multi){
 				MoveVisualCursorRight(cursor,a.num);
@@ -47,34 +47,46 @@ void EditMode::ProcessMoveAction(VisualCursor& cursor,TextAction a){
 			} else if (config.moveMode==MultiMode::PascalWord){
 				MoveVisualCursorRightPascalWord(cursor);
 			}
-			break;
+			return true;
 		case EditAction::MoveUpMulti:
 			MoveVisualCursorUp(cursor,a.num);
-			break;
+			return true;
 		case EditAction::MoveDownMulti:
 			MoveVisualCursorDown(cursor,a.num);
-			break;
+			return true;
 		case EditAction::MoveToLineStart:
 			MoveVisualCursorToLineStart(cursor);
-			break;
+			return true;
 		case EditAction::MoveToLineEnd:
 			MoveVisualCursorToLineEnd(cursor);
-			break;
+			return true;
 		case EditAction::MoveToBufferStart:
 			MoveVisualCursorToBufferStart(cursor);
-			break;
+			return true;
 		case EditAction::MoveToBufferEnd:
 			MoveVisualCursorToBufferEnd(cursor);
-			break;
+			return true;
 		default:
-			break;
+			return false;
 	}
+	
+	return false;
 }
 
 void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
-	TextAction a = GetTextActionFromKey(key,mod,config.multiAmount);
+	bool shiftSelect = mod & KeyModifier::Shift;
+	if (key!=KeyEnum::Tab){
+		mod = (KeyModifier)(mod & ~KeyModifier::Shift);
+	}
+	
+	TextAction a = GetTextActionFromKey(key,mod,config.multiAmount,shiftSelect);
 	VisualCursor& cursor = cursors[0];
-	ProcessMoveAction(cursor,a);
+	if (!selecting&&shiftSelect&&a.action!=EditAction::InsertChar&&a.action!=EditAction::InsertLine)
+		StartSelecting(cursor);
+	if (ProcessMoveAction(cursor,a)){
+		if (selecting&&!shiftSelect)
+			StopSelecting();
+	}
 	
 	if (finding){
 		switch (a.action){
@@ -140,9 +152,6 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 			case EditAction::Escape:
 				StopSelecting();
 				break;
-			case EditAction::ToggleSelect:
-				StopSelecting();
-				return;
 			default:
 				break;
 		}
@@ -219,9 +228,6 @@ void EditMode::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 				break;
 			case EditAction::RedoAction:
 				Redo(cursor);
-				break;
-			case EditAction::ToggleSelect:
-				StartSelecting(cursor);
 				break;
 			case EditAction::SelectAll:
 				selecting = true;

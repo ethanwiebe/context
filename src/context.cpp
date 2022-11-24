@@ -284,7 +284,7 @@ bool ContextEditor::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 }
 
 void ContextEditor::ProcessCommandEntry(KeyEnum key,KeyModifier mod){
-	TextAction textAction = GetTextActionFromKey(key,mod,gConfig.multiAmount);
+	TextAction textAction = GetTextActionFromKey(key,mod,gConfig.multiAmount,false);
 	switch (textAction.action){
 		case EditAction::InsertChar:
 			entryString.insert(entryPos,1,textAction.character);

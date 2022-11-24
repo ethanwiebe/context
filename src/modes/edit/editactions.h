@@ -41,7 +41,6 @@ ACTION(DeleteLine)
 ACTION(UndoAction)
 ACTION(RedoAction)
 
-ACTION(ToggleSelect)
 ACTION(SelectAll)
 
 ACTION(Cut)

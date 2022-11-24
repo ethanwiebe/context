@@ -84,8 +84,6 @@ void LineModeBase::RegisterBinds(){
 	ADD_BIND(EditAction::UndoAction,          ',',                 KeyModifier::Alt);
 	ADD_BIND(EditAction::RedoAction,          '.',                 KeyModifier::Alt);
 
-	ADD_BIND(EditAction::ToggleSelect,        's',                 KeyModifier::Alt);
-	
 	ADD_BIND(EditAction::SelectAll,           'a',                 KeyModifier::Ctrl);
 	
 	ADD_BIND(EditAction::Cut,                 'x',                 KeyModifier::Ctrl);
@@ -108,12 +106,12 @@ void LineModeBase::RegisterBinds(){
 	gBinds["edit"] = edit;
 }
 
-TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod,s64 multiAmount){
+TextAction GetTextActionFromKey(KeyEnum key,KeyModifier mod,s64 multiAmount,bool shiftSelect){
 	TextAction textAction;
 
 	if (IsPrintable((s32)key,mod)){
 		textAction.action = EditAction::InsertChar;
-		if (!(mod & KeyModifier::Shift) && (char)key>='A' && (char)key<='Z')
+		if (!(mod & KeyModifier::Shift) && !shiftSelect && (char)key>='A' && (char)key<='Z')
 			textAction.character = (char)key+0x20;
 		else
 			textAction.character = (char)key;
