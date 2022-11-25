@@ -61,7 +61,7 @@ s64 LinuxOSImpl::GetModifyTime(std::string_view path) const {
 	if (stat64(temp.c_str(),&buf)!=0)
 		return 0;
 	
-	return buf.st_mtim.tv_sec;
+	return buf.st_mtim.tv_sec*1000;
 }
 
 bool LinuxOSImpl::PathsAreSame(std::string_view p1,std::string_view p2) const {

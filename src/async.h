@@ -6,7 +6,7 @@
 
 struct AsyncContext {
 	std::function<void()> func;
-	float preDelay;
+	s64 preDelay;
 	bool updateAfter;
 };
 

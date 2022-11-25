@@ -15,6 +15,7 @@ public:
 	virtual bool FileIsReadable(std::string_view) const = 0;
 	virtual bool FileIsWritable(std::string_view) const = 0;
 	
+	// in millis
 	virtual s64 GetModifyTime(std::string_view) const {return 0;};
 	
 	virtual void ListDir(const std::string&,std::vector<std::string>&) const = 0;
@@ -27,5 +28,8 @@ public:
 	
 	virtual std::string GetHomePath() const = 0;
 	
-	virtual void Sleep(float) const;
+	// returns epoch time in millis
+	virtual s64 GetTime() const;
+	// sleeps for millis
+	virtual void Sleep(s64) const;
 };

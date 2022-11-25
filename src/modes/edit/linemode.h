@@ -106,6 +106,7 @@ protected:
 	Handle<SyntaxHighlighter> syntaxHighlighter;
 
 	bool readonly,modified;
+	bool cursorAtTail;
 	
 	LineConfig config;
 	

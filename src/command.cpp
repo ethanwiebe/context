@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-const size_t gCommandCount = 13;
+const size_t gCommandCount = 14;
 
 const Command gCommands[gCommandCount] = {
 	{
@@ -21,6 +21,10 @@ const Command gCommands[gCommandCount] = {
 		{
 			{ArgType::String,"path"}
 		}
+	},
+	{
+		"reload",
+		{}
 	},
 	{
 		"var",

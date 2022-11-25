@@ -76,6 +76,12 @@ void OSInterface::AutocompletePath(std::string& path) const {
 #include <thread>
 #include <chrono>
 
-void OSInterface::Sleep(float f) const {
-	std::this_thread::sleep_for(std::chrono::milliseconds((s32)(f*1000)));
+s64 OSInterface::GetTime() const {
+	return std::chrono::duration_cast<std::chrono::milliseconds,s64>(
+		std::chrono::system_clock::now().time_since_epoch()
+	).count();
+}
+
+void OSInterface::Sleep(s64 f) const {
+	std::this_thread::sleep_for(std::chrono::milliseconds(f));
 }

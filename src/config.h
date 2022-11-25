@@ -15,6 +15,7 @@ struct Config {
 	bool sleepy;
 	s64 tabBarWidth;
 	s64 multiAmount;
+	s64 autoReloadDelay;
 };
 
 extern Config gConfig;

@@ -119,6 +119,10 @@ inline void ContextEditor::Update(){
 	
 	if (quit) return;
 	
+	if (osInterface->GetTime()-lastReloadCheckTime > gConfig.autoReloadDelay){
+		CheckReload();
+	}
+	
 	{
 		std::scoped_lock lock{updateMutex};
 		if (!willUpdate)
@@ -491,6 +495,22 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		std::string path = tokens[1].Stringify();
 		std::string parsedPath = ParsePath(path,*osInterface);
 		SaveAsMode(parsedPath,currentMode);
+		return true;
+	} else if (tokens[0].Matches("reload")){
+		if (modes.empty()){
+			PushError("Cannot reload without a mode!");
+			return true;
+		}
+		
+		if (!modes[currentMode]->HasPath()){
+			PushError("Cannot reload a mode without a path!");
+			return true;
+		}
+		
+		if (modes[currentMode]->Modified())
+			PromptReloadMode(currentMode);
+		else
+			ReloadMode(currentMode);
 		return true;
 	} else if (tokens[0].Matches("var")){
 		SetConfigVar(tokens);
@@ -1095,14 +1115,19 @@ void ContextEditor::SaveMode(size_t index){
 		return;
 	}
 
-	if (modes[index]->Modified()){
+	if (modes[index]->Modified()||modes[index]->accessTime==0){
 		if (!modes[index]->SaveAction(*osInterface)){
 			if (modes[index]->Readonly()){
 				PushError("File is readonly!");
 			} else {
 				PushError("Could not save!");
 			}
+		} else {
+			// small amount more to prevent save-reloads
+			modes[index]->accessTime = osInterface->GetTime()+50;
 		}
+	} else {
+		infoMessage.Push("Already saved.");
 	}
 }
 
@@ -1141,6 +1166,48 @@ bool ContextEditor::ReadFileChecks(std::string_view path){
 	}
 	
 	return true;
+}
+
+void ContextEditor::ReloadMode(size_t mode){
+	std::string path = (std::string)modes[mode]->GetPath(*osInterface);
+	if (!ReadFileChecks(path)){
+		return;
+	}
+	if (!modes[mode]->OpenAction(*osInterface,path)){
+		PushError("Could not reload '"+path+"'!");
+		return;
+	}
+	modes[mode]->accessTime = osInterface->GetTime();
+	infoMessage.Push("Reloaded.");
+}
+
+void ContextEditor::DisableAutoReload(size_t mode){
+	modes[mode]->autoReload = false;
+	infoMessage.Push("Auto-reload disabled.");
+}
+
+void ContextEditor::PromptReloadMode(size_t mode){
+	entryMode = EntryMode::YesNo;
+	yesNoMessage = "Change detected. Reload?";
+	yesAction = std::bind(&ContextEditor::ReloadMode,this,mode);
+	noAction = std::bind(&ContextEditor::DisableAutoReload,this,mode);
+}
+
+void ContextEditor::CheckReload(){
+	lastReloadCheckTime = osInterface->GetTime();
+	if (!modes[currentMode]->HasPath()) return;
+	
+	if (modes[currentMode]->autoReload){
+		s64 modTime = osInterface->GetModifyTime(modes[currentMode]->GetPath(*osInterface));
+		if (modTime>modes[currentMode]->accessTime){
+			willUpdate = true;
+			silentUpdate = false;
+			if (!modes[currentMode]->Modified())
+				ReloadMode(currentMode);
+			else
+				PromptReloadMode(currentMode);
+		}
+	}
 }
 
 void ContextEditor::NewMode(){
@@ -1200,6 +1267,7 @@ void ContextEditor::OpenMode(std::string_view path){
 	ProcessExtension(copiedPath,mode,procName);
 	
 	Handle<ModeBase> openedMode = Handle<ModeBase>(CreateMode(mode,this));
+	openedMode->accessTime = osInterface->GetTime();
 	if (openedMode->OpenAction(*osInterface,copiedPath)){
 		if (modes.empty()){
 			modes.push_back(std::move(openedMode));
@@ -1228,6 +1296,7 @@ void ContextEditor::OpenHelpMode(){
 	helpMode->SetHelp(MakeRef<TextBuffer>(gHelpBuffer));
 	
 	Handle<ModeBase> m = Handle<ModeBase>(helpMode);
+	m->autoReload = false;
 	
 	modes.push_back(std::move(m));
 	currentMode = modes.size()-1;
@@ -1304,6 +1373,16 @@ void ContextEditor::SetConfigVar(const TokenVector& tokens){
 		if (!ParsePositiveInt(gConfig.multiAmount,tokens[2].Stringify())){
 			PushError("multiAmount must be a positive int!");
 		}
+	} else if (varName=="autoReload"){
+		if (modes.empty()){
+			PushError("Must have a mode to set autoReload on!");
+		} else if (!ParseBool(modes[currentMode]->autoReload,tokens[2].Stringify())){
+			PushError("autoReload must be a boolean value!");
+		}
+	} else if (varName=="autoReloadDelay"){
+		if (!ParsePositiveInt(gConfig.autoReloadDelay,tokens[2].Stringify())){
+			PushError("autoReloadDelay must be a positive int!");
+		}
 	} else {
 		PushError("'"+varName+"' is not a config var!");
 	}
@@ -1317,7 +1396,7 @@ void ContextEditor::SetModeConfigVar(const TokenVector& tokens){
 }
 
 void WaitForAsyncTimer(ContextEditor* ctx,size_t index,AsyncContext a){
-	if (a.preDelay>0.0f){
+	if (a.preDelay>0){
 		ctx->GetOSInterface()->Sleep(a.preDelay);
 		if (ctx->GetAsyncCancel(index)){
 			ctx->AsyncFinished(index);
@@ -1326,7 +1405,6 @@ void WaitForAsyncTimer(ContextEditor* ctx,size_t index,AsyncContext a){
 	}
 	
 	a.func();
-	
 	ctx->AsyncFinished(index);
 }
 

@@ -22,6 +22,9 @@ protected:
 	MessageQueue modeErrorMessage,modeInfoMessage;
 
 public:
+	bool autoReload = false;
+	s64 accessTime = 0;
+
 	ModeBase(ContextEditor* c) : ctx(c){}
 	ModeBase(const ModeBase&) = delete;
 	ModeBase& operator=(const ModeBase&) = delete;

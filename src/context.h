@@ -82,6 +82,8 @@ class ContextEditor {
 	size_t asyncIndex;
 	std::vector<AsyncData> asyncState;
 	
+	s64 lastReloadCheckTime = 0;
+	
 	inline void PushError(std::string&& msg){
 		LOG("ERROR: (" << (s64)errorMessage.msgs.size()<<") "<<msg<<"\n");
 		errorMessage.Push(std::move(msg));
@@ -127,6 +129,8 @@ class ContextEditor {
 	
 	std::string GetTabString(size_t,size_t);
 	void DrawTabsBar();
+	
+	void CheckReload();
 
 	bool ProcessKeyboardEvent(KeyEnum,KeyModifier);
 	void ProcessCommandEntry(KeyEnum,KeyModifier);
@@ -151,6 +155,10 @@ public:
 	void SetPathAndSaveMode(std::string_view,size_t);
 	void SwitchMode(size_t);
 	void MoveMode(size_t,size_t);
+	
+	void ReloadMode(size_t);
+	void DisableAutoReload(size_t);
+	void PromptReloadMode(size_t);
 
 	void NewMode();
 	void OpenMode(std::string_view);

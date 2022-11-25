@@ -109,6 +109,7 @@ LineModeBase::LineModeBase(ContextEditor* ctx) :
 	
 	readonly = false;
 	modified = false;
+	cursorAtTail = false;
 	InitIterators();
 	SetColorLine();
 	bufferPath = {};
@@ -138,11 +139,11 @@ void LineModeBase::UpdateHighlighter(){
 	
 	AsyncContext a = {};
 	a.func = std::bind(&LineModeBase::UpdateHighlighterTask,this);
-	a.preDelay = 0.0f;
+	a.preDelay = 0;
 	a.updateAfter = true;
 	if (!ctx->IsAsyncTaskDone(highlightTask)){
 		ctx->CancelAsyncTask(highlightTask);
-		a.preDelay = 0.03f;
+		a.preDelay = 30;
 	}
 	highlightTask = ctx->StartAsyncTask(a);
 	highlighterNeedsUpdate = false;
@@ -555,6 +556,8 @@ void LineModeBase::SetDefaultHighlighter(std::string_view path){
 }
 
 bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
+	cursorAtTail = (cursors.front().cursor==MakeCursorAtBufferEnd(*textBuffer))&&
+			(cursors.front().cursor!=MakeCursorAtBufferStart(*textBuffer));
 	if (!os.ReadFileIntoTextBuffer(path,textBuffer))
 		return false;
 
@@ -617,13 +620,27 @@ void LineModeBase::SetSyntaxHighlighter(const std::string& name){
 	syntaxHighlighter = Handle<SyntaxHighlighter>(
 		gSyntaxHighlighters.at(name)(*textBuffer)
 	);
+	highlighterNeedsUpdate = true;
 }
 
 void LineModeBase::InitIterators(){
 	viewLine = {textBuffer->begin()};
 	colorLine = colorBuffer.begin();
+	
+	s32 col = 0;
+	s32 line = 0;
+	
+	if (!cursors.empty()){
+		col = cursors.front().cursor.column;
+		line = cursors.front().cursor.line.index;
+	}
 	cursors.clear();
 	cursors.emplace_back(textBuffer->begin());
+	if (cursorAtTail)
+		cursors.front().cursor = MakeCursorAtBufferEnd(*textBuffer);
+	else
+		cursors.front().cursor = MakeCursor(line,col);
+		
 	selectAnchor = cursors[0].cursor;
 	selectCursor = cursors[0].cursor;
 }
@@ -648,6 +665,7 @@ Cursor LineModeBase::MakeCursor(s32 line,s32 column){
 }
 
 Cursor LineModeBase::MakeCursorFromLineIndexedIterator(s32 line,s32 column,LineIndexedIterator it){
+	line = std::min((s32)textBuffer->size()-1,line);
 	while (it.index>line)
 		--it;
 
