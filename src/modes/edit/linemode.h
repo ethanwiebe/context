@@ -129,6 +129,8 @@ public:
 	
 	static void RegisterBinds();
 
+	void SetDefaultHighlighter(std::string_view);
+
 	bool OpenAction(const OSInterface& os,std::string_view path) override;
 	bool SaveAction(const OSInterface& os) override;
 	

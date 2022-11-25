@@ -533,6 +533,27 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 	return false;
 }
 
+void LineModeBase::SetDefaultHighlighter(std::string_view path){
+	auto index = path.rfind('.');
+	if (index!=std::string::npos){
+		path.remove_prefix(index+1);
+	} else {
+		path = {};
+	}
+	
+	if (path=="cpp"||path=="c"||path=="hpp"||path=="h"||path=="c++"||
+		path=="h++"||path=="cc"||path=="hh"){
+		SetSyntaxHighlighter("cpp");
+	} else if (path=="py"||path=="pyw"){
+		SetSyntaxHighlighter("python");
+	} else if (path=="glsl"||path=="frag"||path=="vert"||path=="geom"||
+		path=="fs"||path=="vs"||path=="gs"){
+		SetSyntaxHighlighter("glsl");
+	} else if (path=="trs"||path=="thm"||path=="axm"){
+		SetSyntaxHighlighter("terse");
+	}
+}
+
 bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	if (!os.ReadFileIntoTextBuffer(path,textBuffer))
 		return false;
@@ -544,6 +565,8 @@ bool LineModeBase::OpenAction(const OSInterface& os, std::string_view path){
 	if (textBuffer->empty()){
 		textBuffer->InsertLine(textBuffer->begin(),{});
 	}
+	
+	SetDefaultHighlighter(path);
 
 	colorBuffer = {};
 	colorBuffer.assign(textBuffer->size(),{});
