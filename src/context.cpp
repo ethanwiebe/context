@@ -99,6 +99,7 @@ inline void ContextEditor::Render(){
 inline void ContextEditor::Update(){
 	if ((currentEvent = interface->GetKeyboardEvent())){
 		willUpdate = true;
+		silentUpdate = false;
 		KeyEnum key = (KeyEnum)currentEvent->key;
 		KeyModifier mod = (KeyModifier)currentEvent->mod;
 		
@@ -122,8 +123,6 @@ inline void ContextEditor::Update(){
 		std::scoped_lock lock{updateMutex};
 		if (!willUpdate)
 			return;
-		
-		silentUpdate = (currentEvent==nullptr)||(currentEvent->key==0);
 		
 		Render();
 		
@@ -908,6 +907,7 @@ std::string BarClipStringEnd(const std::string& str,size_t w){
 }
 
 void ContextEditor::DrawStatusBar(){
+	if (silentUpdate) return;
 	s32 w,h;
 	w = screen.GetWidth();
 	h = screen.GetHeight();
@@ -949,16 +949,14 @@ void ContextEditor::DrawStatusBar(){
 		modeErrorStr = modeErrorMessage.Front();
 		MessageQueue& modeInfoMessage = modes[currentMode]->GetInfoMessage();
 		modeInfoStr = modeInfoMessage.Front();
-		if (!silentUpdate){
-			if (!errorMessage.Empty())
-				errorStr = errorMessage.Pop();
-			else if (!modeErrorMessage.Empty())
-				modeErrorStr = modeErrorMessage.Pop();
-			else if (!infoMessage.Empty())
-				infoStr = infoMessage.Pop();
-			else if (!modeInfoMessage.Empty())
-				modeInfoStr = modeInfoMessage.Pop();
-		}
+		if (!errorMessage.Empty())
+			errorStr = errorMessage.Pop();
+		else if (!modeErrorMessage.Empty())
+			modeErrorStr = modeErrorMessage.Pop();
+		else if (!infoMessage.Empty())
+			infoStr = infoMessage.Pop();
+		else if (!modeInfoMessage.Empty())
+			modeInfoStr = modeInfoMessage.Pop();
 	
 		if (!errorStr.empty()){
 			screen.RenderString(0,h-1,BarClipStringEnd(errorStr,maxW),errorStyle);
