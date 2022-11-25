@@ -6,8 +6,8 @@ keys are accessible by holding Alt and
 pressing keys on and near the home row.
 These will be listed below:
 
-Alt-h  Alt-j  Alt-k  Alt-l
-  <      v      ^      >
+ Alt-h        Alt-j        Alt-k       Alt-l
+   <            v            ^           >
 
 Ctrl-Alt-h  Ctrl-Alt-j  Ctrl-Alt-k  Ctrl-Alt-l
   <---          |            ^         --->
@@ -31,9 +31,6 @@ Insert line below cursor
 
 Ctrl-Alt-p
 Insert line above cursor
-
-Alt-s
-Toggle select
 
 Ctrl-a
 Select all
@@ -99,8 +96,14 @@ Goto
 Ctrl-f
 Find
 
+Alt-f
+Case sensitive find
+
 Ctrl-r
 Replace
+
+Alt-r
+Case sensitive replace
 
 Ctrl-z
 Undo
@@ -114,6 +117,9 @@ Indent or next search hit
 Shift-Tab
 Dedent or previous search hit
 
+Escape
+Cancel search, entry, or selection
+
 F1
 Open help
 
@@ -121,11 +127,16 @@ F2
 Save as
 
 
-Commands:
+Text can be selected by holding shift and
+pressing a movement key.
+
+
+Global Commands:
 Pressing Ctrl-e will enter Entry mode which
 enables the configuration of context using
-commands.
-Here are the commands:
+commands. Several common commands are bound to
+keybinds which are listed above.
+Here are the global commands:
 
 open path
 	Opens file at 'path'.
@@ -133,18 +144,21 @@ open path
 save path
 	Saves current file.
 
-saveas path
+saveAs path
 	Renames file to 'path'.
 
 var varName value
 	Sets the global config var 'varName' to be 'value'.
 	
-modevar varName value
+modeVar varName value
 	Sets the mode-specific config var 'varName' to be 'value'
 	
 proc procName
 	Starts the definition of a procedure named 'procName'.
 	Definition ends when 'end' is encountered.
+	
+source filePath
+	Opens the file at 'filePath' and executes it as commands.
 
 bind modeName.actionName keybinds...
 	Binds the action of 'actionName' in 'modeName' to all of the
@@ -161,7 +175,7 @@ ext extName modeName [procName]
 	Any files of type 'extName' will be opened in mode 'modeName' and
 	optionally the procedure 'procName' will be run after opening.
 
-modehook modeName procName
+modeHook modeName procName
 	Whenever the mode 'modeName' is opened the procedure 
 	'procName' will be run.
 
@@ -174,22 +188,45 @@ style styleName fg bg [opts]
 	A full list of style names can be viewed at:
 		github.com/ethanwiebe/context/blob/master/include/stylename.h
 		
-
-The effects of these commands do not persist across
+		
+The effects of configuration commands do not persist across
 sessions. At start-up a file ~/.ctxcfg is checked
 and if it exists all lines in the file will be executed 
 as commands.
 
 
-Variables of 'var' and 'modevar':
+Edit Mode Commands:
+goto lineNumber [colNumber]
+
+find searchString
+	Does a case insensitive search for 'searchString'.
+
+findCase searchString
+	Does a case sensitive search for 'searchString'.
+
+replace searchString replaceString
+	Case insensitive search for 'searchString', replacing
+	with 'replaceString'.
+
+replaceCase searchString replaceString
+	Case sensitive search for 'searchString', replacing
+	with 'replaceString'.
+
+If you are selecting text when you run the find/replace 
+commands, they will run their search within your selection bounds
+instead of the whole file.
+
+
+Variables of 'var' and 'modeVar':
 	var varName value
-	
 	'varName' can be:
 		style                 - style name to set/create
 		sleepy                - whether to sleep or busy loop while waiting
 		tabBarWidth           - width of tabs on top of the screen
 		
-	In edit mode 'modevar' can be:
+		
+	modeVar varName value
+	In edit mode 'varName' can be:
 		tabSize               - tab size in spaces
 		multiAmount           - amount of chars to move in 'multi' movements
 		displayLineNumbers    - whether to display line numbers or not
