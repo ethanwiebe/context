@@ -524,25 +524,8 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		else
 			replace = RemoveEscapes(tokens[2].Stringify());
 		
-		
-		LineDiffInfo diffs = {};
-		
-		size_t replaceCount;
-		if (tokens[0].Matches("replacecase"))
-			replaceCount = ReplaceAll(*textBuffer,find,replace,diffs);
-		else
-			replaceCount = ReplaceAllUncased(*textBuffer,find,replace,diffs);
-		
-		if (replaceCount==0){
-			modeErrorMessage.Push("No matches for '"+find+"'");
-		} else {
-			PushLineReplacementAction(std::move(diffs));
-			
-			modeInfoMessage.Push("Replaced "+std::to_string(replaceCount)+
-				" occurences of '"+find+"'");
-			SetModified();
-			highlighterNeedsUpdate = true;
-		}
+		bool cased = tokens[0].Matches("replacecase");
+		ReplaceTextInBuffer(find,replace,cased);
 		
 		StopSelecting();
 		return true;
@@ -672,7 +655,7 @@ void LineModeBase::UpdateStyle(){
 	highlighterNeedsUpdate = true;
 }
 
-void LineModeBase::FindTextInBuffer(std::string_view text,bool cased){
+void LineModeBase::FindTextInBuffer(const std::string& text,bool cased){
 	findText = text;
 	Cursor start,end;
 	if (!selecting){
@@ -682,10 +665,33 @@ void LineModeBase::FindTextInBuffer(std::string_view text,bool cased){
 		start = GetSelectStartPos();
 		end = GetSelectEndPos();
 	}
-	if (cased)
-		FindAllMatches(*textBuffer,matches,text,start,end);
-	else
-		FindAllMatchesUncased(*textBuffer,matches,text,start,end);
+	
+	FindAllMatches(*textBuffer,matches,text,start,end,cased);
+}
+
+void LineModeBase::ReplaceTextInBuffer(const std::string& find,const std::string& replace,bool cased){
+	LineDiffInfo diffs = {};
+	Cursor start,end;
+	if (!selecting){
+		start = {{textBuffer->begin(),0},0};
+		end = {{textBuffer->end(),(s32)textBuffer->size()},0};
+	} else {
+		start = GetSelectStartPos();
+		end = GetSelectEndPos();
+	}
+	
+	size_t replaceCount = ReplaceAll(*textBuffer,find,replace,diffs,start,end,cased);
+		
+	if (replaceCount==0){
+		modeErrorMessage.Push("No matches for '"+find+"'");
+	} else {
+		PushLineReplacementAction(std::move(diffs));
+		
+		modeInfoMessage.Push("Replaced "+std::to_string(replaceCount)+
+			" occurences of '"+find+"'");
+		SetModified();
+		highlighterNeedsUpdate = true;
+	}
 }
 
 void LineModeBase::CursorToNextMatch(){

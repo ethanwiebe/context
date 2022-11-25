@@ -227,7 +227,8 @@ public:
 
 	void UpdateHighlighter();
 	
-	void FindTextInBuffer(std::string_view,bool);
+	void FindTextInBuffer(const std::string&,bool);
+	void ReplaceTextInBuffer(const std::string&,const std::string&,bool);
 	void CursorToNextMatch();
 	void CursorToPreviousMatch();
 };
