@@ -17,7 +17,7 @@ const Command gCommands[gCommandCount] = {
 		{}
 	},
 	{
-		"saveas",
+		"saveAs",
 		{
 			{ArgType::String,"path"}
 		}
@@ -30,7 +30,7 @@ const Command gCommands[gCommandCount] = {
 		}
 	},
 	{
-		"modevar",
+		"modeVar",
 		{
 			{ArgType::String, "varName"},
 			{ArgType::Any, "value"}
@@ -83,7 +83,7 @@ const Command gCommands[gCommandCount] = {
 		}
 	},
 	{
-		"modehook",
+		"modeHook",
 		{
 			{ArgType::String, "modeName"},
 			{ArgType::String, "procName"}

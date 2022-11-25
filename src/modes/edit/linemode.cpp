@@ -481,7 +481,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		cursors.front().cursor = MakeCursor(l,c);
 		if (selecting) UpdateSelection(cursors.front());
 		return true;
-	} else if (tokens[0].Matches("find")||tokens[0].Matches("findcase")){
+	} else if (tokens[0].Matches("find")||tokens[0].Matches("findCase")){
 		if (tokens.size()<2){
 			modeErrorMessage.Push( "Expected 2 arguments, got "+
 				std::to_string(tokens.size()) );
@@ -495,7 +495,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		
 		std::string fixedToken = RemoveEscapes(search);
 		
-		bool cased = tokens[0].Matches("findcase");
+		bool cased = tokens[0].Matches("findCase");
 		FindTextInBuffer(fixedToken,cased);
 		if (!matches.size()){
 			modeErrorMessage.Push("No matches for '"+findText+"'");
@@ -505,7 +505,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		}
 		StopSelecting();
 		return true;
-	} else if (tokens[0].Matches("replace")||tokens[0].Matches("replacecase")){
+	} else if (tokens[0].Matches("replace")||tokens[0].Matches("replaceCase")){
 		if (tokens.size()<2){
 			modeErrorMessage.Push( "Expected at least 2 arguments, got "+
 				std::to_string(tokens.size()) );
@@ -524,7 +524,7 @@ bool LineModeBase::ProcessCommand(const TokenVector& tokens){
 		else
 			replace = RemoveEscapes(tokens[2].Stringify());
 		
-		bool cased = tokens[0].Matches("replacecase");
+		bool cased = tokens[0].Matches("replaceCase");
 		ReplaceTextInBuffer(find,replace,cased);
 		
 		StopSelecting();

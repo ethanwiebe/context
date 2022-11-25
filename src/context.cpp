@@ -231,7 +231,7 @@ bool ContextEditor::ProcessKeyboardEvent(KeyEnum key,KeyModifier mod){
 			SaveMode(currentMode);
 			return true;
 		case Action::RenameMode: {
-			std::string copy = "saveas " + std::string(modes[currentMode]->GetPath(*osInterface));
+			std::string copy = "saveAs " + std::string(modes[currentMode]->GetPath(*osInterface));
 			BeginCommand(copy);
 			return true;
 		}
@@ -374,7 +374,7 @@ void ContextEditor::AutocompleteCommand(){
 	TokenVector tokens = GetCommandTokens();
 	
 	if ((tokens[0].Matches("open")||
-		 tokens[0].Matches("saveas")||
+		 tokens[0].Matches("saveAs")||
 		 tokens[0].Matches("source"))&&
 			tokens.size()>1){
 		std::string sub = entryString.substr(GetTokenCol(tokens[1]),
@@ -482,7 +482,7 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		
 		SaveMode(currentMode);
 		return true;
-	} else if (tokens[0].Matches("saveas")){
+	} else if (tokens[0].Matches("saveAs")){
 		if (modes.empty()){
 			PushError("Cannot save without a mode!");
 			return true;
@@ -495,10 +495,9 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 	} else if (tokens[0].Matches("var")){
 		SetConfigVar(tokens);
 		return true;
-	} else if (tokens[0].Matches("modevar")){
+	} else if (tokens[0].Matches("modeVar")){
 		if (modes.empty()){
 			PushError("No mode to configure!");
-			LOG("NO MODE ERROR!");
 			return true;
 		}
 		
@@ -559,7 +558,7 @@ bool ContextEditor::ProcessCommand(const TokenVector& tokens){
 		
 		SetExtensionData(extName,index,procName);
 		return true;
-	} else if (tokens[0].Matches("modehook")){
+	} else if (tokens[0].Matches("modeHook")){
 		std::string modeName = tokens[1].Stringify();
 		std::string procName = tokens[2].Stringify();
 		ModeIndex index = ModeNameToIndex(modeName.c_str());
@@ -1092,7 +1091,7 @@ void ContextEditor::ForceCloseMode(size_t index){
 
 void ContextEditor::SaveMode(size_t index){
 	if (!modes[index]->HasPath()||modes[index]->Readonly()){
-		BeginCommand("saveas ");
+		BeginCommand("saveAs ");
 		return;
 	}
 
@@ -1232,6 +1231,11 @@ void ContextEditor::OpenHelpMode(){
 	
 	modes.push_back(std::move(m));
 	currentMode = modes.size()-1;
+	
+	ModeIndex edit = ModeNameToIndex("edit");
+	if (modeHooks.contains(edit)){
+		RunProc(modeHooks.at(edit));
+	}
 }
 
 void ContextEditor::SaveAsMode(std::string_view path,size_t index){
