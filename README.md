@@ -14,7 +14,6 @@ context is a mode-based console text editor.
 - vim-like movement keys accessible by holding Alt
 - style configuration
 - remappable keybinds
-- help page (F1)
 
 
 ## Requirements
