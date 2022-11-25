@@ -11,16 +11,18 @@ context is a mode-based console text editor.
 - command-based config file format
 - Windows support
 - UTF-8 support
-- common movement keys are accessible on the home row
-  by pressing Alt and/or Ctrl
+- vim-like movement keys accessible by holding Alt
 - style configuration
 - remappable keybinds
+- help page (F1)
 
 
 ## Requirements
 
 - Python 3
 - ncurses (Linux)
+- X11 (Linux)
+- g++ 12.1.0+
 
 
 ## Help
@@ -32,8 +34,8 @@ Press F1 to bring up the help page and press Ctrl-q to quit.
 ### Linux
 
 ```
-./builder.py release
-sudo ./builder.py install
+./builder.py
+sudo ./builder.py linux/install
 ```
 
 This will install context at `/usr/local/bin/ctx`.
@@ -41,7 +43,7 @@ This will install context at `/usr/local/bin/ctx`.
 ### Windows
 
 ```
-python builder.py windows release
+python builder.py
 ```
 
 MSYS2 or an equivalent build system is needed
