@@ -44,9 +44,16 @@ bool WindowsOSImpl::FileIsWritable(std::string_view path) const {
 	return good;
 }
 
-//s64 WindowsOSImpl::GetModifyTime(std::string_view) const {
+s64 WindowsOSImpl::GetModifyTime(std::string_view path) const {
+	std::error_code error;
+	auto fileTime = std::filesystem::last_write_time({path},error);
+	if (error)
+		return 0;
 	
-//}
+	auto clockConvert = std::chrono::file_clock::to_sys(fileTime);
+	auto time = std::chrono::duration_cast<std::chrono::milliseconds,s64>(clockConvert.time_since_epoch()).count();
+	return time;
+}
 
 void WindowsOSImpl::ListDir(const std::string& path,std::vector<std::string>& entries) const {
 	const std::filesystem::path fspath{path};
