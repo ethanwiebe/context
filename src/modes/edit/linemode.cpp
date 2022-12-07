@@ -608,6 +608,7 @@ void LineModeBase::SetPath(const OSInterface& os,std::string_view path){
 	bufferPath.clear();
 	bufferPath += path;
 	readonly = !os.FileIsWritable(bufferPath);
+	SetDefaultHighlighter(path);
 	SetModified();
 }
 
